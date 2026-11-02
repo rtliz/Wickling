@@ -37,7 +37,7 @@
 
 | ค่า | ใช้ | สถานะ |
 |---|---|---|
-| package id | `com.rtliz.wickling` | เสนอ (ตามแบบเกม rtliz อื่น) · ยังไม่ได้ลง Capacitor · ยืนยันกับเจ้าของก่อนสร้าง Android |
+| package id | `com.wickling.puzzle` | ล็อก: สร้างแอปใน Play Console แล้ว (2026-11-02, app id `4973122480503751933`) · ยังไม่ได้ลง Capacitor |
 | Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · แผน Spark พอ (ยังไม่ใช้ Firestore) · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
 | key เซฟ | `wickling.save.v1` · สำรองเซฟเสีย `wickling.save.bad` · `SAVE_VERSION = 1` | ล็อก |
 | ลำดับห้องใน `LEVELS` | ดาวในเซฟอ้างด้วยลำดับ → เพิ่มต่อท้ายเท่านั้น | ล็อกหลังปล่อย |
