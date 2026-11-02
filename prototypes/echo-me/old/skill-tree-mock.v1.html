@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Me Skill Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600&display=swap">
+<style>
+/* ต้นไม้สกิล "ภูติตะเกียง": รากอยู่ล่าง สามกิ่งงอกขึ้น ยอดรวมเป็นสกิลสุดท้าย · แผงล่างแสดงรายละเอียด/ปลดล็อก/ติดตั้ง */
+:root{
+  --page:#e7e3ee; --page-fg:#1b1430; --page-muted:#5d5470;
+  --bg:#0c0911; --bg2:#211830; --panel:#1f172b; --panel2:#140f1c; --gold:#e6bd5c; --gold-soft:rgba(230,189,92,.5);
+  --fg:#f6ecd6; --muted:#b9aed3; --flame:#ffb13b; --red:#e85a3a; --red-d:#a8301f; --ink:#1b1430;
+  --b-time:#ffb13b; --b-smoke:#c9b8ff; --b-light:#8fe3d0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--page-fg);font-family:"Noto Sans Thai",system-ui,sans-serif;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.wrap{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;max-width:1100px;margin:0 auto;align-items:flex-start}
+.notes{max-width:420px;display:flex;flex-direction:column;gap:14px}
+.notes h1{font-family:Prompt,sans-serif;font-size:1.5rem;margin:0}
+.notes h3{font-family:Prompt,sans-serif;font-size:1rem;margin:6px 0 0}
+.notes p,.notes li{font-size:.9rem;line-height:1.55;margin:0}
+.notes ul{margin:0;padding-left:18px;color:var(--page-muted)}
+.notes table{border-collapse:collapse;font-size:.85rem;width:100%}
+.notes td,.notes th{border-bottom:1px solid #cfc8dc;padding:5px 6px;text-align:left}
+.notes th{font-family:Prompt,sans-serif;font-weight:600}
+
+.phone{width:360px;max-width:100%;height:740px;border-radius:34px;border:6px solid var(--ink);overflow:hidden;position:relative;
+  background:radial-gradient(90% 60% at 50% 45%,var(--bg2) 0%,var(--bg) 75%);color:var(--fg);font-family:Prompt,sans-serif;
+  display:flex;flex-direction:column;padding:16px 14px 14px;gap:10px;box-shadow:0 10px 0 rgba(27,20,48,.18)}
+.panel{position:relative;background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold-soft);border-radius:10px}
+.panel::before,.panel::after{content:"";position:absolute;width:13px;height:13px;border:2px solid var(--gold)}
+.panel::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+.panel::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+.top{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}
+.top b{font-size:1.1rem}
+.top small{display:block;color:var(--muted);font-size:.7rem}
+.stars{font-size:1.05rem;color:var(--gold);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.stars svg{width:20px;height:20px}
+.close{position:absolute;right:-6px;top:-10px;width:28px;height:28px;border-radius:50%;background:var(--panel);border:1.5px solid var(--gold);color:var(--gold);
+  display:grid;place-items:center;font-size:.85rem}
+
+.tree{position:relative;flex:1;min-height:0}
+.tree svg.links{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;border:2.5px solid #4a3c5c;background:#17111f;
+  display:grid;place-items:center;cursor:pointer;transition:transform .15s}
+.node svg{width:30px;height:30px}
+.node .cost{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-size:.66rem;background:#17111f;border:1px solid #4a3c5c;
+  border-radius:8px;padding:0 6px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.node.locked{opacity:.45}
+.node.avail{border-color:var(--gold);animation:ready 1.6s ease-in-out infinite}
+.node.avail .cost{color:var(--gold);border-color:var(--gold-soft)}
+.node.owned{border-color:var(--c);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 45%,#17111f),#17111f 75%);box-shadow:0 0 16px color-mix(in srgb,var(--c) 60%,transparent)}
+.node.owned .cost{display:none}
+.node.sel{transform:scale(1.12);outline:2px solid #fff;outline-offset:3px}
+.node.cap{width:70px;height:70px;margin:-35px 0 0 -35px}
+.node.cap svg{width:38px;height:38px}
+.node .eq{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);border:1.5px solid #ffcf8a;
+  font-size:.62rem;display:grid;place-items:center;font-weight:700}
+.blabel{position:absolute;transform:translateX(-50%);font-size:.7rem;letter-spacing:.04em;white-space:nowrap}
+@keyframes ready{50%{box-shadow:0 0 14px rgba(230,189,92,.55)}}
+
+.detail{padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:176px}
+.detail .hd{display:flex;gap:10px;align-items:center}
+.detail .ic{width:44px;height:44px;border-radius:50%;border:2px solid var(--c);display:grid;place-items:center;flex:0 0 auto;background:#17111f}
+.detail .ic svg{width:26px;height:26px}
+.detail h2{font-size:1.05rem;margin:0}
+.detail .br{font-size:.7rem;color:var(--c);letter-spacing:.04em}
+.detail p{margin:0;font-size:.84rem;color:var(--muted);line-height:1.45}
+.detail .use{font-size:.75rem;color:var(--fg);opacity:.8}
+.detail .row{display:flex;gap:8px;margin-top:auto}
+.btn{flex:1;text-align:center;padding:10px 6px;border-radius:12px;font-size:.88rem;border:1.5px solid var(--gold-soft);
+  background:linear-gradient(#251c33,#18111f);color:var(--fg);box-shadow:0 3px 0 #000;cursor:pointer;font-family:inherit}
+.btn.main{background:linear-gradient(var(--red),var(--red-d));border-color:#ffcf8a;font-weight:600}
+.btn:disabled{opacity:.4;cursor:default}
+.slots{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:.78rem;color:var(--muted)}
+.slot{width:40px;height:40px;border-radius:10px;border:1.5px dashed var(--gold-soft);display:grid;place-items:center}
+.slot svg{width:24px;height:24px}
+.slot.full{border-style:solid;border-color:var(--gold);background:#17111f}
+.toast{position:absolute;left:50%;top:84px;transform:translateX(-50%);background:var(--panel);border:1.5px solid var(--gold);border-radius:10px;
+  padding:6px 12px;font-size:.82rem;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:3}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.node.avail{animation:none}.node{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="phone" id="phone">
+    <div class="panel top">
+      <div><small>ภูติตะเกียง</small><b>ต้นไม้เปลวไฟ</b></div>
+      <div class="stars"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" fill="#e6bd5c" stroke="#1b1430" stroke-width="1.6" stroke-linejoin="round"/></svg><span id="stars">0</span></div>
+      <div class="close" aria-label="ปิด">✕</div>
+    </div>
+    <div class="tree" id="tree"><svg class="links" id="links"></svg></div>
+    <div class="panel slots"><span>ติดตัวเข้าด่าน</span><div class="slot" id="slot0"></div><div class="slot" id="slot1"></div><span id="slotHint">เลือกได้ 2 สกิล</span></div>
+    <div class="panel detail" id="detail"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="notes">
+    <h1>ต้นไม้สกิล: ภูติตะเกียง</h1>
+    <p>ลองกดได้เลย: แตะวงกลมเพื่อดูรายละเอียด กด "ปลดล็อก" เพื่อใช้ดาว แล้วกด "ติดตัว" เพื่อใส่ช่องสกิล (ตัวอย่างเริ่มที่ 34 ดาว)</p>
+    <h3>หลักการออกแบบ</h3>
+    <ul>
+      <li><b>สกิลคือท่าใหม่ ไม่ใช่ค่าพลัง</b> ไม่มีเวลาเพิ่มหรือเงาเพิ่ม ปริศนาจึงไม่ง่ายลงจนไม่ต้องคิด</li>
+      <li><b>ติดตัวเข้าด่านได้ 2 ช่อง</b> การเลือกว่าจะเอาสกิลไหนเข้าห้องก็เป็นส่วนหนึ่งของปริศนา</li>
+      <li><b>สกิลแบบกดใช้ ได้ 1 ครั้งต่อรอบ</b> ถ้าผ่านห้องโดยไม่ใช้สกิลเลย ได้ป้าย "เปลวบริสุทธิ์" ไว้ท้าทายคนเก่ง</li>
+      <li>ดาวจากด่านหลักมีสูงสุด 90 ดวง แต่ต้นไม้ทั้งต้นใช้ 103 ดวง ส่วนที่ขาดต้องเก็บจากห้องประจำวัน ผู้เล่นเลยมีเหตุผลให้กลับมาเล่น</li>
+    </ul>
+    <h3>ราคาแต่ละชั้น</h3>
+    <table>
+      <tr><th>ชั้น</th><th>ราคา</th><th>ปลดล็อกได้ราว ๆ</th></tr>
+      <tr><td>ราก (มีตั้งแต่เริ่ม)</td><td>0</td><td>ด่าน 1</td></tr>
+      <tr><td>ชั้น 1 (3 สกิล)</td><td>3 ★</td><td>ด่าน 2–5</td></tr>
+      <tr><td>ชั้น 2 (3 สกิล)</td><td>8 ★</td><td>ด่าน 8–15</td></tr>
+      <tr><td>ชั้น 3 (3 สกิล)</td><td>15 ★</td><td>ด่าน 18–28</td></tr>
+      <tr><td>ยอด: แยกเปลว</td><td>25 ★</td><td>หลังจบเนื้อเรื่อง + ห้องประจำวัน</td></tr>
+    </table>
+    <h3>ยังต้องตัดสินใจ</h3>
+    <ul>
+      <li>แพ็กแรกให้ดาวด้วยไหม (เร็วขึ้น แต่ห้ามขายสกิลยอดตรง ๆ)</li>
+      <li>ปลดล็อกแล้วรีเซ็ตต้นไม้ได้ไหม</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const INK = "#1b1430";
+const ICON = {
+  flame:`<path d="M12 2.5 Q16 7 18 11 Q20 18 12 21 Q4 18 6 11 Q7.5 8 10 6.5 Q10 10 12 10 Q11 6 12 2.5Z" fill="#ffb13b" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="15" r="1.1" fill="${INK}"/><circle cx="14" cy="15" r="1.1" fill="${INK}"/>`,
+  eye:`<path d="M2.5 12 Q12 3 21.5 12 Q12 21 2.5 12Z" fill="#2a2134" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 9.5 V12 L13.8 13.2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+  pause:`<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8.3" y="7.5" width="2.6" height="9" rx="1" fill="currentColor"/><rect x="13.1" y="7.5" width="2.6" height="9" rx="1" fill="currentColor"/>`,
+  rewind:`<path d="M19 12 A7 7 0 1 1 12 5 H15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 2 L17.5 5 L14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="matrix(-1 0 0 1 29 0)"/>`,
+  recall:`<path d="M6 18 Q3 12 8 8 Q13 4 17 8 Q20 12 16 15 Q13 17 11 14 Q10 11 13 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15 19 H21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>`,
+  hourglass:`<path d="M7 3 H17 M7 21 H17 M8 3 Q8 9 12 12 Q16 9 16 3 M8 21 Q8 15 12 12 Q16 15 16 21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10 19 Q12 16 14 19Z" fill="currentColor"/>`,
+  mirror:`<path d="M12 3 V21" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 2"/><path d="M10 7 L4 12 L10 17Z" fill="currentColor" opacity=".9"/><path d="M14 7 L20 12 L14 17Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>`,
+  radiate:`<circle cx="12" cy="12" r="3.5" fill="currentColor"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5 V5.5 M12 18.5 V21.5 M2.5 12 H5.5 M18.5 12 H21.5 M5.3 5.3 L7.4 7.4 M16.6 16.6 L18.7 18.7 M5.3 18.7 L7.4 16.6 M16.6 7.4 L18.7 5.3"/></g>`,
+  dash:`<path d="M4 6 L10 12 L4 18 M11 6 L17 12 L11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="12" r="1.8" fill="currentColor"/>`,
+  lantern:`<path d="M9 4 H15 M12 2 V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="7" y="5" width="10" height="13" rx="3" fill="#2a2134" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.5 Q14 11 13 13.5 Q12 15 11 13.5 Q10 11 12 8.5Z" fill="currentColor"/><path d="M8 20.5 H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>`,
+  split:`<path d="M8 4 Q11 8 11.5 11 Q12 16 7.5 17 Q3 16 4 11 Q5 8 8 4Z" fill="#ffb13b" stroke="${INK}" stroke-width="1.4"/><path d="M16 6 Q19 10 19.5 13 Q20 18 15.5 19 Q11 18 12 13 Q13 10 16 6Z" fill="#c9b8ff" stroke="${INK}" stroke-width="1.4"/>`,
+};
+const BR = { root:{ n:"ราก", c:"#ffb13b" }, time:{ n:"เปลวแห่งเวลา", c:"#ffb13b" }, smoke:{ n:"ควันวิญญาณ", c:"#c9b8ff" }, light:{ n:"แสงนำทาง", c:"#8fe3d0" }, cap:{ n:"ยอดต้นไม้", c:"#ffd27a" } };
+// x,y เป็น % ของพื้นที่ต้นไม้ · kind: active = กดใช้ในด่าน 1 ครั้งต่อรอบ, passive = ทำงานเอง
+const NODES = [
+  { id:"root", br:"root", x:50, y:91, cost:0, icon:"flame", name:"ดวงไฟน้อย", kind:"ติดตัวเสมอ", desc:"ร่างแรกของภูติตะเกียง เดินได้ 10 วินาทีต่อรอบ และทิ้งควันไว้เป็นเงา", req:[] },
+  { id:"t1", br:"time", x:18, y:72, cost:3, icon:"eye", name:"ส่องอนาคต", kind:"ทำงานเอง", desc:"กดค้างที่หลอดเทียนแล้วลาก เพื่อดูว่าเงาทุกตัวจะอยู่ตรงไหนในวินาทีนั้น", req:["root"] },
+  { id:"t2", br:"time", x:18, y:50, cost:8, icon:"pause", name:"หยุดเปลว", kind:"กดใช้ 1 ครั้งต่อรอบ", desc:"หยุดเวลาทั้งห้อง 1 วินาที ตัวจริงยังเดินได้ เงาและเลเซอร์หยุดนิ่ง", req:["t1"] },
+  { id:"t3", br:"time", x:18, y:28, cost:15, icon:"rewind", name:"ย้อนเปลว", kind:"กดใช้ 1 ครั้งต่อรอบ", desc:"ย้อนตัวจริงกลับไปจุดที่อยู่เมื่อ 2 วินาทีก่อน (เงาไม่ย้อนตาม)", req:["t2"] },
+  { id:"s1", br:"smoke", x:50, y:66, cost:3, icon:"recall", name:"เรียกควันกลับ", kind:"ทำงานเอง", desc:"ลบเงาตัวไหนก็ได้ ไม่ต้องลบจากตัวล่าสุด แก้แผนได้โดยไม่ต้องเริ่มใหม่", req:["root"] },
+  { id:"s2", br:"smoke", x:50, y:44, cost:8, icon:"hourglass", name:"ควันหน่วงเวลา", kind:"ทำงานเอง", desc:"ตั้งให้เงาแต่ละตัวออกตัวช้าลงได้ 0–3 วินาที จัดจังหวะเงาได้ละเอียดขึ้น", req:["s1"] },
+  { id:"s3", br:"smoke", x:50, y:24, cost:15, icon:"mirror", name:"ควันกระจก", kind:"ทำงานเอง", desc:"เลือกให้เงาเดินแบบกลับซ้ายขวาได้ เงาหนึ่งรอบใช้ได้สองที่", req:["s2"] },
+  { id:"l1", br:"light", x:82, y:72, cost:3, icon:"radiate", name:"ส่องไกล", kind:"ทำงานเอง", desc:"วงแสงกว้างขึ้น เห็นกับดักที่ซ่อนในความมืดได้ไกลกว่าเดิม", req:["root"] },
+  { id:"l2", br:"light", x:82, y:50, cost:8, icon:"dash", name:"เปลวพุ่ง", kind:"กดใช้ 1 ครั้งต่อรอบ", desc:"พุ่งไปข้างหน้า 2 ช่องในจังหวะเดียว ทันเงาที่กำลังจะลุกจากสวิตช์", req:["l1"] },
+  { id:"l3", br:"light", x:82, y:28, cost:15, icon:"lantern", name:"โคมค้างไว้", kind:"กดใช้ 1 ครั้งต่อรอบ", desc:"วางโคมไว้บนช่องที่ยืน โคมกดสวิตช์ค้างไว้ 3 วินาที", req:["l2"] },
+  { id:"cap", br:"cap", x:50, y:7, cost:25, icon:"split", name:"แยกเปลว", kind:"กดใช้ 1 ครั้งต่อรอบ", desc:"แยกเป็นดวงไฟสองดวง 3 วินาที ควบคุมสลับกันได้ ดวงไหนถึงทางออกก่อนก็ผ่าน", req:["t3","s3","l3"], cap:true },
+];
+const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+const S = { stars:34, owned:new Set(["root","t1","s1"]), sel:"t2", eq:["t1", null] };
+
+const $ = id => document.getElementById(id);
+const avail = n => !S.owned.has(n.id) && n.req.every(r => S.owned.has(r));
+const colorOf = n => BR[n.br].c;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1400); }
+const icon = (n, size) => `<svg viewBox="0 0 24 24" style="color:${colorOf(n)}">${ICON[n.icon]}</svg>`;
+
+function render() {
+  $("stars").textContent = S.stars;
+  const tree = $("tree"), links = $("links");
+  tree.querySelectorAll(".node,.blabel").forEach(e => e.remove());
+  const w = tree.clientWidth, h = tree.clientHeight, P = n => [n.x / 100 * w, n.y / 100 * h];
+  let ls = `<defs><filter id="gl"><feGaussianBlur stdDeviation="2.2"/></filter></defs>`;
+  for (const n of NODES) for (const r of n.req) {
+    const [x1, y1] = P(byId[r]), [x2, y2] = P(n), lit = S.owned.has(n.id), col = colorOf(n), my = (y1 + y2) / 2;
+    const d = `M${x1} ${y1} C${x1} ${my} ${x2} ${my} ${x2} ${y2}`;
+    ls += lit ? `<path d="${d}" stroke="${col}" stroke-width="7" fill="none" opacity=".35" filter="url(#gl)"/><path d="${d}" stroke="${col}" stroke-width="2.5" fill="none"/>`
+              : `<path d="${d}" stroke="${avail(n) ? "#e6bd5c" : "#3d3150"}" stroke-width="2" fill="none" stroke-dasharray="${avail(n) ? "5 5" : "2 6"}" opacity="${avail(n) ? .8 : 1}"/>`;
+  }
+  links.innerHTML = ls;
+  for (const k of ["time","smoke","light"]) {
+    const n = NODES.find(m => m.br === k), [x, y] = P(n), lb = document.createElement("div");
+    lb.className = "blabel"; lb.style.left = x + "px"; lb.style.top = (y + 40) + "px"; lb.style.color = BR[k].c; lb.textContent = BR[k].n; tree.appendChild(lb);
+  }
+  for (const n of NODES) {
+    const [x, y] = P(n), el = document.createElement("div");
+    const st = S.owned.has(n.id) ? "owned" : avail(n) ? "avail" : "locked";
+    el.className = `node ${st}${n.cap ? " cap" : ""}${S.sel === n.id ? " sel" : ""}`;
+    el.style.left = x + "px"; el.style.top = y + "px"; el.style.setProperty("--c", colorOf(n));
+    el.innerHTML = icon(n) + (n.cost ? `<span class="cost">${n.cost} ★</span>` : "") + (S.eq.includes(n.id) ? `<span class="eq">${S.eq.indexOf(n.id) + 1}</span>` : "");
+    el.setAttribute("role", "button"); el.setAttribute("aria-label", n.name);
+    el.onclick = () => { S.sel = n.id; render(); };
+    tree.appendChild(el);
+  }
+  S.eq.forEach((id, i) => { const s = $("slot" + i); s.className = "slot" + (id ? " full" : ""); s.innerHTML = id ? icon(byId[id]) : ""; });
+  renderDetail();
+}
+function renderDetail() {
+  const n = byId[S.sel], d = $("detail"), owned = S.owned.has(n.id), can = avail(n), equip = S.eq.includes(n.id);
+  d.style.setProperty("--c", colorOf(n));
+  const lockedBy = n.req.filter(r => !S.owned.has(r)).map(r => byId[r].name).join(", ");
+  let btn;
+  if (n.id === "root") btn = `<button class="btn" disabled>มีตั้งแต่เริ่มเกม</button>`;
+  else if (owned) btn = `<button class="btn ${equip ? "" : "main"}" id="act">${equip ? "ถอดออก" : "ติดตัวเข้าด่าน"}</button>`;
+  else if (can) btn = `<button class="btn main" id="act" ${S.stars < n.cost ? "disabled" : ""}>ปลดล็อก ${n.cost} ★</button>`;
+  else btn = `<button class="btn" disabled>ต้องปลดล็อก ${lockedBy} ก่อน</button>`;
+  d.innerHTML = `<div class="hd"><div class="ic">${icon(n)}</div><div><div class="br">${BR[n.br].n} · ${n.kind}</div><h2>${n.name}</h2></div></div>
+    <p>${n.desc}</p>
+    ${!owned && can && S.stars < n.cost ? `<div class="use">ดาวไม่พอ ขาดอีก ${n.cost - S.stars} ★ · เก็บเพิ่มจากด่านหรือห้องประจำวัน</div>` : ""}
+    <div class="row">${btn}</div>`;
+  const act = $("act");
+  if (act) act.onclick = () => {
+    if (!owned) { S.stars -= n.cost; S.owned.add(n.id); toast(`ปลดล็อก "${n.name}" แล้ว`); }
+    else if (equip) { S.eq[S.eq.indexOf(n.id)] = null; }
+    else { const i = S.eq.indexOf(null); if (i < 0) { S.eq[1] = n.id; toast("ช่องเต็ม แทนที่ช่อง 2"); } else S.eq[i] = n.id; }
+    render();
+  };
+}
+new ResizeObserver(render).observe($("tree"));
+</script>
+</body>
+</html>

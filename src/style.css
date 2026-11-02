@@ -1,0 +1,138 @@
+/* ธีมภูติตะเกียง · ยกจากต้นแบบ prototypes/echo-me/game.html */
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}
+.levels button.q{width:auto;padding:6px 10px}
+/* ภูติตะเกียง: วิหารมืด แสงไฟอุ่น เงาเป็นควันเรืองแสง · แผงมืดขอบทองบาง + ขีดมุม (มาตรฐานสตูดิโอ) */
+:root{
+  --bg:#0c0911; --bg2:#211830; --panel:#1f172b; --panel2:#140f1c; --gold:#e6bd5c; --gold-soft:rgba(230,189,92,.5);
+  --fg:#f6ecd6; --muted:#b9aed3; --flame:#ffb13b; --red:#e85a3a; --red-d:#a8301f; --ink:#1b1430;
+  --display:"Prompt","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:radial-gradient(90% 60% at 50% 40%,var(--bg2) 0%,var(--bg) 75%) fixed,var(--bg);color:var(--fg);font-family:var(--display);
+  display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px;box-sizing:border-box;gap:10px;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:520px;width:100%;margin:0 auto;position:relative;
+  background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold-soft);border-radius:10px;padding:8px 14px}
+header::before,header::after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--gold)}
+header::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+header::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+h1{font-weight:600;font-size:1.15rem;margin:0;line-height:1.25}
+.sub{color:var(--muted);font-size:.72rem;letter-spacing:.03em}
+.ghosts{font-size:.8rem;text-align:right;white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+.ghosts .dots{display:flex;gap:5px;justify-content:flex-end;margin-top:3px}
+.ghosts .dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--gold-soft);box-sizing:border-box}
+#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;max-width:520px;width:100%;margin:0 auto}
+canvas{display:block;touch-action:none;border-radius:8px}
+#banner{min-height:2.7em;text-align:center;font-size:.86rem;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.4}
+#banner b{color:var(--flame);font-weight:600}
+#banner small{opacity:.8}
+.timer{display:flex;align-items:center;max-width:520px;width:100%;margin:0 auto;height:20px}
+.timer .wax{height:10px;width:100%;background:linear-gradient(#fff6e2,#e9d2b0);border:1.5px solid var(--ink);border-radius:3px;flex:0 0 auto}
+.timer .fl{width:12px;height:18px;margin-left:1px;margin-top:-10px;flex:0 0 auto;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  background:radial-gradient(circle at 50% 70%,#fff8c4 0 25%,var(--flame) 55%,#ff6a2b 90%);box-shadow:0 0 12px var(--flame);animation:flick 1.1s ease-in-out infinite}
+.timer .rest{flex:1;height:2px;margin-left:4px;background:rgba(230,189,92,.2)}
+.controls{display:flex;gap:8px;max-width:520px;width:100%;margin:0 auto}
+.skills{display:flex;gap:8px;max-width:520px;width:100%;margin:0 auto}
+.skills button{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 6px;border-color:var(--gold)}
+.skills button svg{width:22px;height:22px;flex:0 0 auto}
+.skills button span{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.skills button small{font-size:.62rem;color:var(--muted)}
+.skills button.used{opacity:.35}
+button{font-family:var(--display);font-size:.88rem;color:var(--fg);background:linear-gradient(#251c33,#18111f);border:1.5px solid var(--gold-soft);
+  border-radius:12px;padding:11px 6px;flex:1;cursor:pointer;box-shadow:0 3px 0 #000}
+button:disabled{opacity:.35}
+button:focus-visible{outline:2px solid var(--flame);outline-offset:2px}
+button.primary{background:linear-gradient(var(--red),var(--red-d));border-color:#ffcf8a;font-weight:600}
+.levels{display:flex;gap:6px;max-width:520px;width:100%;margin:0 auto;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.levels button{flex:0 0 auto}
+.levels button.tree{width:auto;padding:6px 10px;border-color:var(--gold);color:var(--gold)}
+.ghosts .dot.tap{cursor:pointer;outline:1px dashed rgba(230,189,92,.5);outline-offset:2px}
+.skills button.passive{opacity:.7;cursor:default}
+#gmenu{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:76px;z-index:20;display:flex;flex-direction:column;gap:6px;padding:12px;min-width:210px;
+  background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold);border-radius:10px;box-shadow:0 6px 0 #000}
+#gmenu b{font-size:.85rem}
+#gmenu small{color:var(--muted);font-size:.72rem;line-height:1.35}
+#gmenu button{flex:none;padding:8px}
+#treeOv .phone{width:360px;max-width:100%;height:960px;border-radius:34px;border:6px solid var(--ink);overflow:hidden;position:relative;
+  background:radial-gradient(90% 60% at 50% 45%,var(--bg2) 0%,var(--bg) 75%);color:var(--fg);font-family:Prompt,sans-serif;
+  display:flex;flex-direction:column;padding:16px 14px 14px;gap:10px;box-shadow:0 10px 0 rgba(27,20,48,.18)}
+#treeOv .panel{position:relative;background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold-soft);border-radius:10px}
+#treeOv .panel::before,#treeOv .panel::after{content:"";position:absolute;width:13px;height:13px;border:2px solid var(--gold)}
+#treeOv .panel::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+#treeOv .panel::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+#treeOv .top{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}
+#treeOv .top b{font-size:1.1rem}
+#treeOv .top small{display:block;color:var(--muted);font-size:.7rem}
+#treeOv .stars{font-size:1.05rem;color:var(--gold);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+#treeOv .stars svg{width:20px;height:20px}
+#treeOv .close{position:absolute;right:-6px;top:-10px;width:28px;height:28px;border-radius:50%;background:var(--panel);border:1.5px solid var(--gold);color:var(--gold);
+  display:grid;place-items:center;font-size:.85rem}
+#treeOv .tree{position:relative;flex:1;min-height:0}
+#treeOv .tree svg.links{position:absolute;inset:0;width:100%;height:100%}
+#treeOv .node{position:absolute;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;border:2.5px solid #4a3c5c;background:#17111f;
+  display:grid;place-items:center;cursor:pointer;transition:transform .15s}
+#treeOv .node svg{width:30px;height:30px}
+#treeOv .node .cost{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-size:.66rem;background:#17111f;border:1px solid #4a3c5c;
+  border-radius:8px;padding:0 6px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+#treeOv .node.locked{opacity:.45}
+#treeOv .node.avail{border-color:var(--gold);animation:ready 1.6s ease-in-out infinite}
+#treeOv .node.avail .cost{color:var(--gold);border-color:var(--gold-soft)}
+#treeOv .node.owned{border-color:var(--c);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 45%,#17111f),#17111f 75%);box-shadow:0 0 16px color-mix(in srgb,var(--c) 60%,transparent)}
+#treeOv .node.owned .cost{display:none}
+#treeOv .node.sel{transform:scale(1.12);outline:2px solid #fff;outline-offset:3px}
+#treeOv .node.cap{width:70px;height:70px;margin:-35px 0 0 -35px}
+#treeOv .node.cap svg{width:38px;height:38px}
+#treeOv .node .eq{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);border:1.5px solid #ffcf8a;
+  font-size:.62rem;display:grid;place-items:center;font-weight:700}
+#treeOv .blabel{position:absolute;transform:translateX(-50%);font-size:.7rem;letter-spacing:.04em;white-space:nowrap}
+@keyframes ready{50%{box-shadow:0 0 14px rgba(230,189,92,.55)}}
+#treeOv .detail{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+#treeOv .detail .hd{display:flex;gap:10px;align-items:center}
+#treeOv .detail .ic{width:44px;height:44px;border-radius:50%;border:2px solid var(--c);display:grid;place-items:center;flex:0 0 auto;background:#17111f}
+#treeOv .detail .ic svg{width:26px;height:26px}
+#treeOv .detail h2{font-size:1.05rem;margin:0}
+#treeOv .detail .br{font-size:.7rem;color:var(--c);letter-spacing:.04em}
+#treeOv .detail p{margin:0;font-size:.84rem;color:var(--muted);line-height:1.45}
+#treeOv .detail .pv{width:100%;height:auto;aspect-ratio:616/300;border-radius:8px;border:1px solid #3d3150;background:#120d18;display:block}
+#treeOv .detail .room{font-size:.74rem;color:var(--muted);line-height:1.4;border-left:2px solid var(--c);padding-left:8px}
+#treeOv .detail .room b{color:var(--fg);font-weight:600}
+#treeOv .detail .use{font-size:.75rem;color:var(--fg);opacity:.8}
+#treeOv .detail .row{display:flex;gap:8px;margin-top:auto}
+#treeOv .btn{flex:1;text-align:center;padding:10px 6px;border-radius:12px;font-size:.88rem;border:1.5px solid var(--gold-soft);
+  background:linear-gradient(#251c33,#18111f);color:var(--fg);box-shadow:0 3px 0 #000;cursor:pointer;font-family:inherit}
+#treeOv .btn.main{background:linear-gradient(var(--red),var(--red-d));border-color:#ffcf8a;font-weight:600}
+#treeOv .btn:disabled{opacity:.4;cursor:default}
+#treeOv .slots{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:.78rem;color:var(--muted)}
+#treeOv .slot{width:40px;height:40px;border-radius:10px;border:1.5px dashed var(--gold-soft);display:grid;place-items:center}
+#treeOv .slot svg{width:24px;height:24px}
+#treeOv .slot.full{border-style:solid;border-color:var(--gold);background:#17111f}
+#treeOv .toast{position:absolute;left:50%;top:84px;transform:translateX(-50%);background:var(--panel);border:1.5px solid var(--gold);border-radius:10px;
+  padding:6px 12px;font-size:.82rem;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;z-index:3}
+#treeOv .toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){#treeOv .node.avail{animation:none}#treeOv .node{transition:none}}
+#treeOv{position:fixed;inset:0;z-index:50;background:rgba(8,6,12,.94);display:flex;justify-content:center;
+  --page:#e7e3ee;--b-time:#ffb13b;--b-smoke:#c9b8ff;--b-light:#8fe3d0;--red:#e85a3a;--red-d:#a8301f;--ink:#1b1430}
+#treeOv .phone{height:100%;width:min(420px,100%);border:0;border-radius:0;box-shadow:none;overflow-y:auto;padding-top:max(16px,env(safe-area-inset-top,0px))}
+#treeOv .tree{min-height:330px}
+#treeOv .bonus{font:inherit;font-size:.65rem;color:var(--muted);background:none;border:1px dashed var(--gold-soft);border-radius:8px;padding:3px 6px;cursor:pointer;flex:0 0 auto}
+#treeOv .close{cursor:pointer}
+.levels button{flex:0 0 auto;width:46px;padding:6px 0;font-size:.8rem;line-height:1.1;border-radius:10px}
+.levels button.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 3px 0 #000}
+.levels small{display:block;color:var(--gold);font-size:.62rem;letter-spacing:.05em}
+#win{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,6,12,.72);border-radius:8px;padding:16px}
+#win .card{position:relative;background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold-soft);border-radius:12px;
+  padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;width:min(320px,100%);box-shadow:0 6px 0 #000}
+#win .card::before,#win .card::after{content:"";position:absolute;width:16px;height:16px;border:2px solid var(--gold)}
+#win .card::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+#win .card::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+#win h2{font-size:1.5rem;margin:0;color:var(--flame)}
+#win .stars{font-size:2.1rem;letter-spacing:.15em;color:var(--gold);text-shadow:0 0 12px rgba(255,177,59,.6)}
+#win .stars s{color:#3d3150;text-decoration:none;text-shadow:none}
+#win p{margin:0;color:var(--muted);max-width:30ch;font-size:.88rem}
+#win .row{display:flex;gap:8px;width:100%}
+@keyframes flick{0%,100%{transform:scale(1,1)}40%{transform:scale(.9,1.08)}70%{transform:scale(1.05,.95)}}
+@media (prefers-reduced-motion:reduce){.timer .fl{animation:none}}

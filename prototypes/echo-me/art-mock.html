@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Me Art Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Mali:wght@500;700&family=Cinzel:wght@700&family=Noto+Sans+Thai:wght@400;600&display=swap">
+<style>
+/* หน้าเทียบ 3 แนวภาพ: มือถือ 3 เครื่อง (360 กว้าง) ห้องเดียวกัน จังหวะเดียวกัน ต่างกันแค่ภาพ */
+:root{
+  --page:#e7e3ee; --page-fg:#1b1430; --page-muted:#5d5470; --ink:#1b1430;
+  /* clock */ --k-bg:#0f1730; --k-panel:#18233f; --k-brass:#e8b85a; --k-brass-d:#9a6a22; --k-text:#f4ead2; --k-muted:#9fb0d0; --k-holo:#5ee8ff; --k-accent:#ff8a3d;
+  /* paper */ --p-bg:#f7f1e1; --p-grid:#a9c8e8; --p-margin:#e58a8a; --p-kraft:#d4a872; --p-text:#2b2340; --p-muted:#6d6680; --p-red:#d6402c; --p-pencil:#6f7d9c;
+  /* candle */ --c-bg:#0c0911; --c-panel:#17111f; --c-gold:#e6bd5c; --c-text:#f6ecd6; --c-muted:#b9aed3; --c-flame:#ffb13b; --c-smoke:#c9b8ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--page-fg);font-family:"Noto Sans Thai",system-ui,sans-serif;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.intro{max-width:1160px;margin:0 auto 20px}
+.intro h1{font-family:Prompt,sans-serif;font-size:1.5rem;margin:0 0 4px}
+.intro p{margin:0;color:var(--page-muted);max-width:70ch;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;max-width:1160px;margin:0 auto}
+.opt{width:360px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+.opt h2{font-family:Prompt,sans-serif;font-size:1.15rem;margin:0}
+.opt .tag{font-size:.75rem;letter-spacing:.06em;color:var(--page-muted)}
+.opt p{margin:0;font-size:.9rem;line-height:1.5;color:var(--page-fg)}
+.opt ul{margin:0;padding-left:18px;font-size:.85rem;line-height:1.55;color:var(--page-muted)}
+.chips{display:flex;gap:6px}
+.chips i{width:22px;height:22px;border-radius:6px;border:2px solid var(--ink)}
+
+.phone{width:360px;max-width:100%;height:700px;border-radius:34px;border:6px solid var(--ink);overflow:hidden;position:relative;
+  display:flex;flex-direction:column;gap:10px;padding:18px 16px 18px;box-shadow:0 10px 0 rgba(27,20,48,.18)}
+.phone .hud{display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;z-index:1}
+.phone .room small{display:block;font-size:.7rem;letter-spacing:.05em}
+.phone .room b{font-size:1.05rem}
+.phone .gh{display:flex;gap:5px}
+.phone .gh span{width:14px;height:14px;border-radius:50%}
+.board{position:relative;z-index:1;display:flex;justify-content:center}
+.board svg{display:block;width:100%;height:auto;max-width:308px}
+.hint{position:relative;z-index:1;text-align:center;font-size:.82rem;min-height:2.4em;line-height:1.35}
+.timer{position:relative;z-index:1;height:14px}
+.btns{position:relative;z-index:1;display:flex;gap:8px;margin-top:auto}
+.btns div{flex:1;text-align:center;padding:11px 4px;font-size:.88rem;border-radius:12px}
+.deco{position:absolute;inset:0;z-index:0;pointer-events:none}
+
+/* ---------- 1 นาฬิกา ---------- */
+.t-clock{background:radial-gradient(120% 70% at 50% 35%,#1b2a52 0%,var(--k-bg) 70%);color:var(--k-text);font-family:Prompt,sans-serif}
+.t-clock .room small{color:var(--k-muted)}
+.t-clock .room b{font-family:Prompt;letter-spacing:.01em}
+.t-clock .room em{font-family:Cinzel,serif;font-style:normal;color:var(--k-brass);font-size:.7rem;letter-spacing:.12em}
+.t-clock .gh span{border:2px solid var(--k-brass)}
+.t-clock .gh span.on1{background:var(--k-holo);box-shadow:0 0 8px var(--k-holo)}
+.t-clock .gh span.on2{background:#b48cff;box-shadow:0 0 8px #b48cff}
+.t-clock .timer{background:#0a1020;border:2px solid var(--k-brass-d);border-radius:8px;overflow:hidden}
+.t-clock .timer i{display:block;height:100%;width:62%;background:linear-gradient(#ffd07a,#d9892e);
+  background-image:repeating-linear-gradient(90deg,transparent 0 17px,rgba(27,20,48,.45) 17px 19px),linear-gradient(#ffd07a,#d9892e)}
+.t-clock .hint{color:var(--k-muted)}
+.t-clock .hint b{color:var(--k-holo)}
+.t-clock .btns div{background:linear-gradient(#2a3a62,#1a2645);border:2px solid var(--k-brass-d);color:var(--k-text);box-shadow:0 3px 0 #070b16}
+.t-clock .btns div.main{background:linear-gradient(#ffcf7a,#d9892e);color:var(--ink);border-color:var(--ink);font-weight:600}
+
+/* ---------- 2 กระดาษ ---------- */
+.t-paper{background:var(--p-bg);color:var(--p-text);font-family:Mali,"Noto Sans Thai",sans-serif;
+  background-image:linear-gradient(90deg,transparent 30px,var(--p-margin) 30px 32px,transparent 32px),
+  repeating-linear-gradient(0deg,transparent 0 21px,rgba(169,200,232,.55) 21px 22px)}
+.t-paper .room small{color:var(--p-muted)}
+.t-paper .room b{font-weight:700;font-size:1.15rem}
+.t-paper .gh span{border:2px dashed var(--p-pencil)}
+.t-paper .gh span.on1,.t-paper .gh span.on2{background:repeating-linear-gradient(45deg,var(--p-pencil) 0 1.5px,transparent 1.5px 4px);border-style:solid}
+.t-paper .timer{border:2.5px solid var(--p-text);border-radius:3px 9px 4px 8px;background:#fff}
+.t-paper .timer i{display:block;height:100%;width:62%;background:repeating-linear-gradient(-55deg,var(--p-red) 0 3px,#f07a6a 3px 6px)}
+.t-paper .hint{color:var(--p-muted)}
+.t-paper .hint b{color:var(--p-red)}
+.t-paper .btns div{background:#fffdf6;border:2.5px solid var(--p-text);border-radius:4px 12px 6px 10px;color:var(--p-text);box-shadow:3px 3px 0 rgba(43,35,64,.25);font-weight:700;position:relative}
+.t-paper .btns div:nth-child(1){transform:rotate(-1.5deg)}
+.t-paper .btns div:nth-child(3){transform:rotate(1.2deg)}
+.t-paper .btns div.main{background:#ffd95e}
+.t-paper .btns div.main::before{content:"";position:absolute;width:34px;height:12px;background:rgba(255,255,255,.65);top:-7px;left:50%;transform:translateX(-50%) rotate(-4deg);border:1px solid rgba(43,35,64,.15)}
+
+/* ---------- 3 เทียน ---------- */
+.t-candle{background:radial-gradient(90% 60% at 50% 40%,#211830 0%,var(--c-bg) 75%);color:var(--c-text);font-family:Prompt,sans-serif}
+.t-candle .hud{background:linear-gradient(#1f172b,#140f1c);border:1.5px solid rgba(230,189,92,.55);border-radius:10px;padding:8px 12px;position:relative}
+.t-candle .hud::before,.t-candle .hud::after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--c-gold)}
+.t-candle .hud::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+.t-candle .hud::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+.t-candle .room small{color:var(--c-muted)}
+.t-candle .gh span{border:1.5px solid rgba(230,189,92,.6)}
+.t-candle .gh span.on1{background:radial-gradient(circle at 40% 35%,#fff,#c9b8ff 60%);box-shadow:0 0 8px #c9b8ff}
+.t-candle .gh span.on2{background:radial-gradient(circle at 40% 35%,#fff,#8fe3d0 60%);box-shadow:0 0 8px #8fe3d0}
+.t-candle .timer{display:flex;align-items:center}
+.t-candle .timer .wax{height:10px;width:62%;background:linear-gradient(#fff6e2,#e9d2b0);border:1.5px solid var(--ink);border-radius:3px}
+.t-candle .timer .fl{width:12px;height:18px;margin-left:2px;margin-top:-10px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  background:radial-gradient(circle at 50% 70%,#fff8c4 0 25%,#ffb13b 55%,#ff6a2b 90%);box-shadow:0 0 12px #ffb13b;animation:flick 1.2s ease-in-out infinite}
+.t-candle .timer .rest{flex:1;height:2px;margin-left:4px;background:rgba(230,189,92,.25)}
+.t-candle .hint{color:var(--c-muted)}
+.t-candle .hint b{color:var(--c-flame)}
+.t-candle .btns div{background:linear-gradient(#251c33,#18111f);border:1.5px solid rgba(230,189,92,.5);color:var(--c-text);box-shadow:0 3px 0 #000}
+.t-candle .btns div.main{background:linear-gradient(#e85a3a,#a8301f);border-color:#ffcf8a;font-weight:600}
+
+/* motion */
+.spin{animation:spin 18s linear infinite;transform-box:fill-box;transform-origin:center}
+.spin-r{animation:spin 26s linear infinite reverse;transform-box:fill-box;transform-origin:center}
+.hand{animation:spin 4s steps(12) infinite;transform-box:view-box}
+.bob{animation:bob 2.4s ease-in-out infinite}
+.flick{animation:flick 1.1s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bob{50%{transform:translateY(-2.5px)}}
+@keyframes flick{0%,100%{transform:scale(1,1)}40%{transform:scale(.92,1.08)}70%{transform:scale(1.05,.95)}}
+@keyframes pulse{50%{opacity:.6}}
+@media (prefers-reduced-motion:reduce){.spin,.spin-r,.hand,.bob,.flick,.pulse,.t-candle .timer .fl{animation:none}}
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>ตัวฉันเมื่อกี้: เลือกแนวภาพ</h1>
+  <p>ทั้งสามจอคือห้อง 5 ในจังหวะเดียวกัน: เงา #1 ยืนบนสวิตช์ A ประตูเลยเปิด เงา #2 ยืนบังเลเซอร์ล่าง และกำลังจะเดินไปบังเลเซอร์บน ส่วนตัวจริงรอจังหวะอยู่ตรงกลาง เส้นประคือทางเดินของเงาแต่ละตัว</p>
+</div>
+<div class="row" id="row"></div>
+
+<script>
+const INK = "#1b1430";
+const T = 44, MAP = ["#######","#..E..#","###A###",">.....#","#.....#","#.....<","#.....#","#a...S#","#######"];
+const ROWS = MAP.length, COLS = MAP[0].length, W = T * COLS, H = T * ROWS;
+const DIR = { ">":[0,1], "<":[0,-1] };
+const SCENE = {
+  ghosts: [
+    { at:[7,1], path:[[7,5],[7,4],[7,3],[7,2],[7,1]] },
+    { at:[5,5], path:[[7,5],[6,5],[5,5],[4,5],[4,4],[4,3],[4,2],[4,1],[3,1]] },
+  ],
+  player: { at:[4,3], plan:[[4,3],[3,3],[2,3],[1,3]] },
+  beams: [ { from:[3,0], to:[3,5] }, { from:[5,6], to:[5,5], blocked:true } ],
+  doorOpen: true, pressed: { "7,1": 0 },
+};
+const X = c => c * T + T / 2, Y = r => r * T + T / 2;
+const isWall = ch => ch === "#" || ch in DIR;
+const pathD = pts => pts.map(([r, c], i) => (i ? "L" : "M") + X(c) + " " + Y(r)).join(" ");
+const hash = (r, c) => ((r * 73856093) ^ (c * 19349663)) >>> 0;
+function edges(r, c, fn) {   // วาดขอบผนังด้านที่ติดพื้น
+  let s = "";
+  const x = c * T, y = r * T, open = (rr, cc) => rr >= 0 && cc >= 0 && rr < ROWS && cc < COLS && !isWall(MAP[rr][cc]);
+  if (open(r - 1, c)) s += fn(x, y, x + T, y);
+  if (open(r + 1, c)) s += fn(x, y + T, x + T, y + T);
+  if (open(r, c - 1)) s += fn(x, y, x, y + T);
+  if (open(r, c + 1)) s += fn(x + T, y, x + T, y + T);
+  return s;
+}
+function gear(cx, cy, r, teeth) {
+  let d = "";
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2, s = Math.PI / teeth;
+    const pts = [[r * .82, a - s * .55], [r, a - s * .3], [r, a + s * .3], [r * .82, a + s * .55]];
+    pts.forEach(([rr, aa], j) => d += (i === 0 && j === 0 ? "M" : "L") + (cx + rr * Math.cos(aa)).toFixed(1) + " " + (cy + rr * Math.sin(aa)).toFixed(1));
+  }
+  return d + "Z";
+}
+
+/* ================= 1. ห้องทดลองเวลา ================= */
+const clock = {
+  id:"k", cls:"t-clock",
+  title:"1 · ห้องทดลองเวลา", tag:"ทองเหลือง · กลางคืน · โฮโลแกรม",
+  desc:"ตัวเอกเป็นหุ่นไขลานตัวจิ๋วติดนาฬิกาพก เงาเป็นภาพย้อนเวลาสีฟ้าใสแบบโฮโลแกรม ฟันเฟืองหมุนช้า ๆ อยู่หลังฉาก",
+  bullets:["ธีมตรงกับกลไก \"ย้อนเวลา\" มากที่สุด เล่าเรื่องง่าย","ตัวเอกเป็นมาสคอตได้ (หุ่นไขลาน) ทำไอคอนแอปได้สวย","เสียง: ติ๊กต่อก + กระดิ่งนาฬิกาตอนเงากดสวิตช์"],
+  chips:["#0f1730","#e8b85a","#5ee8ff","#ff8a3d","#ff4d6d"],
+  deco(){ return `<svg class="deco" viewBox="0 0 360 700" preserveAspectRatio="none">
+    <g opacity=".08" fill="#e8b85a"><path class="spin" d="${gear(330,120,90,14)}"/><path class="spin-r" d="${gear(40,610,110,16)}"/><path class="spin" d="${gear(310,640,50,10)}"/></g></svg>`; },
+  defs(){ return `
+    <linearGradient id="kBrass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe2a0"/><stop offset=".55" stop-color="#e2a948"/><stop offset="1" stop-color="#9a6a22"/></linearGradient>
+    <linearGradient id="kFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22325a"/><stop offset="1" stop-color="#1a2747"/></linearGradient>
+    <radialGradient id="kExit"><stop offset="0" stop-color="#b8ff8a" stop-opacity=".9"/><stop offset="1" stop-color="#5fd068" stop-opacity="0"/></radialGradient>
+    <radialGradient id="kGlow0"><stop offset="0" stop-color="#5ee8ff" stop-opacity=".7"/><stop offset="1" stop-color="#5ee8ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="kGlow1"><stop offset="0" stop-color="#b48cff" stop-opacity=".7"/><stop offset="1" stop-color="#b48cff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="kHolo0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9f8ff"/><stop offset="1" stop-color="#2fb6e0"/></linearGradient>
+    <linearGradient id="kHolo1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6d6ff"/><stop offset="1" stop-color="#8a5cf0"/></linearGradient>
+    <pattern id="kScan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="1.4" fill="#fff" opacity=".35"/></pattern>`; },
+  floor(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x+1}" y="${y+1}" width="${T-2}" height="${T-2}" rx="5" fill="url(#kFloor)" stroke="#2c3e6b" stroke-width="1.5"/>
+      ${[[6,6],[T-6,6],[6,T-6],[T-6,T-6]].map(([a,b])=>`<circle cx="${x+a}" cy="${y+b}" r="1.6" fill="#3d5288"/>`).join("")}`; },
+  wall(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#0a1022"/>` +
+      edges(r, c, (x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="url(#kBrass)" stroke-width="5" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="1" opacity=".6"/>`); },
+  emitter(r, c, d){ const x = X(c), y = Y(r), rot = d[1] > 0 ? 0 : 180;
+    return `<g transform="translate(${x} ${y}) rotate(${rot})">
+      <rect x="-14" y="-10" width="26" height="20" rx="5" fill="url(#kBrass)" stroke="${INK}" stroke-width="2.5"/>
+      <rect x="8" y="-6" width="10" height="12" rx="3" fill="#6b4a1c" stroke="${INK}" stroke-width="2.5"/>
+      <circle cx="18" cy="0" r="5" fill="#ff4d6d" stroke="${INK}" stroke-width="2"/><circle cx="17" cy="-1.5" r="1.6" fill="#fff"/></g>`; },
+  exit(r, c){ const x = X(c), y = Y(r);
+    let ticks = ""; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; ticks += `<line x1="${x+Math.cos(a)*11}" y1="${y+Math.sin(a)*11}" x2="${x+Math.cos(a)*13.5}" y2="${y+Math.sin(a)*13.5}" stroke="${INK}" stroke-width="${i%3?1.2:2.2}"/>`; }
+    return `<circle cx="${x}" cy="${y}" r="26" fill="url(#kExit)" class="pulse"/>
+      <circle cx="${x}" cy="${y}" r="17" fill="#fff4d8" stroke="url(#kBrass)" stroke-width="5"/><circle cx="${x}" cy="${y}" r="19.5" fill="none" stroke="${INK}" stroke-width="2"/>
+      ${ticks}<line x1="${x}" y1="${y}" x2="${x}" y2="${y-7}" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+      <line class="hand" style="transform-origin:${x}px ${y}px" x1="${x}" y1="${y}" x2="${x+10}" y2="${y}" stroke="#d6402c" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="${x}" cy="${y}" r="2.2" fill="${INK}"/>`; },
+  sw(r, c, gi){ const x = X(c), y = Y(r), on = gi !== undefined, col = on ? ["#5ee8ff","#b48cff"][gi] : "#5a6b95";
+    return `${on?`<circle cx="${x}" cy="${y}" r="24" fill="url(#kGlow${gi})"/>`:""}
+      <circle cx="${x}" cy="${y}" r="16" fill="#0d1428" stroke="url(#kBrass)" stroke-width="4"/>
+      <circle cx="${x}" cy="${y}" r="10" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="3 3"/>
+      <text x="${x}" y="${y+4.5}" text-anchor="middle" font-family="Cinzel,serif" font-size="13" fill="${on?col:"#e8b85a"}">A</text>`; },
+  door(r, c, open){ const x = c*T, y = r*T;
+    if (open) return `<rect x="${x+2}" y="${y+2}" width="${T-4}" height="${T-4}" rx="4" fill="#0d1428" stroke="#e8b85a" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"/>
+      <path d="${gear(x+4,y+T/2,9,8)}" fill="url(#kBrass)" stroke="${INK}" stroke-width="1.5"/><path d="${gear(x+T-4,y+T/2,9,8)}" fill="url(#kBrass)" stroke="${INK}" stroke-width="1.5"/>`;
+    let bars = ""; for (let i = 0; i < 4; i++) bars += `<rect x="${x+6+i*9}" y="${y+4}" width="6" height="${T-8}" rx="3" fill="url(#kBrass)" stroke="${INK}" stroke-width="2"/>`;
+    return `<rect x="${x+1}" y="${y+1}" width="${T-2}" height="${T-2}" fill="#0d1428"/>${bars}`; },
+  beam(b){ const x1 = X(b.from[1]), y1 = Y(b.from[0]), x2 = X(b.to[1]), y2 = Y(b.to[0]);
+    if (b.blocked) return `<circle cx="${(x1+x2)/2}" cy="${y1}" r="7" fill="#ff4d6d" opacity=".55" class="pulse"/>`;
+    return `<g class="pulse"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ff4d6d" stroke-width="16" stroke-linecap="round" opacity=".22"/>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ff6b84" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff0f3" stroke-width="2" stroke-linecap="round"/></g>`; },
+  gpath(g, i){ return `<path d="${pathD(g.path)}" fill="none" stroke="${["#5ee8ff","#b48cff"][i]}" stroke-width="3" stroke-dasharray="1 7" stroke-linecap="round" opacity=".75"/>`; },
+  ppath(p){ return `<path d="${pathD(p.plan)}" fill="none" stroke="#ff8a3d" stroke-width="2.5" stroke-dasharray="6 6" stroke-linecap="round" opacity=".7"/>
+    <circle cx="${X(p.plan.at(-1)[1])}" cy="${Y(p.plan.at(-1)[0])}" r="5" fill="none" stroke="#ff8a3d" stroke-width="2"/>`; },
+  kid(x, y, o){ return `<g transform="translate(${x} ${y})" opacity="${o.op||1}">
+    <ellipse cx="0" cy="17" rx="12" ry="3.5" fill="#000" opacity=".35"/>
+    <g stroke="${INK}" stroke-width="2"><rect x="8" y="4" width="8" height="3" rx="1.5" fill="${o.key}"/><circle cx="18" cy="2" r="3.6" fill="${o.key}"/><circle cx="18" cy="9" r="3.6" fill="${o.key}"/></g>
+    <rect x="-10" y="1" width="20" height="15" rx="7" fill="${o.suit}" stroke="${INK}" stroke-width="2.5"/>
+    <circle cx="0" cy="8" r="3.5" fill="${o.key}" stroke="${INK}" stroke-width="1.5"/>
+    <circle cx="0" cy="-8" r="12.5" fill="${o.skin}" stroke="${INK}" stroke-width="2.5"/>
+    <path d="M-12.5 -9 Q-11 -22 0 -21.5 Q11 -22 12.5 -9 Q6 -14 0 -13 Q-6 -14 -12.5 -9Z" fill="${o.hair}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+    <g stroke="${INK}" stroke-width="1.6"><circle cx="-5" cy="-15.5" r="3.6" fill="${o.lens}"/><circle cx="5" cy="-15.5" r="3.6" fill="${o.lens}"/></g>
+    <circle cx="-4.5" cy="-6" r="2" fill="${INK}"/><circle cx="4.5" cy="-6" r="2" fill="${INK}"/>
+    <ellipse cx="-8" cy="-2.5" rx="2.4" ry="1.4" fill="#ff7a8a" opacity=".6"/><ellipse cx="8" cy="-2.5" rx="2.4" ry="1.4" fill="#ff7a8a" opacity=".6"/>
+    <path d="M-2.5 -2 Q0 0.5 2.5 -2" fill="none" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/>
+    ${o.scan?`<rect x="-14" y="-24" width="28" height="42" fill="url(#kScan)"/>`:""}</g>`; },
+  ghost(r, c, i){ const x = X(c), y = Y(r), h = `url(#kHolo${i})`, col = ["#5ee8ff","#b48cff"][i];
+    return `<circle cx="${x}" cy="${y+4}" r="22" fill="url(#kGlow${i})" opacity=".7"/>
+      <g class="bob">${this.kid(x, y-2, { skin:h, suit:h, hair:h, key:h, lens:"#fff", op:.62, scan:true })}
+      <circle cx="${x+13}" cy="${y-20}" r="7" fill="${col}" stroke="${INK}" stroke-width="2"/><text x="${x+13}" y="${y-16.5}" text-anchor="middle" font-family="Prompt" font-weight="700" font-size="10" fill="${INK}">${i+1}</text></g>`; },
+  player(r, c){ return this.kid(X(c), Y(r)-2, { skin:"#ffdcb8", suit:"#ff8a3d", hair:"#3a2a63", key:"url(#kBrass)", lens:"#9ff2ff" }); },
+  hud:`<div class="room"><small>ห้อง 5/30 · <em>TIME LAB</em></small><b>ทุกอย่างพร้อมกัน</b></div><div class="gh"><span class="on1"></span><span class="on2"></span><span></span><span></span></div>`,
+  hint:"เงา #2 กำลังจะไปบังเลเซอร์บน · <b>รอจังหวะ</b>",
+  timer:`<div class="timer"><i></i></div>`,
+};
+
+/* ================= 2. โลกกระดาษสำเนา ================= */
+const paper = {
+  id:"p", cls:"t-paper",
+  title:"2 · โลกกระดาษสำเนา", tag:"สมุดตาราง · ดินสอ · สีเทียน",
+  desc:"ทุกอย่างเป็นกระดาษตัดวางบนสมุดตาราง ตัวเอกเป็นตุ๊กตากระดาษ เงาคือ \"สำเนา\" ที่ร่างด้วยดินสอ สวิตช์เป็นตราปั๊ม เลเซอร์เป็นเส้นปากกาเมจิก",
+  bullets:["อบอุ่น น่ารัก เด็กและผู้ใหญ่เล่นได้ ต่างจากเกมอื่นในตลาด","สว่าง อ่านง่ายในที่แจ้ง","เสียง: ดินสอขีด + กระดาษพลิก + เสียงปั๊มตรา"],
+  chips:["#f7f1e1","#d4a872","#d6402c","#ffd95e","#6f7d9c"],
+  deco(){ return `<svg class="deco" viewBox="0 0 360 700" preserveAspectRatio="none">
+    <g opacity=".5"><path d="M300 40 l40 12 -6 18 -40 -12z" fill="#fff" stroke="#c9bfa8"/><path d="M18 650 l38 -10 4 16 -38 10z" fill="#fff" stroke="#c9bfa8"/></g>
+    <g fill="none" stroke="#6f7d9c" stroke-width="1.5" opacity=".4" stroke-linecap="round"><path d="M290 600 q10 -14 22 -2 t22 0"/><path d="M296 615 l6 -4 6 4 6 -4 6 4"/></g></svg>`; },
+  defs(){ return `
+    <pattern id="pHatch0" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.4" height="5" fill="#5b7bd6" opacity=".55"/></pattern>
+    <pattern id="pHatch1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="1.4" height="5" fill="#b25bd6" opacity=".55"/></pattern>
+    <pattern id="pCorr" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="2" fill="#b98a52" opacity=".35"/></pattern>`; },
+  pre(){ // พื้นสมุด + เงากระดาษของผนังทั้งหมด (วาดก่อนผนัง)
+    let s = `<rect width="${W}" height="${H}" fill="#fffaf0"/>`;
+    for (let i = 0; i <= COLS * 2; i++) s += `<line x1="${i*T/2}" y1="0" x2="${i*T/2}" y2="${H}" stroke="#a9c8e8" stroke-width="${i%2?0.6:1}" opacity=".7"/>`;
+    for (let i = 0; i <= ROWS * 2; i++) s += `<line x1="0" y1="${i*T/2}" x2="${W}" y2="${i*T/2}" stroke="#a9c8e8" stroke-width="${i%2?0.6:1}" opacity=".7"/>`;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (isWall(MAP[r][c])) s += `<rect x="${c*T+4}" y="${r*T+4}" width="${T}" height="${T}" fill="#2b2340" opacity=".18"/>`;
+    return s; },
+  floor(){ return ""; },
+  wall(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#d4a872"/><rect x="${x}" y="${y}" width="${T}" height="${T}" fill="url(#pCorr)"/>` +
+      edges(r, c, (x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`); },
+  emitter(r, c, d){ const x = X(c), y = Y(r), rot = d[1] > 0 ? 0 : 180;
+    return `<g transform="translate(${x} ${y}) rotate(${rot})">
+      <rect x="-16" y="-7" width="26" height="14" rx="4" fill="#fff" stroke="${INK}" stroke-width="2.5"/>
+      <rect x="-16" y="-7" width="9" height="14" rx="3" fill="#d6402c" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M10 -5 L18 0 L10 5Z" fill="#d6402c" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></g>`; },
+  exit(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x+6}" y="${y+5}" width="${T-12}" height="${T-8}" rx="3" fill="#7fc4ff" stroke="${INK}" stroke-width="2.5" transform="rotate(-3 ${x+T/2} ${y+T/2})"/>
+      <circle cx="${x+T-14}" cy="${y+T/2+2}" r="2" fill="${INK}"/>
+      <path d="M${x+T/2} ${y+8} l3.2 6.6 7.2 1 -5.2 5 1.3 7.2 -6.5 -3.4 -6.5 3.4 1.3 -7.2 -5.2 -5 7.2 -1z" fill="#ffd95e" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round" transform="translate(-3 2) scale(.9)"/>`; },
+  sw(r, c, gi){ const x = X(c), y = Y(r), on = gi !== undefined;
+    return `<g transform="rotate(-8 ${x} ${y})" opacity="${on?1:.75}">
+      <circle cx="${x}" cy="${y}" r="16" fill="${on?"rgba(214,64,44,.15)":"none"}" stroke="#d6402c" stroke-width="3"/>
+      <circle cx="${x}" cy="${y}" r="12" fill="none" stroke="#d6402c" stroke-width="1.4"/>
+      <text x="${x}" y="${y+5.5}" text-anchor="middle" font-family="Mali" font-weight="700" font-size="15" fill="#d6402c">A</text></g>`; },
+  door(r, c, open){ const x = c*T, y = r*T;
+    if (open) { let z = ""; for (let i = 0; i < 4; i++) z += `${i?"L":"M"}${x+3+(i%2)*6} ${y+4+i*12}`;
+      return `<path d="M${x+3} ${y+4} l6 9 -6 9 6 9 -6 9 L${x+3} ${y+T-4}" fill="#ffd95e" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+        <rect x="${x+12}" y="${y+4}" width="${T-16}" height="${T-8}" fill="none" stroke="#6f7d9c" stroke-width="1.5" stroke-dasharray="4 3"/>`; }
+    return `<rect x="${x+2}" y="${y+3}" width="${T-4}" height="${T-6}" fill="#ffd95e" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M${x+2+(T-4)/3} ${y+3} v${T-6} M${x+2+2*(T-4)/3} ${y+3} v${T-6}" stroke="#c9a33a" stroke-width="2"/>
+      <text x="${x+T/2}" y="${y+T/2+5}" text-anchor="middle" font-family="Mali" font-weight="700" font-size="13" fill="${INK}">A</text>`; },
+  beam(b){ const x1 = X(b.from[1]) + (b.from[1] ? -16 : 16), y = Y(b.from[0]), x2 = X(b.to[1]);
+    if (b.blocked) return `<path d="M${x1} ${y} l-6 -5 m0 10 l6 -5" stroke="#d6402c" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+    let d = `M${x1} ${y}`; const n = Math.round(Math.abs(x2 - x1) / 9);
+    for (let i = 1; i <= n; i++) d += ` L${x1 + (x2 - x1) * i / n} ${y + (i % 2 ? -2.2 : 2.2)}`;
+    return `<path d="${d}" fill="none" stroke="#9e1f2b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>
+      <path d="${d}" fill="none" stroke="#e8424f" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${d}" fill="none" stroke="#ff9ea4" stroke-width="1.2" stroke-linecap="round" opacity=".9"/>`; },
+  gpath(g, i){ return `<path d="${pathD(g.path)}" fill="none" stroke="${["#5b7bd6","#b25bd6"][i]}" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" opacity=".7"/>`; },
+  ppath(p){ const e = p.plan.at(-1);
+    return `<path d="${pathD(p.plan)}" fill="none" stroke="#d6402c" stroke-width="2.5" stroke-dasharray="2 5" stroke-linecap="round"/>
+      <path d="M${X(e[1])-5} ${Y(e[0])-5} l10 10 m0 -10 l-10 10" stroke="#d6402c" stroke-width="2.5" stroke-linecap="round"/>`; },
+  doll(x, y, o){ return `<g transform="translate(${x} ${y})">
+    ${o.sketch?"":`<g transform="translate(3 3)" opacity=".2" fill="${INK}"><circle cx="0" cy="-8" r="12"/><path d="M-11 16 L-8 2 Q0 -2 8 2 L11 16Z"/></g>`}
+    <path d="M-11 16 L-8 2 Q0 -2 8 2 L11 16Z" fill="${o.body}" stroke="${o.line}" stroke-width="${o.w}" stroke-linejoin="round" ${o.dash?`stroke-dasharray="${o.dash}"`:""}/>
+    <path d="M-8 6 L-15 1 M8 6 L15 1" stroke="${o.line}" stroke-width="${o.w}" stroke-linecap="round" ${o.dash?`stroke-dasharray="${o.dash}"`:""}/>
+    <circle cx="0" cy="-8" r="12" fill="${o.head}" stroke="${o.line}" stroke-width="${o.w}" ${o.dash?`stroke-dasharray="${o.dash}"`:""}/>
+    ${o.sketch?"":`<path d="M-11 -12 Q-6 -22 4 -20 Q11 -18 12 -9 Q5 -15 -2 -13Z" fill="#2b2340"/><circle cx="7" cy="-19" r="3.5" fill="#ff7a8a" stroke="${INK}" stroke-width="1.5"/>`}
+    <circle cx="-4.5" cy="-7" r="1.8" fill="${o.line}"/><circle cx="4.5" cy="-7" r="1.8" fill="${o.line}"/>
+    ${o.sketch?"":`<ellipse cx="-7.5" cy="-3" rx="2.6" ry="1.6" fill="#ff8f8f" opacity=".7"/><ellipse cx="7.5" cy="-3" rx="2.6" ry="1.6" fill="#ff8f8f" opacity=".7"/>`}
+    <path d="M-2.5 -3 Q0 -0.5 2.5 -3" fill="none" stroke="${o.line}" stroke-width="1.5" stroke-linecap="round"/></g>`; },
+  ghost(r, c, i){ const x = X(c), y = Y(r) - 2, col = ["#5b7bd6","#b25bd6"][i];
+    return `<g class="bob">${this.doll(x, y, { body:`url(#pHatch${i})`, head:`url(#pHatch${i})`, line:col, w:1.8, dash:"4 2", sketch:true })}
+      <text x="${x+15}" y="${y-14}" font-family="Mali" font-weight="700" font-size="14" fill="${col}" transform="rotate(-10 ${x+15} ${y-14})">#${i+1}</text></g>`; },
+  player(r, c){ return this.doll(X(c), Y(r) - 2, { body:"#ff8a5c", head:"#fff", line:INK, w:2.5 }); },
+  hud:`<div class="room"><small>ห้อง 5/30 · หน้า 5</small><b>ทุกอย่างพร้อมกัน</b></div><div class="gh"><span class="on1"></span><span class="on2"></span><span></span><span></span></div>`,
+  hint:"สำเนา #2 กำลังจะไปบังเส้นแดงด้านบน · <b>รอจังหวะ</b>",
+  timer:`<div class="timer"><i></i></div>`,
+};
+
+/* ================= 3. ภูติตะเกียง ================= */
+const candle = {
+  id:"c", cls:"t-candle",
+  title:"3 · ภูติตะเกียง", tag:"วิหารมืด · แสงไฟอุ่น · ควัน",
+  desc:"ตัวเอกเป็นดวงไฟตัวน้อยในวิหารโบราณ ห้องมืดนอกวงแสง เงาคือควันเรืองแสงที่ทิ้งรอยไว้ สวิตช์เป็นแท่นบูชาที่ลุกเป็นไฟเมื่อมีคนยืน",
+  bullets:["บรรยากาศสวย ลึกลับ ใกล้สไตล์เกม Wuxia ของสตูดิโอ (แผงทอง)","แสง/เงาเป็นเอกลักษณ์ชัดเจนในภาพหน้าร้าน","ต้องระวังเครื่องสเปกต่ำ: ระดับกราฟิกต่ำตัดแสงนุ่มออก"],
+  chips:["#0c0911","#2b2236","#e6bd5c","#ffb13b","#c9b8ff"],
+  deco(){ return `<svg class="deco" viewBox="0 0 360 700" preserveAspectRatio="none"><g fill="#ffcf8a" opacity=".5">
+    <circle cx="40" cy="160" r="1.5" class="pulse"/><circle cx="320" cy="220" r="1.2"/><circle cx="300" cy="560" r="1.6" class="pulse"/><circle cx="60" cy="520" r="1"/></g></svg>`; },
+  defs(){ return `
+    <linearGradient id="cFlame" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a2b"/><stop offset=".45" stop-color="#ffb13b"/><stop offset="1" stop-color="#fff6c0"/></linearGradient>
+    <radialGradient id="cWarm"><stop offset="0" stop-color="#ffb13b" stop-opacity=".55"/><stop offset="1" stop-color="#ffb13b" stop-opacity="0"/></radialGradient>
+    <radialGradient id="cGate"><stop offset="0" stop-color="#fff0b8"/><stop offset=".6" stop-color="#ffc35a"/><stop offset="1" stop-color="#b8661f"/></radialGradient>
+    <linearGradient id="cSmoke0" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c9b8ff" stop-opacity="0"/><stop offset=".5" stop-color="#c9b8ff" stop-opacity=".7"/><stop offset="1" stop-color="#f2edff"/></linearGradient>
+    <linearGradient id="cSmoke1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#8fe3d0" stop-opacity="0"/><stop offset=".5" stop-color="#8fe3d0" stop-opacity=".7"/><stop offset="1" stop-color="#eafff9"/></linearGradient>
+    <radialGradient id="cHole"><stop offset="0" stop-color="#000"/><stop offset=".5" stop-color="#000"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <mask id="cDark"><rect width="${W}" height="${H}" fill="#fff"/>
+      ${[[4,3,130],[1,3,90],[7,1,80],[3,2,90],[5,5,70]].map(([r,c,s])=>`<rect x="${X(c)-s/2}" y="${Y(r)-s/2}" width="${s}" height="${s}" fill="url(#cHole)"/>`).join("")}
+    </mask>`; },
+  floor(r, c){ const x = c*T, y = r*T, h = hash(r, c), tone = ["#2d2438","#2a2134","#30263c"][h % 3];
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="${tone}"/>
+      <rect x="${x+2}" y="${y+2}" width="${T-4}" height="${T-4}" rx="3" fill="none" stroke="#3d3150" stroke-width="1.5"/>
+      ${h % 4 === 0 ? `<path d="M${x+10} ${y+12} l6 5 -2 7 5 4" fill="none" stroke="#1e1728" stroke-width="1.4"/>` : ""}`; },
+  wall(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#120d18"/>` +
+      edges(r, c, (x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e6bd5c" stroke-width="2" opacity=".55"/>`); },
+  emitter(r, c, d){ const x = X(c), y = Y(r), rot = d[1] > 0 ? 0 : 180;
+    return `<g transform="translate(${x} ${y}) rotate(${rot})">
+      <path d="M-14 -13 L8 -9 Q16 0 8 9 L-14 13Z" fill="#3a2e48" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M-6 -6 L4 -4 M-6 6 L4 4" stroke="#e6bd5c" stroke-width="1.5" opacity=".7"/>
+      <ellipse cx="9" cy="0" rx="5" ry="3.5" fill="#ff3a4a" stroke="${INK}" stroke-width="1.8"/><ellipse cx="9" cy="0" rx="2" ry="1.5" fill="#fff"/></g>`; },
+  exit(r, c){ const x = c*T, y = r*T;
+    return `<circle cx="${x+T/2}" cy="${y+T/2}" r="34" fill="url(#cWarm)" class="pulse"/>
+      <path d="M${x+7} ${y+T-3} V${y+18} Q${x+7} ${y+4} ${x+T/2} ${y+4} Q${x+T-7} ${y+4} ${x+T-7} ${y+18} V${y+T-3}Z" fill="url(#cGate)" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M${x+7} ${y+T-3} V${y+18} Q${x+7} ${y+4} ${x+T/2} ${y+4} Q${x+T-7} ${y+4} ${x+T-7} ${y+18} V${y+T-3}" fill="none" stroke="#e6bd5c" stroke-width="1.5" transform="translate(0 0)" opacity=".9"/>`; },
+  sw(r, c, gi){ const x = X(c), y = Y(r), on = gi !== undefined;
+    return `${on?`<circle cx="${x}" cy="${y-6}" r="26" fill="url(#cWarm)"/>`:""}
+      <path d="M${x-13} ${y+14} L${x-9} ${y+2} H${x+9} L${x+13} ${y+14}Z" fill="#4a3c5c" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <rect x="${x-11}" y="${y-1}" width="22" height="5" rx="2" fill="#e6bd5c" stroke="${INK}" stroke-width="1.8"/>
+      ${on?`<path class="flick" d="M${x} ${y-20} Q${x+7} ${y-9} ${x+4} ${y-3} Q${x} ${y} ${x-4} ${y-3} Q${x-7} ${y-9} ${x} ${y-20}Z" fill="url(#cSmoke${gi})" stroke="${INK}" stroke-width="1.6"/>`:""}`; },
+  door(r, c, open){ const x = c*T, y = r*T;
+    if (open) return `<rect x="${x+3}" y="${y+T-9}" width="${T-6}" height="6" rx="2" fill="#4a3c5c" stroke="${INK}" stroke-width="2"/>
+      <rect x="${x+3}" y="${y+3}" width="${T-6}" height="${T-6}" rx="3" fill="none" stroke="#e6bd5c" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>`;
+    return `<rect x="${x+2}" y="${y+2}" width="${T-4}" height="${T-4}" rx="3" fill="#4a3c5c" stroke="${INK}" stroke-width="2.5"/>
+      <circle cx="${x+T/2}" cy="${y+T/2}" r="9" fill="none" stroke="#e6bd5c" stroke-width="1.8"/><path d="M${x+T/2} ${y+T/2-9} V${y+T/2+9} M${x+T/2-9} ${y+T/2} H${x+T/2+9}" stroke="#e6bd5c" stroke-width="1.2" opacity=".7"/>`; },
+  beam(b){ const x1 = X(b.from[1]) + (b.from[1] ? -12 : 12), y = Y(b.from[0]), x2 = X(b.to[1]);
+    if (b.blocked) return `<circle cx="${x2+18}" cy="${y}" r="6" fill="#ff3a4a" opacity=".6" class="pulse"/>`;
+    return `<g class="pulse"><path d="M${x1} ${y-7} L${x2} ${y-1.5} L${x2} ${y+1.5} L${x1} ${y+7}Z" fill="#ff3a4a" opacity=".22"/>
+      <path d="M${x1} ${y-3} L${x2} ${y-.8} L${x2} ${y+.8} L${x1} ${y+3}Z" fill="#ff5866" opacity=".9"/>
+      <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#ffe3e6" stroke-width="1.2"/>
+      ${[0.3,0.55,0.8].map(k=>`<circle cx="${x1+(x2-x1)*k}" cy="${y+(k>.5?-5:5)}" r="1.4" fill="#ffb3b9"/>`).join("")}</g>`; },
+  gpath(g, i){ return `<path d="${pathD(g.path)}" fill="none" stroke="${["#c9b8ff","#8fe3d0"][i]}" stroke-width="3" stroke-dasharray="1 6" stroke-linecap="round" opacity=".55"/>`; },
+  ppath(p){ return `<path d="${pathD(p.plan)}" fill="none" stroke="#ffb13b" stroke-width="2" stroke-dasharray="4 6" stroke-linecap="round" opacity=".8"/>`; },
+  overlay(){ return `<rect width="${W}" height="${H}" fill="#07050b" opacity=".72" mask="url(#cDark)"/>`; },
+  flame(x, y, o){ return `<g transform="translate(${x} ${y})">
+    ${o.glow?`<circle cx="0" cy="0" r="30" fill="url(#cWarm)"/>`:""}
+    <ellipse cx="0" cy="17" rx="10" ry="3" fill="#000" opacity=".4"/>
+    <g class="flick"><path d="M0 -24 Q8 -14 13 -2 Q16 14 0 16 Q-16 14 -13 -2 Q-10 -10 -4 -14 Q-3 -8 0 -8 Q-2 -16 0 -24Z" fill="${o.fill}" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round" opacity="${o.op||1}"/>
+    ${o.wisp?`<path d="M-6 16 Q-14 24 -6 30 Q2 34 -4 40" fill="none" stroke="${o.wisp}" stroke-width="3" stroke-linecap="round" opacity=".5"/>`:""}
+    <ellipse cx="-4.5" cy="2" rx="2" ry="2.6" fill="${INK}"/><ellipse cx="4.5" cy="2" rx="2" ry="2.6" fill="${INK}"/>
+    <circle cx="-3.8" cy="1" r=".8" fill="#fff"/><circle cx="5.2" cy="1" r=".8" fill="#fff"/>
+    <path d="M-2 7 Q0 9 2 7" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/></g></g>`; },
+  ghost(r, c, i){ const x = X(c), y = Y(r) - 2, col = ["#c9b8ff","#8fe3d0"][i];
+    return `<g class="bob">${this.flame(x, y, { fill:`url(#cSmoke${i})`, op:.75, wisp:col })}
+      <circle cx="${x+14}" cy="${y-18}" r="7" fill="#17111f" stroke="${col}" stroke-width="1.6"/><text x="${x+14}" y="${y-14.5}" text-anchor="middle" font-family="Prompt" font-weight="700" font-size="10" fill="${col}">${i+1}</text></g>`; },
+  player(r, c){ return this.flame(X(c), Y(r) - 2, { fill:"url(#cFlame)", glow:true }); },
+  hud:`<div class="room"><small>ห้อง 5/30 · วิหารชั้นล่าง</small><b>ทุกอย่างพร้อมกัน</b></div><div class="gh"><span class="on1"></span><span class="on2"></span><span></span><span></span></div>`,
+  hint:"ควัน #2 กำลังจะลอยไปบังลำแสงบน · <b>รอจังหวะ</b>",
+  timer:`<div class="timer"><span class="wax"></span><span class="fl"></span><span class="rest"></span></div>`,
+};
+
+function board(th) {
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${th.defs()}</defs>`;
+  if (th.pre) s += th.pre();
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const ch = MAP[r][c]; s += isWall(ch) ? th.wall(r, c) : th.floor(r, c); }
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const ch = MAP[r][c];
+    if (ch in DIR) s += th.emitter(r, c, DIR[ch]);
+    if (ch === "E") s += th.exit(r, c);
+    if (ch === "a") s += th.sw(r, c, SCENE.pressed[r + "," + c]);
+    if (ch === "A") s += th.door(r, c, SCENE.doorOpen);
+  }
+  if (th.overlay) s += th.overlay();
+  SCENE.ghosts.forEach((g, i) => s += th.gpath(g, i));
+  s += th.ppath(SCENE.player);
+  SCENE.beams.forEach(b => s += th.beam(b));
+  SCENE.ghosts.forEach((g, i) => s += th.ghost(g.at[0], g.at[1], i));
+  s += th.player(SCENE.player.at[0], SCENE.player.at[1]);
+  return s + "</svg>";
+}
+
+const row = document.getElementById("row");
+for (const th of [clock, paper, candle]) {
+  const el = document.createElement("section");
+  el.className = "opt";
+  el.innerHTML = `
+    <div><div class="tag">${th.tag}</div><h2>${th.title}</h2></div>
+    <div class="phone ${th.cls}">${th.deco()}
+      <div class="hud">${th.hud}</div>
+      <div class="board">${board(th)}</div>
+      <div class="hint">${th.hint}</div>
+      ${th.timer}
+      <div class="btns"><div>ลบเงา</div><div class="main">ใช้เงาเลย ⟲</div><div>เริ่มใหม่</div></div>
+    </div>
+    <p>${th.desc}</p>
+    <ul>${th.bullets.map(b => `<li>${b}</li>`).join("")}</ul>
+    <div class="chips">${th.chips.map(c => `<i style="background:${c}"></i>`).join("")}</div>`;
+  row.appendChild(el);
+}
+</script>
+</body>
+</html>

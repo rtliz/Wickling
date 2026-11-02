@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0911">
+<title>Wickling · ภูติตะเกียง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600&display=swap">
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <div class="sub" id="lvlNo">ห้อง 1/5</div>
+    <h1 id="lvlName">สวิตช์แรก</h1>
+  </div>
+  <div class="ghosts">
+    <div id="ghostTxt">เงา 0/4</div>
+    <div class="dots" id="dots"></div>
+  </div>
+</header>
+
+<div id="stage">
+  <canvas id="cv" aria-label="กระดานเกม แตะช่องเพื่อเดิน"></canvas>
+  <div id="win" hidden><div class="card">
+    <h2 id="winTitle">ผ่านแล้ว!</h2>
+    <div class="stars" id="winStars"></div>
+    <p id="winMsg"></p>
+    <div class="row">
+      <button id="btnRetry">เล่นห้องนี้อีก</button>
+      <button id="btnNext" class="primary">ห้องต่อไป</button>
+    </div>
+  </div></div>
+</div>
+
+<div id="banner"></div>
+<div class="timer" id="timerBar" aria-label="เวลาที่เหลือ"><span class="wax" id="bar"></span><span class="fl"></span><span class="rest"></span></div>
+<div class="skills" id="skillBar"></div>
+<div class="controls">
+  <button id="btnEnd" disabled>ใช้เงาเลย ⟲</button>
+  <button id="btnUndo" disabled>ลบเงาล่าสุด</button>
+  <button id="btnReset">เริ่มห้องใหม่</button>
+</div>
+<div class="levels" id="levels"></div>
+<div id="gmenu" hidden></div>
+<div id="treeOv" hidden>
+<div class="phone" id="phone">
+    <div class="panel top">
+      <div><small>ภูติตะเกียง · ใช้ดาวจากด่าน</small><b>ต้นไม้เปลวไฟ</b></div>
+      <div class="stars"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" fill="#e6bd5c" stroke="#1b1430" stroke-width="1.6" stroke-linejoin="round"/></svg><span id="stars">0</span></div>
+      <button class="bonus" id="treeBonus">+20 ★ ทดสอบ</button>
+      <div class="close" id="treeClose" role="button" aria-label="ปิด">✕</div>
+    </div>
+    <div class="tree" id="tree"><svg class="links" id="links"></svg></div>
+    <div class="panel slots"><span>ติดตัวเข้าด่าน</span><div class="slot" id="slot0"></div><div class="slot" id="slot1"></div><span id="slotHint">เลือกได้ 2 สกิล</span></div>
+    <div class="panel detail" id="detail"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

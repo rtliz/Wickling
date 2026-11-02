@@ -1,0 +1,436 @@
+<title>Echo Me Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap">
+<style>
+/* Layout: one-screen phone app — header strip, square-ish board that fills the middle, timer + controls at the thumb. Single deliberate night-lab look. */
+:root{
+  --bg:#0e171b; --panel:#16242a; --floor:#1c2f36; --floor-line:#243b43; --wall:#08100f;
+  --fg:#e7efe9; --muted:#8fa6a8; --player:#ffb36b; --exit:#9be27a; --laser:#ff4d5e;
+  --key-a:#ffd166; --key-b:#5fd3e6;
+  --g1:#8fb8ff; --g2:#d29bff; --g3:#7fe0c4; --g4:#ffa3c7;
+  --display:"Mitr","Noto Sans Thai",system-ui,sans-serif;
+  --body:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);display:flex;flex-direction:column;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px;box-sizing:border-box;gap:8px;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;max-width:520px;width:100%;margin:0 auto}
+h1{font-family:var(--display);font-weight:600;font-size:1.25rem;margin:0;text-wrap:balance;line-height:1.2}
+.sub{color:var(--muted);font-size:.8rem;letter-spacing:.02em}
+.ghosts{font-family:var(--display);font-size:.95rem;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ghosts .dots{display:flex;gap:4px;justify-content:flex-end;margin-top:2px}
+.ghosts .dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--muted);box-sizing:border-box}
+#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;max-width:520px;width:100%;margin:0 auto}
+canvas{display:block;touch-action:none;border-radius:10px}
+#banner{min-height:2.6em;text-align:center;font-size:.92rem;color:var(--fg);max-width:520px;margin:0 auto;line-height:1.35}
+#banner b{color:var(--player);font-weight:600}
+.timer{height:8px;background:var(--panel);border-radius:4px;overflow:hidden;max-width:520px;width:100%;margin:0 auto}
+.timer i{display:block;height:100%;width:100%;background:var(--player);transform-origin:left;will-change:transform}
+.controls{display:flex;gap:8px;max-width:520px;width:100%;margin:0 auto}
+button{font-family:var(--display);font-size:.9rem;color:var(--fg);background:var(--panel);border:1.5px solid var(--floor-line);
+  border-radius:10px;padding:10px 6px;flex:1;cursor:pointer}
+button:disabled{opacity:.35}
+button:focus-visible{outline:2px solid var(--player);outline-offset:2px}
+button.primary{background:var(--player);color:#2a1606;border-color:var(--player)}
+.levels{display:flex;gap:6px;justify-content:center;max-width:520px;margin:0 auto}
+.levels button{flex:0 0 auto;width:44px;padding:6px 0;font-size:.8rem;line-height:1.1}
+.levels button.on{border-color:var(--player)}
+.levels small{display:block;color:var(--key-a);font-size:.65rem;letter-spacing:.05em}
+#win{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);border-radius:10px;text-align:center;padding:16px}
+#win h2{font-family:var(--display);font-size:1.6rem;margin:0}
+#win .stars{font-size:2.2rem;letter-spacing:.15em;color:var(--key-a)}
+#win .stars s{color:var(--floor-line);text-decoration:none}
+#win p{margin:0;color:var(--muted);max-width:30ch}
+#win .row{display:flex;gap:8px;width:min(320px,100%)}
+@media (prefers-reduced-motion:reduce){.timer i{transition:none}}
+</style>
+
+<header>
+  <div>
+    <div class="sub" id="lvlNo">ห้อง 1/5</div>
+    <h1 id="lvlName">สวิตช์แรก</h1>
+  </div>
+  <div class="ghosts">
+    <div id="ghostTxt">เงา 0/4</div>
+    <div class="dots" id="dots"></div>
+  </div>
+</header>
+
+<div id="stage">
+  <canvas id="cv" aria-label="กระดานเกม แตะช่องเพื่อเดิน"></canvas>
+  <div id="win" hidden>
+    <h2 id="winTitle">ผ่านแล้ว!</h2>
+    <div class="stars" id="winStars"></div>
+    <p id="winMsg"></p>
+    <div class="row">
+      <button id="btnRetry">เล่นห้องนี้อีก</button>
+      <button id="btnNext" class="primary">ห้องต่อไป</button>
+    </div>
+  </div>
+</div>
+
+<div id="banner"></div>
+<div class="timer"><i id="bar"></i></div>
+<div class="controls">
+  <button id="btnEnd" disabled>จบรอบเลย</button>
+  <button id="btnUndo" disabled>ลบเงาล่าสุด</button>
+  <button id="btnReset">เริ่มห้องใหม่</button>
+</div>
+<div class="levels" id="levels"></div>
+
+<script>
+(() => {
+const TICK = 250, TICKS = 40, MAX_GHOSTS = 4;   // 40 ก้าว × 0.25 วิ = 10 วินาทีต่อรอบ
+
+// # กำแพง . พื้น S จุดเริ่ม E ทางออก a/b สวิตช์ A/B ประตู (คู่กัน) > < ^ v ปืนเลเซอร์
+const LEVELS = [
+  { name:"สวิตช์แรก", par:1,
+    hint:"ประตูเปิดเฉพาะตอนมีคนยืนบนสวิตช์ · รอบแรกลองเดินไปยืนบนสวิตช์ แล้วรอให้หมดเวลา",
+    map:["#######","#..E..#","###A###","#.....#","#.....#","#.....#","#.....#","#a...S#","#######"] },
+  { name:"ประตูสองชั้น", par:2,
+    hint:"มีสองประตู · ใช้เงาสองตัว หรือถ้าเก่งจริง ลองใช้เงาตัวเดียวที่ย้ายสวิตช์ให้ทันจังหวะ",
+    map:["#######","#..E..#","###B###","#.....#","###A###","#.....#","#.....#","#a.S.b#","#######"] },
+  { name:"เลเซอร์", par:1,
+    hint:"เลเซอร์ทำร้ายตัวจริง แต่เงาเดินผ่านได้และบังลำแสงได้ · ให้เงาไปยืนขวางลำแสงไว้",
+    map:["#######","#..E..#","#.....#",">.....#","#.....#","#.....#","#.....#","#...S.#","#######"] },
+  { name:"ส่งต่อกันเป็นทอด", par:2,
+    hint:"สวิตช์ b เปิดทางไปสวิตช์ a · ส่วนสวิตช์ a เปิดทางออก",
+    map:["#######","#a##E##","#B##A##","#.....#","#.....#","#.....#","#.....#","#b..S.#","#######"] },
+  { name:"ทุกอย่างพร้อมกัน", par:3,
+    hint:"เลเซอร์สองเส้น ประตูหนึ่งบาน · ใช้เงาสามตัวผ่านได้ ถ้าเงาตัวหนึ่งย้ายที่ทันเวลา อาจใช้แค่สองตัว",
+    map:["#######","#..E..#","###A###",">.....#","#.....#","#.....<","#.....#","#a...S#","#######"] },
+];
+const DIRS = { ">":[0,1], "<":[0,-1], "^":[-1,0], "v":[1,0] };
+const css = getComputedStyle(document.documentElement);
+const C = n => css.getPropertyValue("--"+n).trim();
+const COL = { floor:C("floor"), line:C("floor-line"), wall:C("wall"), player:C("player"), exit:C("exit"), laser:C("laser"),
+  a:C("key-a"), b:C("key-b"), fg:C("fg"), muted:C("muted"), bg:C("bg"), ghost:[C("g1"),C("g2"),C("g3"),C("g4")] };
+const NOTES = [523.25, 659.25, 783.99, 987.77];  // เงาแต่ละตัวมีโน้ตของตัวเอง กดพร้อมกันเป็นคอร์ด
+
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+let best = {};
+try { best = JSON.parse(localStorage.getItem("echo-proto-best") || "{}"); } catch (e) {}
+
+let G = null;   // ข้อมูลห้อง
+let S = null;   // สถานะการเล่น
+
+function loadLevel(i) {
+  const L = LEVELS[i], rows = L.map.length, cols = L.map[0].length;
+  const grid = [], emitters = [];
+  let start, exit;
+  for (let r = 0; r < rows; r++) {
+    grid.push([]);
+    for (let c = 0; c < cols; c++) {
+      const ch = L.map[r][c]; let cell;
+      if (ch === "#") cell = { t:"wall" };
+      else if (DIRS[ch]) { cell = { t:"emit", d:DIRS[ch] }; emitters.push({ r, c, d:DIRS[ch] }); }
+      else if (ch === "S") { cell = { t:"floor" }; start = [r, c]; }
+      else if (ch === "E") { cell = { t:"exit" }; exit = [r, c]; }
+      else if (/[a-z]/.test(ch)) cell = { t:"switch", k:ch };
+      else if (/[A-Z]/.test(ch)) cell = { t:"door", k:ch.toLowerCase() };
+      else cell = { t:"floor" };
+      grid[r].push(cell);
+    }
+  }
+  G = { i, L, rows, cols, grid, emitters, start, exit };
+  S = { ghosts: [] };
+  $("win").hidden = true;
+  startRound();
+  renderLevelChips(); resize();
+}
+
+function startRound() {
+  clearTimeout(S.timer);
+  Object.assign(S, { phase:"ready", t:0, p:[...G.start], pPrev:[...G.start], path:[], rec:[[...G.start]], last:0, flash:null, pressed:{} });
+  evaluate(false);
+  updateHud();
+  banner(S.ghosts.length === 0 ? G.L.hint
+    : `เงา #${S.ghosts.length} พร้อมแล้ว · แตะช่องไหนก็ได้เพื่อเริ่ม<b>รอบที่ ${S.ghosts.length + 1}</b>`);
+}
+
+const ghostAt = t => S.ghosts.map(g => g.rec[Math.min(t, g.rec.length - 1)]);
+const key = p => p[0] + "," + p[1];
+const cellOf = p => G.grid[p[0]][p[1]];
+
+// สวิตช์ → ประตู → เลเซอร์ คำนวณจากตำแหน่งทุกตัวในจังหวะนี้
+function evaluate(withSound) {
+  const gp = ghostAt(S.t), all = gp.concat([S.p]);
+  const pressed = {}, open = {};
+  all.forEach((p, idx) => { const c = cellOf(p); if (c.t === "switch" && !(c.k in pressed)) pressed[c.k] = idx < gp.length ? idx : "p"; });
+  if (withSound) for (const k in pressed) if (!(k in S.pressed)) note(pressed[k] === "p" ? 392 : NOTES[pressed[k] % 4], .18);
+  for (const k of ["a","b"]) open[k] = k in pressed;
+  all.forEach(p => { const c = cellOf(p); if (c.t === "door") open[c.k] = true; });  // ประตูปิดทับคนไม่ได้
+  const ghostSet = new Set(gp.map(key));
+  const beam = new Set(), beamSegs = [];
+  for (const e of G.emitters) {
+    let r = e.r + e.d[0], c = e.c + e.d[1], end = null;
+    while (r >= 0 && c >= 0 && r < G.rows && c < G.cols) {
+      const cell = G.grid[r][c];
+      if (cell.t === "wall" || cell.t === "emit" || (cell.t === "door" && !open[cell.k])) break;
+      if (ghostSet.has(r + "," + c)) { end = [r, c]; break; }
+      beam.add(r + "," + c);
+      end = [r, c];
+      if (r === S.p[0] && c === S.p[1]) break;
+      r += e.d[0]; c += e.d[1];
+    }
+    if (end) beamSegs.push({ from:[e.r, e.c], to:end, blocked: ghostSet.has(key(end)) });
+  }
+  S.pressed = pressed; S.open = open; S.beam = beam; S.beamSegs = beamSegs;
+}
+
+function passable(p) {
+  const c = cellOf(p);
+  if (c.t === "wall" || c.t === "emit") return false;
+  if (c.t === "door") return !!S.open[c.k];
+  return true;
+}
+
+function findPath(from, to) {
+  const ok = p => { const c = cellOf(p); return c.t !== "wall" && c.t !== "emit"; };
+  if (!ok(to)) return null;
+  const prev = new Map([[key(from), null]]), q = [from];
+  while (q.length) {
+    const cur = q.shift();
+    if (cur[0] === to[0] && cur[1] === to[1]) break;
+    for (const d of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const n = [cur[0] + d[0], cur[1] + d[1]];
+      if (n[0] < 0 || n[1] < 0 || n[0] >= G.rows || n[1] >= G.cols || !ok(n) || prev.has(key(n))) continue;
+      prev.set(key(n), cur); q.push(n);
+    }
+  }
+  if (!prev.has(key(to))) return null;
+  const path = []; let k = to;
+  while (k && key(k) !== key(from)) { path.unshift(k); k = prev.get(key(k)); }
+  return path;
+}
+
+function tick() {
+  S.t++;
+  S.pPrev = [...S.p];
+  if (S.path.length && passable(S.path[0])) S.p = S.path.shift();
+  evaluate(true);
+  S.rec.push([...S.p]);
+  if (S.beam.has(key(S.p))) return zap();
+  if (key(S.p) === key(G.exit)) return win();
+  if (S.t >= TICKS) endRound("หมดเวลา");
+}
+
+function zap() {
+  S.phase = "zap"; S.flash = { color:COL.laser, at:performance.now() };
+  buzz(); banner("โดนเลเซอร์! แต่ไม่เป็นไร รอบนี้ยังกลายเป็นเงาได้");
+  S.timer = setTimeout(() => endRound("โดนเลเซอร์"), 750);
+}
+
+function endRound(why) {
+  if (S.ghosts.length >= MAX_GHOSTS) {
+    S.ghosts = []; startRound();
+    banner(`${why} · เงาครบ ${MAX_GHOSTS} ตัวแล้ว เริ่มห้องใหม่ทั้งหมด ลองวางแผนอีกแบบ`);
+    return;
+  }
+  S.ghosts.push({ rec: S.rec });
+  note(330, .25);
+  startRound();
+}
+
+function win() {
+  S.phase = "win"; S.flash = { color:COL.exit, at:performance.now() };
+  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => note(f, .25), i * 110));
+  const n = S.ghosts.length, par = G.L.par;
+  const stars = n <= par ? 3 : n === par + 1 ? 2 : 1;
+  best[G.i] = Math.max(best[G.i] || 0, stars);
+  try { localStorage.setItem("echo-proto-best", JSON.stringify(best)); } catch (e) {}
+  $("winTitle").textContent = n < par ? "เหนือชั้น!" : "ผ่านแล้ว!";
+  $("winStars").innerHTML = "★".repeat(stars) + "<s>" + "★".repeat(3 - stars) + "</s>";
+  $("winMsg").textContent = n < par
+    ? `ใช้เงาแค่ ${n} ตัว น้อยกว่าที่ออกแบบไว้ (${par})`
+    : `ใช้เงา ${n} ตัว` + (stars < 3 ? ` · ลองใช้แค่ ${par} ตัวเพื่อรับ 3 ดาว` : "");
+  $("btnNext").textContent = G.i < LEVELS.length - 1 ? "ห้องต่อไป" : "กลับห้องแรก";
+  $("win").hidden = false;
+  banner(""); updateHud(); renderLevelChips();
+}
+
+// ---------- input ----------
+cv.addEventListener("pointerdown", ev => {
+  unlockAudio();
+  if (S.phase !== "ready" && S.phase !== "run") return;
+  const rect = cv.getBoundingClientRect(), ts = rect.width / G.cols;
+  const p = [Math.floor((ev.clientY - rect.top) / ts), Math.floor((ev.clientX - rect.left) / ts)];
+  if (p[0] < 0 || p[1] < 0 || p[0] >= G.rows || p[1] >= G.cols) return;
+  const path = key(p) === key(S.p) ? [] : findPath(S.p, p);
+  if (!path) return;
+  S.path = path; S.target = p;
+  if (S.phase === "ready") { S.phase = "run"; S.last = performance.now(); banner(""); updateHud(); }
+});
+$("btnEnd").onclick = () => { if (S.phase === "run") endRound("จบรอบเอง"); };
+$("btnUndo").onclick = () => { if (S.phase === "ready" && S.ghosts.length) { S.ghosts.pop(); startRound(); } };
+$("btnReset").onclick = () => loadLevel(G.i);
+$("btnRetry").onclick = () => loadLevel(G.i);
+$("btnNext").onclick = () => loadLevel((G.i + 1) % LEVELS.length);
+
+// ---------- hud ----------
+function banner(html) { $("banner").innerHTML = html; }
+function updateHud() {
+  $("lvlNo").textContent = `ห้อง ${G.i + 1}/${LEVELS.length} · 3 ดาวเมื่อใช้เงา ≤ ${G.L.par}`;
+  $("lvlName").textContent = G.L.name;
+  $("ghostTxt").textContent = `เงา ${S.ghosts.length}/${MAX_GHOSTS}`;
+  $("dots").innerHTML = "";
+  for (let i = 0; i < MAX_GHOSTS; i++) {
+    const d = document.createElement("span"); d.className = "dot";
+    if (i < S.ghosts.length) { d.style.background = COL.ghost[i]; d.style.borderColor = COL.ghost[i]; }
+    $("dots").appendChild(d);
+  }
+  $("btnEnd").disabled = S.phase !== "run";
+  $("btnUndo").disabled = !(S.phase === "ready" && S.ghosts.length);
+}
+function renderLevelChips() {
+  const box = $("levels"); box.innerHTML = "";
+  LEVELS.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.className = i === G.i ? "on" : "";
+    b.innerHTML = `${i + 1}<small>${"★".repeat(best[i] || 0) || "&nbsp;"}</small>`;
+    b.setAttribute("aria-label", `ห้อง ${i + 1}`);
+    b.onclick = () => loadLevel(i);
+    box.appendChild(b);
+  });
+}
+
+// ---------- audio ----------
+let ac = null;
+function unlockAudio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+function note(f, dur, type = "sine", vol = .12) {
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + .02);
+}
+function buzz() { note(110, .35, "sawtooth", .08); }
+
+// ---------- render ----------
+let TS = 40, dpr = 1;
+function resize() {
+  if (!G) return;
+  const st = $("stage"), w = st.clientWidth, h = st.clientHeight;
+  TS = Math.max(16, Math.floor(Math.min(w / G.cols, h / G.rows)));
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = TS * G.cols * dpr; cv.height = TS * G.rows * dpr;
+  cv.style.width = TS * G.cols + "px"; cv.style.height = TS * G.rows + "px";
+}
+new ResizeObserver(resize).observe($("stage"));
+
+const lerp = (a, b, t) => a + (b - a) * t;
+function center(p) { return [(p[1] + .5) * TS, (p[0] + .5) * TS]; }
+
+function drawCell(r, c) {
+  const cell = G.grid[r][c], x = c * TS, y = r * TS;
+  if (cell.t === "wall" || cell.t === "emit") {
+    ctx.fillStyle = COL.wall; ctx.fillRect(x, y, TS, TS);
+    if (cell.t === "emit") {
+      const [cx, cy] = [x + TS / 2, y + TS / 2], [dy, dx] = cell.d;
+      ctx.fillStyle = COL.laser; ctx.beginPath();
+      ctx.moveTo(cx + dx * TS * .32, cy + dy * TS * .32);
+      ctx.lineTo(cx - dx * TS * .2 - dy * TS * .26, cy - dy * TS * .2 - dx * TS * .26);
+      ctx.lineTo(cx - dx * TS * .2 + dy * TS * .26, cy - dy * TS * .2 + dx * TS * .26);
+      ctx.fill();
+    }
+    return;
+  }
+  ctx.fillStyle = COL.floor; ctx.fillRect(x, y, TS, TS);
+  ctx.strokeStyle = COL.line; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, TS - 1, TS - 1);
+  if (cell.t === "exit") {
+    ctx.fillStyle = COL.exit; ctx.globalAlpha = .25; ctx.fillRect(x + 3, y + 3, TS - 6, TS - 6); ctx.globalAlpha = 1;
+    ctx.strokeStyle = COL.exit; ctx.lineWidth = 2.5; ctx.strokeRect(x + 6, y + 6, TS - 12, TS - 12);
+    label("ออก", x + TS / 2, y + TS / 2, COL.exit, TS * .26);
+  }
+  if (cell.t === "switch") {
+    const on = cell.k in S.pressed, col = COL[cell.k];
+    ctx.beginPath(); ctx.arc(x + TS / 2, y + TS / 2, TS * .34, 0, 7);
+    ctx.fillStyle = on ? col : COL.bg; ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.stroke();
+    label(cell.k.toUpperCase(), x + TS / 2, y + TS / 2, on ? COL.bg : col, TS * .3);
+  }
+  if (cell.t === "door") {
+    const col = COL[cell.k];
+    if (S.open[cell.k]) {
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = col; ctx.lineWidth = 2;
+      ctx.strokeRect(x + 4, y + 4, TS - 8, TS - 8); ctx.setLineDash([]);
+    } else {
+      ctx.fillStyle = col; ctx.fillRect(x + 2, y + 2, TS - 4, TS - 4);
+      ctx.fillStyle = COL.bg; for (let i = 1; i < 4; i++) ctx.fillRect(x + (TS * i) / 4 - 1.5, y + 4, 3, TS - 8);
+    }
+    label(cell.k.toUpperCase(), x + TS / 2, y + TS * .16, S.open[cell.k] ? col : COL.bg, TS * .22);
+  }
+}
+function label(txt, x, y, color, size) {
+  ctx.fillStyle = color; ctx.font = `600 ${Math.round(size)}px Mitr, system-ui, sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, x, y);
+}
+function drawBody(x, y, color, alpha, num, eyes) {
+  ctx.globalAlpha = alpha;
+  ctx.beginPath(); ctx.arc(x, y, TS * .3, 0, 7); ctx.fillStyle = color; ctx.fill();
+  ctx.globalAlpha = 1;
+  if (eyes) {
+    ctx.fillStyle = "#2a1606";
+    ctx.beginPath(); ctx.arc(x - TS * .09, y - TS * .04, TS * .045, 0, 7); ctx.arc(x + TS * .09, y - TS * .04, TS * .045, 0, 7); ctx.fill();
+  }
+  if (num) label(num, x, y + 1, COL.bg, TS * .28);
+}
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!G) return;
+  if (S.phase === "run") {
+    while (now - S.last >= TICK && S.phase === "run") { S.last += TICK; tick(); }
+  }
+  const a = S.phase === "run" ? Math.min(1, (now - S.last) / TICK) : 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, TS * G.cols, TS * G.rows);
+  for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) drawCell(r, c);
+
+  // เส้นทางของเงา (ช่วยให้วางแผนได้)
+  S.ghosts.forEach((g, i) => {
+    ctx.strokeStyle = COL.ghost[i]; ctx.globalAlpha = .35; ctx.lineWidth = 3; ctx.setLineDash([2, 6]); ctx.lineCap = "round";
+    ctx.beginPath(); g.rec.forEach((p, j) => { const [x, y] = center(p); j ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  });
+  // เส้นทางที่ตัวจริงกำลังจะเดิน
+  if (S.path.length && (S.phase === "run")) {
+    ctx.strokeStyle = COL.player; ctx.globalAlpha = .45; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(...center(S.p)); S.path.forEach(p => ctx.lineTo(...center(p))); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+  // เลเซอร์
+  for (const s of S.beamSegs) {
+    const [x1, y1] = center(s.from), [x2, y2] = center(s.to);
+    ctx.strokeStyle = COL.laser; ctx.lineCap = "round";
+    ctx.globalAlpha = .25; ctx.lineWidth = TS * .28; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  // เงา
+  const tPrev = Math.max(0, S.t - 1);
+  S.ghosts.forEach((g, i) => {
+    const p0 = g.rec[Math.min(tPrev, g.rec.length - 1)], p1 = g.rec[Math.min(S.t, g.rec.length - 1)];
+    const [x0, y0] = center(p0), [x1, y1] = center(p1);
+    drawBody(lerp(x0, x1, a), lerp(y0, y1, a), COL.ghost[i], .62, String(i + 1), false);
+  });
+  // ตัวจริง
+  const [px0, py0] = center(S.pPrev), [px1, py1] = center(S.p);
+  drawBody(lerp(px0, px1, a), lerp(py0, py1, a), COL.player, 1, "", true);
+
+  if (S.flash) {
+    const k = 1 - (now - S.flash.at) / 600;
+    if (k > 0) { ctx.globalAlpha = k * .35; ctx.fillStyle = S.flash.color; ctx.fillRect(0, 0, TS * G.cols, TS * G.rows); ctx.globalAlpha = 1; }
+  }
+  const left = S.phase === "run" ? 1 - Math.min(1, (S.t + a) / TICKS) : S.phase === "ready" ? 1 : 1 - S.t / TICKS;
+  $("bar").style.transform = `scaleX(${left})`;
+}
+
+loadLevel(0);
+requestAnimationFrame(frame);
+})();
+</script>

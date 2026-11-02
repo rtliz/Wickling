@@ -1,0 +1,20 @@
+{
+  "name": "wickling",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc --noEmit",
+    "check": "tsc --noEmit && rolldown scripts/check.ts -o node_modules/.cache/check/check.mjs -p node -f esm --log-level warn && node node_modules/.cache/check/check.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "rolldown": "~1.2.13",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "packageManager": "pnpm@10.18.2"
+}

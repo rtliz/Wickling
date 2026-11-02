@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);height:100%}</style>
+<title>Echo Me Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600&display=swap">
+<style>
+/* ภูติตะเกียง: วิหารมืด แสงไฟอุ่น เงาเป็นควันเรืองแสง · แผงมืดขอบทองบาง + ขีดมุม (มาตรฐานสตูดิโอ) */
+:root{
+  --bg:#0c0911; --bg2:#211830; --panel:#1f172b; --panel2:#140f1c; --gold:#e6bd5c; --gold-soft:rgba(230,189,92,.5);
+  --fg:#f6ecd6; --muted:#b9aed3; --flame:#ffb13b; --red:#e85a3a; --red-d:#a8301f; --ink:#1b1430;
+  --display:"Prompt","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:radial-gradient(90% 60% at 50% 40%,var(--bg2) 0%,var(--bg) 75%) fixed,var(--bg);color:var(--fg);font-family:var(--display);
+  display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px;box-sizing:border-box;gap:10px;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:520px;width:100%;margin:0 auto;position:relative;
+  background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold-soft);border-radius:10px;padding:8px 14px}
+header::before,header::after{content:"";position:absolute;width:14px;height:14px;border:2px solid var(--gold)}
+header::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+header::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+h1{font-weight:600;font-size:1.15rem;margin:0;line-height:1.25}
+.sub{color:var(--muted);font-size:.72rem;letter-spacing:.03em}
+.ghosts{font-size:.8rem;text-align:right;white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+.ghosts .dots{display:flex;gap:5px;justify-content:flex-end;margin-top:3px}
+.ghosts .dot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--gold-soft);box-sizing:border-box}
+#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;max-width:520px;width:100%;margin:0 auto}
+canvas{display:block;touch-action:none;border-radius:8px}
+#banner{min-height:2.7em;text-align:center;font-size:.86rem;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.4}
+#banner b{color:var(--flame);font-weight:600}
+#banner small{opacity:.8}
+.timer{display:flex;align-items:center;max-width:520px;width:100%;margin:0 auto;height:20px}
+.timer .wax{height:10px;width:100%;background:linear-gradient(#fff6e2,#e9d2b0);border:1.5px solid var(--ink);border-radius:3px;flex:0 0 auto}
+.timer .fl{width:12px;height:18px;margin-left:1px;margin-top:-10px;flex:0 0 auto;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  background:radial-gradient(circle at 50% 70%,#fff8c4 0 25%,var(--flame) 55%,#ff6a2b 90%);box-shadow:0 0 12px var(--flame);animation:flick 1.1s ease-in-out infinite}
+.timer .rest{flex:1;height:2px;margin-left:4px;background:rgba(230,189,92,.2)}
+.controls{display:flex;gap:8px;max-width:520px;width:100%;margin:0 auto}
+.skills{display:flex;gap:8px;max-width:520px;width:100%;margin:0 auto}
+.skills button{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 6px;border-color:var(--gold)}
+.skills button svg{width:22px;height:22px;flex:0 0 auto}
+.skills button span{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.skills button small{font-size:.62rem;color:var(--muted)}
+.skills button.used{opacity:.35}
+button{font-family:var(--display);font-size:.88rem;color:var(--fg);background:linear-gradient(#251c33,#18111f);border:1.5px solid var(--gold-soft);
+  border-radius:12px;padding:11px 6px;flex:1;cursor:pointer;box-shadow:0 3px 0 #000}
+button:disabled{opacity:.35}
+button:focus-visible{outline:2px solid var(--flame);outline-offset:2px}
+button.primary{background:linear-gradient(var(--red),var(--red-d));border-color:#ffcf8a;font-weight:600}
+.levels{display:flex;gap:6px;justify-content:center;max-width:520px;margin:0 auto}
+.levels button{flex:0 0 auto;width:46px;padding:6px 0;font-size:.8rem;line-height:1.1;border-radius:10px}
+.levels button.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 3px 0 #000}
+.levels small{display:block;color:var(--gold);font-size:.62rem;letter-spacing:.05em}
+#win{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,6,12,.72);border-radius:8px;padding:16px}
+#win .card{position:relative;background:linear-gradient(var(--panel),var(--panel2));border:1.5px solid var(--gold-soft);border-radius:12px;
+  padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;width:min(320px,100%);box-shadow:0 6px 0 #000}
+#win .card::before,#win .card::after{content:"";position:absolute;width:16px;height:16px;border:2px solid var(--gold)}
+#win .card::before{top:-3px;left:-3px;border-right:0;border-bottom:0}
+#win .card::after{bottom:-3px;right:-3px;border-left:0;border-top:0}
+#win h2{font-size:1.5rem;margin:0;color:var(--flame)}
+#win .stars{font-size:2.1rem;letter-spacing:.15em;color:var(--gold);text-shadow:0 0 12px rgba(255,177,59,.6)}
+#win .stars s{color:#3d3150;text-decoration:none;text-shadow:none}
+#win p{margin:0;color:var(--muted);max-width:30ch;font-size:.88rem}
+#win .row{display:flex;gap:8px;width:100%}
+@keyframes flick{0%,100%{transform:scale(1,1)}40%{transform:scale(.9,1.08)}70%{transform:scale(1.05,.95)}}
+@media (prefers-reduced-motion:reduce){.timer .fl{animation:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="sub" id="lvlNo">ห้อง 1/5</div>
+    <h1 id="lvlName">สวิตช์แรก</h1>
+  </div>
+  <div class="ghosts">
+    <div id="ghostTxt">เงา 0/4</div>
+    <div class="dots" id="dots"></div>
+  </div>
+</header>
+
+<div id="stage">
+  <canvas id="cv" aria-label="กระดานเกม แตะช่องเพื่อเดิน"></canvas>
+  <div id="win" hidden><div class="card">
+    <h2 id="winTitle">ผ่านแล้ว!</h2>
+    <div class="stars" id="winStars"></div>
+    <p id="winMsg"></p>
+    <div class="row">
+      <button id="btnRetry">เล่นห้องนี้อีก</button>
+      <button id="btnNext" class="primary">ห้องต่อไป</button>
+    </div>
+  </div></div>
+</div>
+
+<div id="banner"></div>
+<div class="timer" aria-label="เวลาที่เหลือ"><span class="wax" id="bar"></span><span class="fl"></span><span class="rest"></span></div>
+<div class="skills">
+  <button id="skFreeze" disabled><svg viewBox="0 0 24 24" fill="none" stroke="#ffb13b" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><rect x="8.3" y="7.5" width="2.6" height="9" rx="1" fill="#ffb13b" stroke="none"/><rect x="13.1" y="7.5" width="2.6" height="9" rx="1" fill="#ffb13b" stroke="none"/></svg><span>หยุดเปลว<small>หยุดโลก 1 วิ · รอบละครั้ง</small></span></button>
+  <button id="skLantern" disabled><svg viewBox="0 0 24 24" fill="none" stroke="#8fe3d0" stroke-width="1.8" stroke-linecap="round"><path d="M9 4 H15 M12 2 V4"/><rect x="7" y="5" width="10" height="13" rx="3"/><path d="M12 8.5 Q14 11 13 13.5 Q12 15 11 13.5 Q10 11 12 8.5Z" fill="#8fe3d0" stroke="none"/><path d="M8 20.5 H16"/></svg><span>วางโคม<small>กดสวิตช์ค้าง 3 วิ · รอบละครั้ง</small></span></button>
+</div>
+<div class="controls">
+  <button id="btnEnd" disabled>ใช้เงาเลย ⟲</button>
+  <button id="btnUndo" disabled>ลบเงาล่าสุด</button>
+  <button id="btnReset">เริ่มห้องใหม่</button>
+</div>
+<div class="levels" id="levels"></div>
+
+<script>
+(() => {
+const TICK = 250, TICKS = 40, MAX_GHOSTS = 4;   // 40 ก้าว × 0.25 วิ = 10 วินาทีต่อรอบ
+
+// # กำแพง . พื้น S จุดเริ่ม E ทางออก a/b สวิตช์ A/B ประตู (คู่กัน) > < ^ v ปืนเลเซอร์
+const LEVELS = [
+  { name:"สวิตช์แรก", par:1,
+    hint:"ประตูเปิดเฉพาะตอนมีคนยืนบนสวิตช์ · รอบแรกลองเดินไปยืนบนสวิตช์ แล้วรอให้หมดเวลา",
+    map:["#######","#..E..#","###A###","#.....#","#.....#","#.....#","#.....#","#a...S#","#######"] },
+  { name:"ประตูสองชั้น", par:2,
+    hint:"มีสองประตู · ใช้เงาสองตัว หรือถ้าเก่งจริง ลองใช้เงาตัวเดียวที่ย้ายสวิตช์ให้ทันจังหวะ",
+    map:["#######","#..E..#","###B###","#.....#","###A###","#.....#","#.....#","#a.S.b#","#######"] },
+  { name:"เลเซอร์", par:1,
+    hint:"เลเซอร์ทำร้ายตัวจริง แต่เงาเดินผ่านได้และบังลำแสงได้ · ให้เงาไปยืนขวางลำแสงไว้",
+    map:["#######","#..E..#","#.....#",">.....#","#.....#","#.....#","#.....#","#...S.#","#######"] },
+  { name:"ส่งต่อกันเป็นทอด", par:2,
+    hint:"สวิตช์ b เปิดทางไปสวิตช์ a · ส่วนสวิตช์ a เปิดทางออก",
+    map:["#######","#a##E##","#B##A##","#.....#","#.....#","#.....#","#.....#","#b..S.#","#######"] },
+  { name:"ทุกอย่างพร้อมกัน", par:3,
+    hint:"เลเซอร์สองเส้น ประตูหนึ่งบาน · ใช้เงาสามตัวผ่านได้ ถ้าเงาตัวหนึ่งย้ายที่ทันเวลา อาจใช้แค่สองตัว",
+    map:["#######","#..E..#","###A###",">.....#","#.....#","#.....<","#.....#","#a...S#","#######"] },
+  { name:"เลเซอร์กะพริบ", par:0, skill:"หยุดเปลว",
+    hint:"ห้องสอน · หยุดเปลว: เลเซอร์สองเส้นดับไม่พร้อมกัน กด <b>หยุดเปลว</b> ตอนที่ดับพร้อมกัน แล้วเดินผ่านสบาย ๆ (หรือกะจังหวะเอง / ให้เงาบังหนึ่งเส้น)",
+    map:["#######","#..E..#","#.....#","#.....{","}.....#","#.....#","#.....#","#..S..#","#######"] },
+  { name:"โคมเฝ้าสวิตช์", par:0, skill:"วางโคม",
+    hint:"ห้องสอน · วางโคม: ยืนบนสวิตช์ กด <b>วางโคม</b> แล้วรีบไปที่ประตูภายใน 3 วินาที ผ่านได้โดยไม่ใช้เงาเลย",
+    map:["#######","#..E..#","###A###","#.....#","#.....#","#.....#","#.....#","#a...S#","#######"] },
+];
+const LANTERN = 12;                                   // โคมกดสวิตช์ค้าง 12 จังหวะ = 3 วินาที
+const pulseOff = (gt, ph) => ((gt - ph) % 8 + 8) % 8 < 3;   // เลเซอร์กะพริบ: ดับ 3 จังหวะทุก 8 จังหวะ
+const DIRS = { ">":[0,1], "<":[0,-1], "^":[-1,0], "v":[1,0], "}":[0,1], "{":[0,-1] };
+const PULSE = { "}":0, "{":1 };          // ตัวอักษรของเลเซอร์กะพริบ → เฟส
+
+// ---------- หอคอย ∞: สุ่มห้องแบบ "สร้างจากคำตอบ" จึงผ่านได้แน่นอน ----------
+// ทุกสวิตช์อยู่ใต้ประตูทั้งหมด (เงายืนค้างได้) · เลเซอร์ทุกเส้นมีช่องข้างปืนให้เงาไปยืนบัง
+// (เดินไปบังแล้วโดนยิงก็ไม่เป็นไร รอบนั้นกลายเป็นเงาที่ยืนบังตรงนั้น) · ห้องเดิมสุ่มออกมาเหมือนเดิมทุกครั้ง
+let tower = { floor:1, best:0 };
+try { Object.assign(tower, JSON.parse(localStorage.getItem("echo-proto-tower") || "{}")); } catch (e) {}
+function saveTower() { try { localStorage.setItem("echo-proto-tower", JSON.stringify(tower)); } catch (e) {} }
+function rng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function genTower(floor) {
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const R = rng(floor * 7919 + attempt * 104729 + 13), ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+    const pick = arr => arr.splice(Math.floor(R() * arr.length), 1)[0];
+    const elements = Math.min(4, 1 + Math.floor((floor - 1) / 2));
+    let D = ri(0, Math.min(2, elements)), Lz = elements - D;
+    if (Lz > 2) { D += Lz - 2; Lz = 2; }
+    const g = Array.from({ length:9 }, (_, r) => Array.from({ length:7 }, (_, c) => (r === 0 || r === 8 || c === 0 || c === 6) ? "#" : "."));
+    const doorRows = D === 2 ? [4, 2] : D === 1 ? [ri(0, 1) ? 4 : 2] : [];   // ตัวแรก = ประตู A (ล่าง)
+    const gaps = [];
+    doorRows.forEach((row, k) => { const gap = ri(1, 5); for (let c = 1; c < 6; c++) g[row][c] = "#"; g[row][gap] = "AB"[k]; gaps.push([row, gap]); });
+    const laneCand = [2, 3, 4, 5, 6].filter(r => !doorRows.includes(r)), lanes = [];
+    for (let k = 0; k < Lz && laneCand.length; k++) lanes.push(pick(laneCand));
+    if (lanes.length < Lz) continue;
+    const blockers = [];
+    lanes.forEach(r => { if (ri(0, 1)) { g[r][0] = ">"; blockers.push([r, 1]); } else { g[r][6] = "<"; blockers.push([r, 5]); } });
+    const start = [7, ri(1, 5)], exit = [1, ri(1, 5)];
+    g[start[0]][start[1]] = "S"; g[exit[0]][exit[1]] = "E";
+    const low = doorRows.length ? Math.max(...doorRows) : 8, sw = [];
+    const swCand = [];
+    for (let r = Math.min(low + 1, 7); r <= 7; r++) for (let c = 1; c <= 5; c++)
+      if (r > (doorRows.length ? low : 0) && !lanes.includes(r) && g[r][c] === "." ) swCand.push([r, c]);
+    if (swCand.length < D) continue;
+    for (let k = 0; k < D; k++) { const p = pick(swCand); g[p[0]][p[1]] = "ab"[k]; sw.push(p); }
+    // เสากลางห้อง: เพิ่มตามชั้น แต่ห้ามขวางเลน เลเซอร์ ช่องประตู หรือของสำคัญ
+    const near = (r, c) => gaps.some(([gr, gc]) => gc === c && Math.abs(gr - r) === 1) || blockers.some(([br, bc]) => br === r && bc === c);
+    const pillCand = [];
+    for (let r = 1; r <= 7; r++) for (let c = 1; c <= 5; c++) if (g[r][c] === "." && !lanes.includes(r) && !near(r, c)) pillCand.push([r, c]);
+    const P = Math.min(4, Math.floor((floor - 1) / 2));
+    for (let k = 0; k < P && pillCand.length; k++) { const p = pick(pillCand); g[p[0]][p[1]] = "#"; }
+    // ตรวจว่าเดินถึงทุกจุดสำคัญภายในเวลา (เปิดประตูทุกบาน)
+    const dist = new Map([[start.join(), 0]]), q = [start];
+    while (q.length) { const [r, c] = q.shift(), d = dist.get(r + "," + c);
+      for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) { const nr = r + dr, nc = c + dc, ch = g[nr][nc];
+        if (ch === "#" || ch in DIRS || dist.has(nr + "," + nc)) continue; dist.set(nr + "," + nc, d + 1); q.push([nr, nc]); } }
+    const targets = [exit, ...sw, ...blockers];
+    if (!targets.every(t => dist.has(t.join()) && dist.get(t.join()) <= 26)) continue;
+    const parts = [];
+    if (D) parts.push(`ประตู ${D} บาน`);
+    if (Lz) parts.push(`เลเซอร์ ${Lz} เส้น`);
+    return { name:`หอคอย ชั้น ${floor}`, par: D + Lz, tower:true,
+      hint:`ห้องสุ่มชั้น ${floor} · ${parts.join(" · ")} · ทุกห้องผ่านได้แน่นอน`, map: g.map(r => r.join("")) };
+  }
+  return { ...LEVELS[0], name:`หอคอย ชั้น ${floor}`, tower:true };
+}
+// สีของภาพในกระดาน (ธีมภูติตะเกียง) · เก็บที่เดียว
+const INK = "#1b1430";
+const COL = { bg:"#0c0911", wall:"#120d18", gold:"#e6bd5c", stone:["#2d2438","#2a2134","#30263c"], stoneLine:"#3d3150", crack:"#1e1728",
+  player:"#ffb13b", laser:"#ff3a4a", exit:"#ffd27a", a:"#e6bd5c", b:"#ff8f6b",
+  ghost:["#c9b8ff","#8fe3d0","#ffb3c7","#9fd4ff"] };
+const NOTES = [523.25, 659.25, 783.99, 987.77];  // เงาแต่ละตัวมีโน้ตของตัวเอง กดพร้อมกันเป็นคอร์ด
+
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+let best = {};
+try { best = JSON.parse(localStorage.getItem("echo-proto-best") || "{}"); } catch (e) {}
+
+let G = null;   // ข้อมูลห้อง
+let S = null;   // สถานะการเล่น
+
+function loadLevel(i) {
+  const L = i < 0 ? genTower(tower.floor) : LEVELS[i], rows = L.map.length, cols = L.map[0].length;
+  const grid = [], emitters = [];
+  let start, exit;
+  for (let r = 0; r < rows; r++) {
+    grid.push([]);
+    for (let c = 0; c < cols; c++) {
+      const ch = L.map[r][c]; let cell;
+      if (ch === "#") cell = { t:"wall" };
+      else if (DIRS[ch]) { cell = { t:"emit", d:DIRS[ch], pulse:PULSE[ch] }; emitters.push({ r, c, d:DIRS[ch], pulse:PULSE[ch] }); }
+      else if (ch === "S") { cell = { t:"floor" }; start = [r, c]; }
+      else if (ch === "E") { cell = { t:"exit" }; exit = [r, c]; }
+      else if (/[a-z]/.test(ch)) cell = { t:"switch", k:ch };
+      else if (/[A-Z]/.test(ch)) cell = { t:"door", k:ch.toLowerCase() };
+      else cell = { t:"floor" };
+      grid[r].push(cell);
+    }
+  }
+  G = { i, L, rows, cols, grid, emitters, start, exit };
+  S = { ghosts: [] };
+  $("win").hidden = true;
+  startRound();
+  renderLevelChips(); resize();
+}
+
+function startRound() {
+  clearTimeout(S.timer);
+  Object.assign(S, { phase:"ready", t:0, p:[...G.start], pPrev:[...G.start], path:[], rec:[[...G.start]], last:0, flash:null, pressed:{}, idleAt:0, gt:0, gtPrev:0, freeze:0, used:{}, lantern:null });
+  evaluate(false);
+  updateHud();
+  banner(S.ghosts.length === 0 ? G.L.hint
+    : `เงา #${S.ghosts.length} พร้อมแล้ว · แตะเพื่อเริ่ม<b>รอบที่ ${S.ghosts.length + 1}</b>`
+      + (S.ghosts.length === 1 ? `<br><small>วงประ = ที่ที่เงาจะอยู่ตอนคุณเดินไปถึง</small>` : ""));
+}
+
+const ghostAt = t => S.ghosts.map(g => g.rec[Math.min(t, g.rec.length - 1)]);
+const key = p => p[0] + "," + p[1];
+const cellOf = p => G.grid[p[0]][p[1]];
+
+// สวิตช์ → ประตู → เลเซอร์ คำนวณจากตำแหน่งทุกตัวในจังหวะนี้
+function evaluate(withSound) {
+  const gp = ghostAt(S.gt), all = gp.concat([S.p]);
+  const lan = [];
+  if (S.lantern && S.t >= S.lantern.t0 && S.t < S.lantern.t0 + LANTERN) lan.push(S.lantern.p);
+  S.ghosts.forEach(g => { if (g.lantern && S.gt >= g.lantern.t0 && S.gt < g.lantern.t0 + LANTERN) lan.push(g.lantern.p); });
+  S.lanterns = lan;
+  const pressed = {}, open = {};
+  all.forEach((p, idx) => { const c = cellOf(p); if (c.t === "switch" && !(c.k in pressed)) pressed[c.k] = idx < gp.length ? idx : "p"; });
+  lan.forEach(p => { const c = cellOf(p); if (c.t === "switch" && !(c.k in pressed)) pressed[c.k] = "p"; });
+  if (withSound) for (const k in pressed) if (!(k in S.pressed)) note(pressed[k] === "p" ? 392 : NOTES[pressed[k] % 4], .18);
+  for (const k of ["a","b"]) open[k] = k in pressed;
+  all.forEach(p => { const c = cellOf(p); if (c.t === "door") open[c.k] = true; });  // ประตูปิดทับคนไม่ได้
+  const ghostSet = new Set(gp.map(key));
+  const beam = new Set(), beamSegs = [];
+  for (const e of G.emitters) {
+    if (e.pulse !== undefined && pulseOff(S.gt, e.pulse)) continue;
+    let r = e.r + e.d[0], c = e.c + e.d[1], end = null;
+    while (r >= 0 && c >= 0 && r < G.rows && c < G.cols) {
+      const cell = G.grid[r][c];
+      if (cell.t === "wall" || cell.t === "emit" || (cell.t === "door" && !open[cell.k])) break;
+      if (ghostSet.has(r + "," + c)) { end = [r, c]; break; }
+      beam.add(r + "," + c);
+      end = [r, c];
+      if (r === S.p[0] && c === S.p[1]) break;
+      r += e.d[0]; c += e.d[1];
+    }
+    if (end) beamSegs.push({ from:[e.r, e.c], to:end, blocked: ghostSet.has(key(end)) });
+  }
+  S.pressed = pressed; S.open = open; S.beam = beam; S.beamSegs = beamSegs;
+}
+
+function passable(p) {
+  const c = cellOf(p);
+  if (c.t === "wall" || c.t === "emit") return false;
+  if (c.t === "door") return !!S.open[c.k];
+  return true;
+}
+
+function findPath(from, to) {
+  const ok = p => { const c = cellOf(p); return c.t !== "wall" && c.t !== "emit"; };
+  if (!ok(to)) return null;
+  const prev = new Map([[key(from), null]]), q = [from];
+  while (q.length) {
+    const cur = q.shift();
+    if (cur[0] === to[0] && cur[1] === to[1]) break;
+    for (const d of [[-1,0],[1,0],[0,-1],[0,1]]) {
+      const n = [cur[0] + d[0], cur[1] + d[1]];
+      if (n[0] < 0 || n[1] < 0 || n[0] >= G.rows || n[1] >= G.cols || !ok(n) || prev.has(key(n))) continue;
+      prev.set(key(n), cur); q.push(n);
+    }
+  }
+  if (!prev.has(key(to))) return null;
+  const path = []; let k = to;
+  while (k && key(k) !== key(from)) { path.unshift(k); k = prev.get(key(k)); }
+  return path;
+}
+
+function tick() {
+  S.t++;
+  S.gtPrev = S.gt;
+  if (S.freeze > 0) S.freeze--; else S.gt++;
+  S.pPrev = [...S.p];
+  if (S.path.length && passable(S.path[0])) S.p = S.path.shift();
+  if (!S.path.length && !S.idleAt) S.idleAt = performance.now();
+  evaluate(true);
+  S.rec.push([...S.p]);
+  if (S.beam.has(key(S.p))) return zap();
+  if (key(S.p) === key(G.exit)) return win();
+  if (S.t >= TICKS) endRound("หมดเวลา");
+}
+
+function zap() {
+  S.phase = "zap"; S.flash = { color:COL.laser, at:performance.now() };
+  buzz(); banner("โดนเลเซอร์! แต่ไม่เป็นไร รอบนี้ยังกลายเป็นเงาได้");
+  S.timer = setTimeout(() => endRound("โดนเลเซอร์"), 750);
+}
+
+function endRound(why) {
+  if (S.ghosts.length >= MAX_GHOSTS) {
+    S.ghosts = []; startRound();
+    banner(`${why} · เงาครบ ${MAX_GHOSTS} ตัวแล้ว เริ่มห้องใหม่ทั้งหมด ลองวางแผนอีกแบบ`);
+    return;
+  }
+  S.ghosts.push({ rec: S.rec, lantern: S.lantern ? { p:S.lantern.p, t0:S.lantern.t0 } : null });   // โคมในรอบนี้เล่นซ้ำพร้อมเงาด้วย
+  note(330, .25);
+  startRound();
+}
+
+function win() {
+  S.phase = "win"; S.flash = { color:COL.exit, at:performance.now() };
+  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => note(f, .25), i * 110));
+  const n = S.ghosts.length, par = G.L.par;
+  const stars = n <= par ? 3 : n === par + 1 ? 2 : 1;
+  if (G.i >= 0) {
+    best[G.i] = Math.max(best[G.i] || 0, stars);
+    try { localStorage.setItem("echo-proto-best", JSON.stringify(best)); } catch (e) {}
+  } else { tower.best = Math.max(tower.best, tower.floor); saveTower(); }
+  $("winTitle").textContent = n < par ? "เหนือชั้น!" : "ผ่านแล้ว!";
+  $("winStars").innerHTML = "★".repeat(stars) + "<s>" + "★".repeat(3 - stars) + "</s>";
+  $("winMsg").textContent = n < par
+    ? `ใช้เงาแค่ ${n} ตัว น้อยกว่าที่ออกแบบไว้ (${par})`
+    : `ใช้เงา ${n} ตัว` + (stars < 3 ? (par === 0 ? " · ลองผ่านโดยไม่ใช้เงาเลยเพื่อรับ 3 ดาว" : ` · ลองใช้แค่ ${par} ตัวเพื่อรับ 3 ดาว`) : "");
+  $("btnNext").textContent = G.i < 0 ? `ขึ้นชั้น ${tower.floor + 1}` : G.i < LEVELS.length - 1 ? "ห้องต่อไป" : "ไปหอคอย ∞";
+  $("win").hidden = false;
+  banner(""); updateHud(); renderLevelChips();
+}
+
+// ---------- input ----------
+cv.addEventListener("pointerdown", ev => {
+  unlockAudio();
+  if (S.phase !== "ready" && S.phase !== "run") return;
+  const rect = cv.getBoundingClientRect(), ts = rect.width / G.cols;
+  const p = [Math.floor((ev.clientY - rect.top) / ts), Math.floor((ev.clientX - rect.left) / ts)];
+  if (p[0] < 0 || p[1] < 0 || p[0] >= G.rows || p[1] >= G.cols) return;
+  const path = key(p) === key(S.p) ? [] : findPath(S.p, p);
+  if (!path) return;
+  S.path = path; S.target = p; S.idleAt = path.length ? 0 : performance.now();
+  if (S.phase === "ready") { S.phase = "run"; S.last = performance.now(); banner(""); updateHud(); }
+});
+$("btnEnd").onclick = () => { if (S.phase === "run") endRound("จบรอบเอง"); };
+$("skFreeze").onclick = () => {
+  if (S.phase !== "run" || S.used.freeze) return;
+  S.used.freeze = true; S.freeze = 4; note(880, .35, "triangle", .07);
+  banner("หยุดเปลว! เงา ประตู และเลเซอร์กะพริบหยุด 1 วินาที ตัวคุณยังเดินได้"); updateHud();
+};
+$("skLantern").onclick = () => {
+  if (S.phase !== "run" || S.used.lantern) return;
+  S.used.lantern = true; S.lantern = { p:[...S.p], t0:S.t }; evaluate(false); note(660, .25, "sine", .08);
+  banner("วางโคมแล้ว โคมกดสวิตช์ค้างไว้ 3 วินาที"); updateHud();
+};
+$("btnUndo").onclick = () => { if (S.phase === "ready" && S.ghosts.length) { S.ghosts.pop(); startRound(); } };
+$("btnReset").onclick = () => loadLevel(G.i);
+$("btnRetry").onclick = () => loadLevel(G.i);
+$("btnNext").onclick = () => {
+  if (G.i < 0) { tower.floor++; saveTower(); loadLevel(-1); }
+  else loadLevel(G.i < LEVELS.length - 1 ? G.i + 1 : -1);
+};
+
+// ---------- hud ----------
+function banner(html) { $("banner").innerHTML = html; }
+function updateHud() {
+  $("lvlNo").textContent = G.i < 0 ? `หอคอย ∞ · สถิติสูงสุด ชั้น ${tower.best} · 3 ดาวเมื่อใช้เงา ≤ ${G.L.par}`
+    : `ห้อง ${G.i + 1}/${LEVELS.length} · 3 ดาวเมื่อใช้เงา ≤ ${G.L.par}`;
+  $("lvlName").textContent = G.L.name;
+  $("ghostTxt").textContent = `เงา ${S.ghosts.length}/${MAX_GHOSTS}`;
+  $("dots").innerHTML = "";
+  for (let i = 0; i < MAX_GHOSTS; i++) {
+    const d = document.createElement("span"); d.className = "dot";
+    if (i < S.ghosts.length) { d.style.background = COL.ghost[i]; d.style.borderColor = COL.ghost[i]; }
+    $("dots").appendChild(d);
+  }
+  $("btnEnd").disabled = S.phase !== "run";
+  $("btnEnd").className = S.phase === "run" ? "primary" : "";
+  $("btnUndo").disabled = !(S.phase === "ready" && S.ghosts.length);
+  for (const [id, k] of [["skFreeze", "freeze"], ["skLantern", "lantern"]]) {
+    $(id).disabled = S.phase !== "run" || !!S.used[k];
+    $(id).classList.toggle("used", !!S.used[k]);
+  }
+}
+function renderLevelChips() {
+  const box = $("levels"); box.innerHTML = "";
+  LEVELS.forEach((_, i) => {
+    const b = document.createElement("button");
+    b.className = i === G.i ? "on" : "";
+    b.innerHTML = `${i + 1}<small>${"★".repeat(best[i] || 0) || "&nbsp;"}</small>`;
+    b.setAttribute("aria-label", `ห้อง ${i + 1}`);
+    b.onclick = () => loadLevel(i);
+    box.appendChild(b);
+  });
+  const t = document.createElement("button");
+  t.className = G.i < 0 ? "on" : "";
+  t.style.width = "64px";
+  t.innerHTML = `หอคอย ∞<small>${tower.best ? "ชั้น " + tower.best : "&nbsp;"}</small>`;
+  t.setAttribute("aria-label", "โหมดหอคอยไม่รู้จบ");
+  t.onclick = () => loadLevel(-1);
+  box.appendChild(t);
+}
+
+// ---------- audio ----------
+let ac = null;
+function unlockAudio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
+function note(f, dur, type = "sine", vol = .12) {
+  if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + .02);
+}
+function buzz() { note(110, .35, "sawtooth", .08); }
+
+// ---------- render: ภาพวาดเป็น SVG ในโค้ด แปลงเป็นภาพครั้งเดียว แล้ววาดซ้ำทุกเฟรม (ไม่สร้างของใหม่ในลูป) ----------
+const U = 44;                      // หน่วยของ SVG: 1 ช่อง = 44 · สไปรต์กว้าง 64 หน่วย จุดกึ่งกลาง = กลางช่อง
+function svgImg(inner, defs = "") {
+  const img = new Image();
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-32 -32 64 64" width="128" height="128"><defs>${defs}</defs>${inner}</svg>`);
+  return img;
+}
+const flamePath = "M0 -24 Q8 -14 13 -2 Q16 14 0 16 Q-16 14 -13 -2 Q-10 -10 -4 -14 Q-3 -8 0 -8 Q-2 -16 0 -24Z";
+const face = `<ellipse cx="-4.5" cy="2" rx="2" ry="2.6" fill="${INK}"/><ellipse cx="4.5" cy="2" rx="2" ry="2.6" fill="${INK}"/>
+  <circle cx="-3.8" cy="1" r=".8" fill="#fff"/><circle cx="5.2" cy="1" r=".8" fill="#fff"/>
+  <path d="M-2 7 Q0 9 2 7" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>`;
+const SPR = {
+  player: svgImg(`<path d="${flamePath}" fill="url(#f)" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M0 -14 Q5 -4 4 4 Q0 8 -4 4 Q-5 -4 0 -14Z" fill="#fff6c0" opacity=".55"/>${face}`,
+    `<linearGradient id="f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a2b"/><stop offset=".45" stop-color="#ffb13b"/><stop offset="1" stop-color="#fff6c0"/></linearGradient>`),
+  ghost: COL.ghost.map(c => svgImg(`<path d="M-6 15 Q-14 21 -7 26 Q0 30 -5 31" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    <path d="${flamePath}" fill="url(#s)" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round" opacity=".85"/>${face}`,
+    `<linearGradient id="s" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${c}" stop-opacity=".15"/><stop offset=".5" stop-color="${c}" stop-opacity=".75"/><stop offset="1" stop-color="#fbf9ff"/></linearGradient>`)),
+  exit: svgImg(`<path d="M-15 20 V-6 Q-15 -20 0 -20 Q15 -20 15 -6 V20Z" fill="url(#g)" stroke="${INK}" stroke-width="2.5"/>
+    <path d="M-11 20 V-5 Q-11 -16 0 -16 Q11 -16 11 -5 V20" fill="none" stroke="${COL.gold}" stroke-width="1.5" opacity=".9"/>
+    <path d="M-19 20 H19" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M0 -8 l3 6 -3 6 -3 -6z" fill="#fff" opacity=".8"/>`,
+    `<radialGradient id="g" cy=".6"><stop offset="0" stop-color="#fff0b8"/><stop offset=".6" stop-color="#ffc35a"/><stop offset="1" stop-color="#b8661f"/></radialGradient>`),
+  emitter: svgImg(`<path d="M-16 -14 L8 -9 Q17 0 8 9 L-16 14Z" fill="#3a2e48" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-8 -6 L4 -4 M-8 6 L4 4" stroke="${COL.gold}" stroke-width="1.5" opacity=".7"/>
+    <ellipse cx="9" cy="0" rx="5" ry="3.6" fill="${COL.laser}" stroke="${INK}" stroke-width="1.8"/><ellipse cx="9" cy="0" rx="2" ry="1.5" fill="#fff"/>`),
+  sw: {}, door: {},
+};
+for (const k of ["a", "b"]) {
+  const c = COL[k], altar = `<path d="M-14 18 L-10 4 H10 L14 18Z" fill="#4a3c5c" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+    <rect x="-12" y="1" width="24" height="5" rx="2" fill="${c}" stroke="${INK}" stroke-width="1.8"/>
+    <text x="0" y="15.5" text-anchor="middle" font-family="Prompt, sans-serif" font-weight="700" font-size="9" fill="${c}">${k.toUpperCase()}</text>`;
+  SPR.sw[k] = {
+    off: svgImg(altar + `<ellipse cx="0" cy="0" rx="6" ry="2" fill="#2a2134" stroke="${INK}" stroke-width="1.2"/>`),
+    on: svgImg(altar + `<path d="M0 -20 Q7 -9 4 -3 Q0 0 -4 -3 Q-7 -9 0 -20Z" fill="url(#f)" stroke="${INK}" stroke-width="1.6"/>`,
+      `<linearGradient id="f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="#fffbe8"/></linearGradient>`),
+  };
+  SPR.door[k] = {
+    closed: svgImg(`<rect x="-20" y="-20" width="40" height="40" rx="3" fill="#4a3c5c" stroke="${INK}" stroke-width="2.5"/>
+      <rect x="-16" y="-16" width="32" height="32" rx="2" fill="none" stroke="#5c4b70" stroke-width="1.5"/>
+      <circle cx="0" cy="0" r="9" fill="none" stroke="${c}" stroke-width="2"/><path d="M0 -9 V9 M-9 0 H9" stroke="${c}" stroke-width="1.3" opacity=".75"/>
+      <text x="0" y="-11" text-anchor="middle" font-family="Prompt, sans-serif" font-weight="700" font-size="7" fill="${c}">${k.toUpperCase()}</text>`),
+    open: svgImg(`<rect x="-19" y="12" width="38" height="7" rx="2" fill="#4a3c5c" stroke="${INK}" stroke-width="2"/>
+      <rect x="-19" y="-19" width="38" height="38" rx="3" fill="none" stroke="${c}" stroke-width="1.2" stroke-dasharray="3 4" opacity=".6"/>`),
+  };
+}
+function sprite(img, cx, cy, sx = 1, sy = 1, alpha = 1) {
+  if (!img.complete || !img.naturalWidth) return;
+  const s = TS * 64 / U;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(cx, cy); ctx.scale(sx, sy);
+  ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore();
+}
+
+let TS = 40, dpr = 1;
+const floorCv = document.createElement("canvas"), fctx = floorCv.getContext("2d");
+const darkCv = document.createElement("canvas"), dctx = darkCv.getContext("2d");
+function resize() {
+  if (!G) return;
+  const st = $("stage"), w = st.clientWidth, h = st.clientHeight;
+  TS = Math.max(16, Math.floor(Math.min(w / G.cols, h / G.rows)));
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const c of [cv, floorCv, darkCv]) { c.width = TS * G.cols * dpr; c.height = TS * G.rows * dpr; }
+  cv.style.width = TS * G.cols + "px"; cv.style.height = TS * G.rows + "px";
+  paintFloor();
+}
+new ResizeObserver(resize).observe($("stage"));
+
+// พื้นหินกับผนัง วาดครั้งเดียวต่อห้อง/ขนาดจอ
+function paintFloor() {
+  const g = fctx, isW = (r, c) => r < 0 || c < 0 || r >= G.rows || c >= G.cols || ["wall", "emit"].includes(G.grid[r][c].t);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, TS * G.cols, TS * G.rows);
+  for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+    const x = c * TS, y = r * TS, h = ((r * 73856093) ^ (c * 19349663)) >>> 0;
+    if (isW(r, c)) { g.fillStyle = COL.wall; g.fillRect(x, y, TS, TS); continue; }
+    g.fillStyle = COL.stone[h % 3]; g.fillRect(x, y, TS, TS);
+    g.strokeStyle = COL.stoneLine; g.lineWidth = 1.5; g.strokeRect(x + 2.5, y + 2.5, TS - 5, TS - 5);
+    if (h % 4 === 0) { g.strokeStyle = COL.crack; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x + TS * .25, y + TS * .28); g.lineTo(x + TS * .38, y + TS * .4); g.lineTo(x + TS * .33, y + TS * .55); g.lineTo(x + TS * .45, y + TS * .64); g.stroke(); }
+  }
+  g.strokeStyle = COL.gold; g.globalAlpha = .55; g.lineWidth = 2;
+  for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+    if (!isW(r, c)) continue;
+    const x = c * TS, y = r * TS; g.beginPath();
+    if (!isW(r - 1, c)) { g.moveTo(x, y); g.lineTo(x + TS, y); }
+    if (!isW(r + 1, c)) { g.moveTo(x, y + TS); g.lineTo(x + TS, y + TS); }
+    if (!isW(r, c - 1)) { g.moveTo(x, y); g.lineTo(x, y + TS); }
+    if (!isW(r, c + 1)) { g.moveTo(x + TS, y); g.lineTo(x + TS, y + TS); }
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+}
+
+const lerp = (a, b, t) => a + (b - a) * t;
+function center(p) { return [(p[1] + .5) * TS, (p[0] + .5) * TS]; }
+function label(txt, x, y, color, size) {
+  ctx.fillStyle = color; ctx.font = `700 ${Math.round(size)}px Prompt, system-ui, sans-serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(txt, x, y);
+}
+function glow(x, y, r, color, a) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color); g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.globalAlpha = a; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+}
+function hole(x, y, r) {
+  const g = dctx.createRadialGradient(x, y, r * .35, x, y, r);
+  g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+  dctx.fillStyle = g; dctx.beginPath(); dctx.arc(x, y, r, 0, 7); dctx.fill();
+}
+
+// เวลาเดินความเร็วปกติเสมอ (เจ้าของไม่เอาการเร่งเวลาตอนยืนนิ่ง) · อยากจบรอบเร็วให้กด "ใช้เงาเลย"
+function stepMs() { return TICK; }
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!G) return;
+  if (S.phase === "run") {
+    while (now - S.last >= stepMs(now) && S.phase === "run") { S.last += stepMs(now); tick(); }
+  }
+  const a = S.phase === "run" ? Math.max(0, Math.min(1, (now - S.last) / stepMs(now))) : 1;
+  const Wd = TS * G.cols, Hd = TS * G.rows, tPrev = S.gtPrev, tNow = S.gt;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, Wd, Hd);
+  ctx.drawImage(floorCv, 0, 0, Wd, Hd);
+
+  // ตำแหน่งเงาและตัวจริงในเฟรมนี้
+  const gpos = S.ghosts.map(g => {
+    const [x0, y0] = center(g.rec[Math.min(tPrev, g.rec.length - 1)]), [x1, y1] = center(g.rec[Math.min(tNow, g.rec.length - 1)]);
+    return [lerp(x0, x1, a), lerp(y0, y1, a)];
+  });
+  const [px0, py0] = center(S.pPrev), [px1, py1] = center(S.p), px = lerp(px0, px1, a), py = lerp(py0, py1, a);
+  const pulse = .75 + .25 * Math.sin(now / 420);
+
+  // ของในห้อง
+  for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) {
+    const cell = G.grid[r][c], [x, y] = center([r, c]);
+    if (cell.t === "exit") { glow(x, y, TS * 1.1, "rgba(255,177,59,.7)", pulse); sprite(SPR.exit, x, y); }
+    else if (cell.t === "switch") { const on = cell.k in S.pressed; if (on) glow(x, y - TS * .1, TS * .8, COL[cell.k], .45 * pulse); sprite(SPR.sw[cell.k][on ? "on" : "off"], x, y); }
+    else if (cell.t === "door") sprite(SPR.door[cell.k][S.open[cell.k] ? "open" : "closed"], x, y);
+    else if (cell.t === "emit") {
+      const off = cell.pulse !== undefined && pulseOff(S.gt, cell.pulse);
+      sprite(SPR.emitter, x, y, cell.d[1] < 0 ? -1 : 1, 1, off ? .45 : 1);
+      if (cell.pulse !== undefined) { ctx.strokeStyle = off ? "#5c4b70" : COL.laser; ctx.lineWidth = 2; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(x, y, TS * .42, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+    }
+  }
+
+  // ความมืดนอกวงแสง (ไม่มืดจนมองแผนผังห้องไม่เห็น)
+  dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  dctx.globalCompositeOperation = "source-over"; dctx.clearRect(0, 0, Wd, Hd);
+  dctx.fillStyle = "rgba(6,4,10,.62)"; dctx.fillRect(0, 0, Wd, Hd);
+  dctx.globalCompositeOperation = "destination-out";
+  hole(px, py, TS * 2.8 * (.96 + .04 * Math.sin(now / 90)));
+  hole(...center(G.exit), TS * 1.5);
+  gpos.forEach(([x, y]) => hole(x, y, TS * 1.05));
+  (S.lanterns || []).forEach(p => hole(...center(p), TS * 1.2));
+  for (let r = 0; r < G.rows; r++) for (let c = 0; c < G.cols; c++) { const cl = G.grid[r][c]; if (cl.t === "switch" && cl.k in S.pressed) hole(...center([r, c]), TS * 1.3); }
+  ctx.drawImage(darkCv, 0, 0, Wd, Hd);
+
+  // เส้นทางของเงา (ควันจาง ๆ)
+  ctx.lineCap = "round";
+  S.ghosts.forEach((g, i) => {
+    ctx.strokeStyle = COL.ghost[i]; ctx.globalAlpha = .5; ctx.lineWidth = 3; ctx.setLineDash([1, 7]);
+    ctx.beginPath(); g.rec.forEach((p, j) => { const [x, y] = center(p); j ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+  });
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+  // ทางที่ตัวจริงจะเดิน
+  if (S.path.length && S.phase === "run") {
+    ctx.strokeStyle = COL.player; ctx.globalAlpha = .75; ctx.lineWidth = 2; ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(...center(S.p)); S.path.forEach(p => ctx.lineTo(...center(p))); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    const [tx, ty] = center(S.path[S.path.length - 1]);
+    ctx.strokeStyle = COL.player; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(tx, ty, TS * .14, 0, 7); ctx.stroke();
+  }
+
+  // ลำแสงต้องห้าม: เรียวจากต้นทาง + แกนสว่าง + ประกายวิ่ง
+  for (const sg of S.beamSegs) {
+    const [ex, ey] = center(sg.from), [x2, y2] = center(sg.to), dx = Math.sign(x2 - ex), dy = Math.sign(y2 - ey);
+    const x1 = ex + dx * TS * .3, y1 = ey + dy * TS * .3, ox = -dy, oy = dx, w0 = TS * .16, w1 = TS * .05;
+    const endX = sg.blocked ? x2 - dx * TS * .32 : x2, endY = sg.blocked ? y2 - dy * TS * .32 : y2;
+    ctx.globalAlpha = .28 * pulse + .1; ctx.fillStyle = COL.laser; ctx.beginPath();
+    ctx.moveTo(x1 + ox * w0, y1 + oy * w0); ctx.lineTo(endX + ox * w1 * 2, endY + oy * w1 * 2); ctx.lineTo(endX - ox * w1 * 2, endY - oy * w1 * 2); ctx.lineTo(x1 - ox * w0, y1 - oy * w0); ctx.fill();
+    ctx.globalAlpha = .9; ctx.fillStyle = "#ff5866"; ctx.beginPath();
+    ctx.moveTo(x1 + ox * w0 * .4, y1 + oy * w0 * .4); ctx.lineTo(endX + ox * w1 * .6, endY + oy * w1 * .6); ctx.lineTo(endX - ox * w1 * .6, endY - oy * w1 * .6); ctx.lineTo(x1 - ox * w0 * .4, y1 - oy * w0 * .4); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = "#ffe3e6"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(endX, endY); ctx.stroke();
+    const len = Math.hypot(endX - x1, endY - y1);
+    ctx.fillStyle = "#ffb3b9";
+    for (let k = 0; k < 3; k++) { const f = ((now / 700) + k / 3) % 1, sx = x1 + (endX - x1) * f, sy = y1 + (endY - y1) * f, j = Math.sin(now / 60 + k * 2) * TS * .1;
+      if (len > TS * .3) { ctx.beginPath(); ctx.arc(sx + ox * j, sy + oy * j, 1.5, 0, 7); ctx.fill(); } }
+    if (sg.blocked) glow(endX, endY, TS * .35, "rgba(255,90,102,.9)", .8);
+  }
+
+  // เงา (ควันเรืองแสง ลอยขึ้นลง)
+  gpos.forEach(([x, y], i) => {
+    const bob = Math.sin(now / 380 + i * 1.7) * TS * .05;
+    glow(x, y, TS * .55, COL.ghost[i], .35);
+    sprite(SPR.ghost[i], x, y - TS * .05 + bob, 1, 1, .9);
+    const bx = x + TS * .33, by = y - TS * .4 + bob;
+    ctx.fillStyle = "#17111f"; ctx.strokeStyle = COL.ghost[i]; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(bx, by, TS * .16, 0, 7); ctx.fill(); ctx.stroke();
+    label(String(i + 1), bx, by + 1, COL.ghost[i], TS * .2);
+  });
+  // วงประ: เงาจะอยู่ตรงไหนตอนตัวจริงเดินไปถึงเป้าหมาย
+  if (S.phase === "run" && S.path.length) {
+    const eta = S.gt + Math.max(0, S.path.length - S.freeze);
+    S.ghosts.forEach((g, i) => {
+      const [x, y] = center(g.rec[Math.min(eta, g.rec.length - 1)]);
+      ctx.strokeStyle = COL.ghost[i]; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(x, y, TS * .42, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  // ตัวจริง (ดวงไฟ ไหววูบ)
+  glow(px, py, TS * .9, "rgba(255,177,59,.8)", .55);
+  const fl = Math.sin(now / 110) * .04;
+  sprite(SPR.player, px, py - TS * .04, 1 - fl, 1 + fl);
+
+  // โคม: ตัวโคม + วงนับถอยหลัง
+  const lanList = [];
+  if (S.lantern && S.t < S.lantern.t0 + LANTERN) lanList.push([S.lantern.p, 1 - (S.t + a - S.lantern.t0) / LANTERN]);
+  S.ghosts.forEach(g => { if (g.lantern && S.gt >= g.lantern.t0 && S.gt < g.lantern.t0 + LANTERN) lanList.push([g.lantern.p, 1 - (S.gt - g.lantern.t0) / LANTERN]); });
+  for (const [p, left] of lanList) {
+    const [lx, ly] = center(p), w = TS * .28, h = TS * .34;
+    glow(lx, ly, TS * .7, "rgba(143,227,208,.8)", .5);
+    ctx.fillStyle = "#2a2134"; ctx.strokeStyle = "#8fe3d0"; ctx.lineWidth = 2;
+    ctx.fillRect(lx - w / 2, ly - h * .9, w, h); ctx.strokeRect(lx - w / 2, ly - h * .9, w, h);
+    ctx.fillStyle = "#ffd27a"; ctx.beginPath(); ctx.arc(lx, ly - h * .42, TS * .06, 0, 7); ctx.fill();
+    ctx.strokeStyle = "#8fe3d0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(lx, ly, TS * .44, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, left)); ctx.stroke();
+  }
+  // หยุดเปลว: โทนฟ้า
+  if (S.freeze > 0 && S.phase === "run") {
+    ctx.globalAlpha = .16; ctx.fillStyle = "#5fa8ff"; ctx.fillRect(0, 0, Wd, Hd); ctx.globalAlpha = 1;
+    label("❚❚ หยุดเปลว", Wd - TS * 1.1, TS * .35, "#cfe4ff", TS * .24);
+  }
+  if (S.flash) {
+    const k = 1 - (now - S.flash.at) / 600;
+    if (k > 0) { ctx.globalAlpha = k * .35; ctx.fillStyle = S.flash.color; ctx.fillRect(0, 0, Wd, Hd); ctx.globalAlpha = 1; }
+  }
+  const left = S.phase === "run" ? 1 - Math.min(1, (S.t + a) / TICKS) : S.phase === "ready" ? 1 : 1 - S.t / TICKS;
+  const pct = Math.round(Math.max(0, Math.min(1, left)) * 1000) / 10;
+  if (pct !== S.barPct) { S.barPct = pct; $("bar").style.width = `calc(${pct}% - 20px)`; }
+}
+
+loadLevel(0);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

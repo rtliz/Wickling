@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Me Art Directions II</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Sriracha&family=Itim&family=VT323&family=Noto+Sans+Thai:wght@400;600&display=swap">
+<style>
+/* หน้าเทียบชุดที่ 2: นินจา / เทปวิดีโอ / ใต้ทะเล · ห้องเดียวกับชุดแรก */
+:root{
+  --page:#e7e3ee; --page-fg:#1b1430; --page-muted:#5d5470; --ink:#1b1430;
+  --n-washi:#efe5cc; --n-wood:#3a2618; --n-red:#d6402c; --n-text:#2a1d14; --n-muted:#7a6650;
+  --v-bg:#160a2e; --v-pink:#ff3ea5; --v-cyan:#2ee6ff; --v-green:#39ff9e; --v-yellow:#ffd23f; --v-text:#f2e9ff;
+  --d-top:#0f8aa3; --d-deep:#063a55; --d-sand:#f0d6a0; --d-text:#f2fbff; --d-muted:#b9e6f2; --d-coral:#ff7f6e;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--page-fg);font-family:"Noto Sans Thai",system-ui,sans-serif;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
+.intro{max-width:1160px;margin:0 auto 20px}
+.intro h1{font-family:Prompt,sans-serif;font-size:1.5rem;margin:0 0 4px}
+.intro p{margin:0;color:var(--page-muted);max-width:70ch;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;max-width:1160px;margin:0 auto}
+.opt{width:360px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+.opt h2{font-family:Prompt,sans-serif;font-size:1.15rem;margin:0}
+.opt .tag{font-size:.75rem;letter-spacing:.06em;color:var(--page-muted)}
+.opt p{margin:0;font-size:.9rem;line-height:1.5}
+.opt ul{margin:0;padding-left:18px;font-size:.85rem;line-height:1.55;color:var(--page-muted)}
+.chips{display:flex;gap:6px}
+.chips i{width:22px;height:22px;border-radius:6px;border:2px solid var(--ink)}
+.phone{width:360px;max-width:100%;height:700px;border-radius:34px;border:6px solid var(--ink);overflow:hidden;position:relative;
+  display:flex;flex-direction:column;gap:10px;padding:18px 16px;box-shadow:0 10px 0 rgba(27,20,48,.18)}
+.phone .hud{display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;z-index:1}
+.phone .room small{display:block;font-size:.7rem;letter-spacing:.05em}
+.phone .room b{font-size:1.05rem}
+.phone .gh{display:flex;gap:5px}
+.board{position:relative;z-index:1;display:flex;justify-content:center}
+.board svg{display:block;width:100%;height:auto;max-width:308px}
+.hint{position:relative;z-index:1;text-align:center;font-size:.82rem;min-height:2.4em;line-height:1.35}
+.timer{position:relative;z-index:1}
+.btns{position:relative;z-index:1;display:flex;gap:8px;margin-top:auto}
+.btns div{flex:1;text-align:center;padding:11px 4px;font-size:.88rem;border-radius:12px}
+.deco{position:absolute;inset:0;z-index:0;pointer-events:none}
+
+/* ---------- 4 นินจา ---------- */
+.t-ninja{background:var(--n-washi);color:var(--n-text);font-family:Prompt,sans-serif;
+  background-image:linear-gradient(rgba(58,38,24,.07) 2px,transparent 2px),linear-gradient(90deg,rgba(58,38,24,.07) 2px,transparent 2px);background-size:60px 80px}
+.t-ninja .room small{color:var(--n-muted)}
+.t-ninja .room b{font-family:Sriracha,Prompt,sans-serif;font-size:1.25rem;font-weight:400}
+.t-ninja .gh span{width:16px;height:16px;border:2px solid var(--n-red);border-radius:3px}
+.t-ninja .gh span.on1,.t-ninja .gh span.on2{background:var(--n-red);box-shadow:inset 0 0 0 2px var(--n-washi)}
+.t-ninja .timer{height:22px;display:flex;align-items:center}
+.t-ninja .timer .stick{height:5px;width:62%;background:linear-gradient(#a8743f,#6d4423);border-radius:3px}
+.t-ninja .timer .ember{width:9px;height:9px;border-radius:50%;background:radial-gradient(#fff3b0,#ff6a2b 60%,#a8301f);box-shadow:0 0 10px #ff6a2b;margin-left:-2px}
+.t-ninja .timer .ash{flex:1;height:2px;margin-left:3px;background:repeating-linear-gradient(90deg,rgba(42,29,20,.25) 0 4px,transparent 4px 8px)}
+.t-ninja .hint{color:var(--n-muted)}
+.t-ninja .hint b{color:var(--n-red)}
+.t-ninja .btns div{background:#f8f1df;border:2.5px solid var(--n-wood);color:var(--n-text);box-shadow:0 3px 0 var(--n-wood);border-radius:6px}
+.t-ninja .btns div.main{background:var(--n-red);color:#fff6e6;font-weight:600}
+
+/* ---------- 5 เทปวิดีโอ ---------- */
+.t-vhs{background:linear-gradient(#160a2e 0%,#2a0d47 62%,#3d0f52 100%);color:var(--v-text);font-family:Prompt,sans-serif}
+.t-vhs .room small{font-family:VT323,monospace;font-size:1rem;color:var(--v-green);letter-spacing:.08em}
+.t-vhs .room b{text-shadow:2px 0 var(--v-pink),-2px 0 var(--v-cyan)}
+.t-vhs .rec{font-family:VT323,monospace;font-size:1.05rem;color:#ff4a5a;letter-spacing:.06em;text-align:right}
+.t-vhs .gh span{width:22px;height:13px;border:1.5px solid var(--v-cyan);border-radius:2px;position:relative}
+.t-vhs .gh span.on1,.t-vhs .gh span.on2{background:linear-gradient(90deg,var(--v-cyan),var(--v-pink))}
+.t-vhs .timer{font-family:VT323,monospace;font-size:1.25rem;color:var(--v-green);display:flex;justify-content:space-between;align-items:center;letter-spacing:.06em}
+.t-vhs .timer .bar{flex:1;margin:0 10px;height:6px;background:#2a1a4a;border-radius:3px;overflow:hidden}
+.t-vhs .timer .bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--v-cyan),var(--v-pink))}
+.t-vhs .hint{color:#c8b6ea}
+.t-vhs .hint b{color:var(--v-yellow)}
+.t-vhs .btns div{background:#1d1038;border:1.5px solid var(--v-cyan);color:var(--v-text);box-shadow:0 0 10px rgba(46,230,255,.25);border-radius:6px}
+.t-vhs .btns div.main{border-color:var(--v-pink);background:linear-gradient(#ff3ea5,#b8137a);font-weight:600;box-shadow:0 0 14px rgba(255,62,165,.55)}
+.t-vhs .scan{position:absolute;inset:0;z-index:2;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+
+/* ---------- 6 ใต้ทะเล ---------- */
+.t-sea{background:linear-gradient(var(--d-top),var(--d-deep));color:var(--d-text);font-family:Itim,Prompt,sans-serif}
+.t-sea .hud{background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.35);border-radius:22px;padding:8px 14px}
+.t-sea .room small{color:var(--d-muted)}
+.t-sea .room b{font-size:1.2rem;font-weight:400}
+.t-sea .gh span{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9) 0 2px,transparent 3px)}
+.t-sea .gh span.on1{background:radial-gradient(circle at 35% 30%,#fff 0 2px,#ffd166 3px)}
+.t-sea .gh span.on2{background:radial-gradient(circle at 35% 30%,#fff 0 2px,#ff9ad5 3px)}
+.t-sea .timer{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.t-sea .timer .tank{flex:1;height:16px;border-radius:9px;border:2.5px solid var(--ink);background:#1a5068;overflow:hidden}
+.t-sea .timer .tank i{display:block;height:100%;width:62%;background:linear-gradient(#9ff6ff,#28b8d8);border-radius:6px}
+.t-sea .hint{color:var(--d-muted)}
+.t-sea .hint b{color:#ffd166}
+.t-sea .btns div{background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.45);color:var(--d-text);border-radius:22px}
+.t-sea .btns div.main{background:linear-gradient(#ffb36b,#ff7f4e);border-color:var(--ink);color:var(--ink);font-weight:600}
+
+.spin{animation:spin 18s linear infinite;transform-box:fill-box;transform-origin:center}
+.bob{animation:bob 2.4s ease-in-out infinite}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+.rise{animation:rise 5s linear infinite}
+.sway{animation:sway 3s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bob{50%{transform:translateY(-2.5px)}}
+@keyframes pulse{50%{opacity:.6}}
+@keyframes rise{from{transform:translateY(0);opacity:.8}to{transform:translateY(-120px);opacity:0}}
+@keyframes sway{50%{transform:rotate(6deg)}}
+@media (prefers-reduced-motion:reduce){.spin,.bob,.pulse,.rise,.sway{animation:none}}
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>ตัวฉันเมื่อกี้: แนวภาพชุดที่ 2</h1>
+  <p>ห้อง 5 ในจังหวะเดียวกับชุดแรก: เงา #1 ยืนบนสวิตช์ ประตูเปิด เงา #2 บังกับดักด้านล่างแล้วกำลังจะไปบังด้านบน ตัวจริงรอจังหวะอยู่ตรงกลาง</p>
+</div>
+<div class="row" id="row"></div>
+
+<script>
+const INK = "#1b1430";
+const T = 44, MAP = ["#######","#..E..#","###A###",">.....#","#.....#","#.....<","#.....#","#a...S#","#######"];
+const ROWS = MAP.length, COLS = MAP[0].length, W = T * COLS, H = T * ROWS;
+const DIR = { ">":[0,1], "<":[0,-1] };
+const SCENE = {
+  ghosts: [ { at:[7,1], path:[[7,5],[7,4],[7,3],[7,2],[7,1]] },
+            { at:[5,5], path:[[7,5],[6,5],[5,5],[4,5],[4,4],[4,3],[4,2],[4,1],[3,1]] } ],
+  player: { at:[4,3], plan:[[4,3],[3,3],[2,3],[1,3]] },
+  beams: [ { from:[3,0], to:[3,5] }, { from:[5,6], to:[5,5], blocked:true } ],
+  doorOpen: true, pressed: { "7,1": 0 },
+};
+const X = c => c * T + T / 2, Y = r => r * T + T / 2;
+const isWall = ch => ch === "#" || ch in DIR;
+const pathD = pts => pts.map(([r, c], i) => (i ? "L" : "M") + X(c) + " " + Y(r)).join(" ");
+const hash = (r, c) => ((r * 73856093) ^ (c * 19349663)) >>> 0;
+function edges(r, c, fn) {
+  let s = ""; const x = c * T, y = r * T, open = (rr, cc) => rr >= 0 && cc >= 0 && rr < ROWS && cc < COLS && !isWall(MAP[rr][cc]);
+  if (open(r - 1, c)) s += fn(x, y, x + T, y, "t");
+  if (open(r + 1, c)) s += fn(x, y + T, x + T, y + T, "b");
+  if (open(r, c - 1)) s += fn(x, y, x, y + T, "l");
+  if (open(r, c + 1)) s += fn(x + T, y, x + T, y + T, "r");
+  return s;
+}
+const beamEnds = b => [X(b.from[1]) + (b.from[1] ? -14 : 14), Y(b.from[0]), X(b.to[1])];
+
+/* ================= 4. นินจาแยกร่าง ================= */
+const ninja = {
+  cls:"t-ninja", title:"4 · นินจาแยกร่าง", tag:"กระดาษสา · ไม้ · หมึกพู่กัน · ชาด",
+  desc:"ตัวเอกเป็นนินจาฝึกหัด เงาคือ \"ร่างแยก\" ที่วาดด้วยหมึกพู่กัน ห้องเป็นเสื่อตาตามิ ประตูเป็นบานโชจิเลื่อน กับดักเป็นเชือกแดงผูกกระดิ่ง ทางออกเป็นเสาโทริอิ",
+  bullets:["\"แยกร่าง\" อธิบายกลไกได้ทันที ใคร ๆ ก็รู้จักคาถาแยกร่างของนินจา","เส้นหมึก + สีชาดเข้ากับมาตรฐานภาพของสตูดิโอ","หลอดเวลาเป็นธูปที่ค่อย ๆ ไหม้"],
+  chips:["#efe5cc","#dccb8e","#3a2618","#d6402c","#2f4bd6"],
+  gc:["#2f4bd6","#8f2fb8"],
+  deco(){ return `<svg class="deco" viewBox="0 0 360 700" preserveAspectRatio="none">
+    <circle cx="300" cy="610" r="46" fill="#d6402c" opacity=".18"/>
+    <path d="M0 700 L0 640 Q40 600 80 630 Q120 585 170 625 Q215 600 250 640 Q300 610 360 650 L360 700Z" fill="#2a1d14" opacity=".12"/></svg>`; },
+  defs(){ return `
+    <pattern id="nWeave" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="1.2" fill="#b9a865" opacity=".55"/></pattern>
+    <radialGradient id="nGlow0"><stop offset="0" stop-color="#2f4bd6" stop-opacity=".5"/><stop offset="1" stop-color="#2f4bd6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="nWarm"><stop offset="0" stop-color="#ff9a5a" stop-opacity=".55"/><stop offset="1" stop-color="#ff9a5a" stop-opacity="0"/></radialGradient>
+    <filter id="nInk" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter>`; },
+  floor(r, c){ const x = c*T, y = r*T, vert = (r + c) % 2;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#dccb8e"/>
+      <rect x="${x}" y="${y}" width="${T}" height="${T}" fill="url(#nWeave)" ${vert?`transform="rotate(90 ${x+T/2} ${y+T/2})"`:""}/>
+      <rect x="${x+1}" y="${y+1}" width="${T-2}" height="${T-2}" fill="none" stroke="#5f6a2c" stroke-width="2.5" opacity=".55"/>`; },
+  wall(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#3a2618"/>
+      <line x1="${x}" y1="${y+T/2}" x2="${x+T}" y2="${y+T/2}" stroke="#2a1a10" stroke-width="1.5"/>` +
+      edges(r, c, (a,b,c2,d)=>`<line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="#9a6a3a" stroke-width="4"/><line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="${INK}" stroke-width="1.2"/>`); },
+  emitter(r, c, d){ const x = X(c), y = Y(r), rot = d[1] > 0 ? 0 : 180;
+    return `<g transform="translate(${x} ${y}) rotate(${rot})">
+      <rect x="-6" y="-15" width="12" height="30" rx="4" fill="#7a9a3a" stroke="${INK}" stroke-width="2.2"/>
+      <path d="M-6 -5 H6 M-6 6 H6" stroke="${INK}" stroke-width="1.6"/>
+      <circle cx="8" cy="0" r="5" fill="#8a5a32" stroke="${INK}" stroke-width="2"/><circle cx="8" cy="0" r="2" fill="#c8283a"/></g>`; },
+  exit(r, c){ const x = X(c), y = Y(r);
+    return `<circle cx="${x}" cy="${y}" r="28" fill="url(#nWarm)" class="pulse"/>
+      <rect x="${x-13}" y="${y-8}" width="5" height="25" fill="#d6402c" stroke="${INK}" stroke-width="2"/><rect x="${x+8}" y="${y-8}" width="5" height="25" fill="#d6402c" stroke="${INK}" stroke-width="2"/>
+      <rect x="${x-15}" y="${y-6}" width="30" height="4" fill="#d6402c" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M${x-20} ${y-14} Q${x} ${y-10} ${x+20} ${y-14} L${x+18} ${y-9} Q${x} ${y-6} ${x-18} ${y-9}Z" fill="${INK}"/>`; },
+  sw(r, c, gi){ const x = X(c), y = Y(r), on = gi !== undefined, col = on ? this.gc[gi] : "#6b6b60";
+    let petals = ""; for (let i = 0; i < 4; i++) petals += `<ellipse cx="${x}" cy="${y-5}" rx="3" ry="5" fill="${on?col:"none"}" stroke="${col}" stroke-width="1.6" transform="rotate(${i*90} ${x} ${y})"/>`;
+    return `${on?`<circle cx="${x}" cy="${y}" r="24" fill="url(#nGlow0)"/>`:""}
+      <circle cx="${x}" cy="${y}" r="16" fill="#b8b4a2" stroke="${INK}" stroke-width="2.5"/><circle cx="${x}" cy="${y}" r="12" fill="none" stroke="${col}" stroke-width="1.6"/>${petals}`; },
+  door(r, c, open){ const x = c*T, y = r*T;
+    const panel = (px, w) => `<rect x="${px}" y="${y+2}" width="${w}" height="${T-4}" fill="#f8f1df" stroke="#6d4423" stroke-width="3"/>
+      <path d="M${px+w/2} ${y+2} V${y+T-2} M${px} ${y+T/3} H${px+w} M${px} ${y+2*T/3} H${px+w}" stroke="#8a5a32" stroke-width="1.6"/>`;
+    return open ? panel(x+2, 11) + `<rect x="${x+15}" y="${y+3}" width="${T-18}" height="${T-6}" fill="none" stroke="#6d4423" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>` : panel(x+2, T-4); },
+  beam(b){ const [x1, y, x2] = beamEnds(b);
+    if (b.blocked) return `<circle cx="${x1-6}" cy="${y}" r="3.5" fill="#e6bd5c" stroke="${INK}" stroke-width="1.5"/>`;
+    let bells = ""; for (let x = x1 + 22; x < x2; x += 44) bells += `<path d="M${x} ${y} v4" stroke="${INK}" stroke-width="1.2"/><circle cx="${x}" cy="${y+7}" r="3.6" fill="#e6bd5c" stroke="${INK}" stroke-width="1.5"/>`;
+    return `<path d="M${x1} ${y} Q${(x1+x2)/2} ${y+3} ${x2} ${y}" fill="none" stroke="#c8283a" stroke-width="7" opacity=".2"/>
+      <path d="M${x1} ${y} Q${(x1+x2)/2} ${y+3} ${x2} ${y}" fill="none" stroke="#c8283a" stroke-width="2.4" stroke-linecap="round"/>${bells}`; },
+  gpath(g, i){ return `<path d="${pathD(g.path)}" fill="none" stroke="${this.gc[i]}" stroke-width="3.5" stroke-dasharray="1 7" stroke-linecap="round" opacity=".55"/>`; },
+  ppath(p){ return `<path d="${pathD(p.plan)}" fill="none" stroke="#d6402c" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round" opacity=".8"/>`; },
+  body(x, y, o){ return `<g transform="translate(${x} ${y})" opacity="${o.op||1}" ${o.ink?`filter="url(#nInk)"`:""}>
+    ${o.ink?"":`<ellipse cx="0" cy="17" rx="12" ry="3.5" fill="#000" opacity=".25"/>`}
+    <path d="M7 2 Q19 -1 24 9 Q17 6 9 7Z" fill="${o.scarf}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="-10" y="1" width="20" height="15" rx="7" fill="${o.suit}" stroke="${INK}" stroke-width="2.5"/>
+    <path d="M-10 4 H10" stroke="${o.scarf}" stroke-width="3"/>
+    <circle cx="0" cy="-8" r="12.5" fill="${o.suit}" stroke="${INK}" stroke-width="2.5"/>
+    <circle cx="10" cy="-18" r="3.2" fill="${o.suit}" stroke="${INK}" stroke-width="1.8"/>
+    <rect x="-10" y="-13" width="20" height="9" rx="4.5" fill="${o.skin}" stroke="${INK}" stroke-width="1.6"/>
+    <ellipse cx="-4.5" cy="-8.5" rx="2" ry="2.4" fill="${INK}"/><ellipse cx="4.5" cy="-8.5" rx="2" ry="2.4" fill="${INK}"/>
+    <path d="M-8 -12 L-2.5 -10.5 M8 -12 L2.5 -10.5" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/></g>`; },
+  ghost(r, c, i){ const x = X(c), y = Y(r) - 2, col = this.gc[i];
+    return `<g class="bob">${this.body(x, y, { suit:col, scarf:col, skin:"#f8f1df", op:.55, ink:true })}
+      <rect x="${x+8}" y="${y-26}" width="13" height="13" rx="2" fill="#d6402c" stroke="${INK}" stroke-width="1.5" transform="rotate(-6 ${x+14} ${y-20})"/>
+      <text x="${x+14.5}" y="${y-15.5}" text-anchor="middle" font-family="Prompt" font-weight="700" font-size="10" fill="#fff6e6">${i+1}</text></g>`; },
+  player(r, c){ return this.body(X(c), Y(r) - 2, { suit:"#2b2f55", scarf:"#d6402c", skin:"#ffdcb8" }); },
+  hud:`<div class="room"><small>ห้อง 5/30 · ปราสาทชั้นล่าง</small><b>ทุกอย่างพร้อมกัน</b></div><div class="gh"><span class="on1"></span><span class="on2"></span><span></span><span></span></div>`,
+  hint:"ร่างแยก #2 กำลังจะไปบังเชือกด้านบน · <b>รอจังหวะ</b>",
+  timer:`<div class="timer"><span class="stick"></span><span class="ember"></span><span class="ash"></span></div>`,
+  btns:["ลบร่าง","แยกร่างเลย","เริ่มใหม่"],
+};
+
+/* ================= 5. เทปย้อนเวลา ================= */
+const vhs = {
+  cls:"t-vhs", title:"5 · เทปย้อนเวลา", tag:"นีออน · ยุค 80 · วิดีโอเทป",
+  desc:"เกมทั้งเกมคือวิดีโอเทป ทุกรอบที่จบคือการ \"กรอกลับ\" แล้วอัดทับ เงาคือภาพรีเพลย์ที่สีเหลื่อมแบบเทปเก่า มุมจอขึ้น PLAY / REC ตัวนับเวลาเป็นเลขเทป",
+  bullets:["ปุ่ม \"กรอกลับ ◀◀\" ทำให้เข้าใจกลไกทันที","สีนีออนเด่นมากในหน้าร้าน กลุ่มวัยรุ่นชอบ","เสียงกรอเทปเป็นเอกลักษณ์ (ถ้าจะใส่เสียงทีหลัง)"],
+  chips:["#160a2e","#ff3ea5","#2ee6ff","#39ff9e","#ffd23f"],
+  gc:["#2ee6ff","#ff3ea5"],
+  deco(){ let g = ""; for (let i = 0; i < 9; i++) g += `<line x1="${180+(i-4)*22}" y1="600" x2="${180+(i-4)*90}" y2="700" stroke="#ff3ea5" stroke-width="1.2" opacity=".5"/>`;
+    for (let i = 0; i < 4; i++) g += `<line x1="0" y1="${612+i*i*7}" x2="360" y2="${612+i*i*7}" stroke="#ff3ea5" stroke-width="1" opacity=".45"/>`;
+    return `<svg class="deco" viewBox="0 0 360 700" preserveAspectRatio="none"><circle cx="180" cy="600" r="70" fill="#ff8a3d" opacity=".25"/>${g}</svg><div class="scan"></div>`; },
+  defs(){ return `
+    <pattern id="vHaz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#ffd23f"/><rect width="6" height="12" fill="${INK}"/></pattern>
+    <radialGradient id="vGlow0"><stop offset="0" stop-color="#2ee6ff" stop-opacity=".6"/><stop offset="1" stop-color="#2ee6ff" stop-opacity="0"/></radialGradient>
+    <pattern id="vScan" width="4" height="3" patternUnits="userSpaceOnUse"><rect width="4" height="1" fill="#fff" opacity=".35"/></pattern>`; },
+  floor(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#1c0f38"/>
+      <rect x="${x+.5}" y="${y+.5}" width="${T-1}" height="${T-1}" fill="none" stroke="#ff3ea5" stroke-width="1" opacity=".35"/>
+      <path d="M${x+T/2-3} ${y+T/2} h6 M${x+T/2} ${y+T/2-3} v6" stroke="#ff3ea5" stroke-width="1" opacity=".3"/>`; },
+  wall(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#08040f"/>` +
+      edges(r, c, (a,b,c2,d)=>`<line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="#2ee6ff" stroke-width="6" opacity=".22"/><line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="#2ee6ff" stroke-width="1.8"/>`); },
+  emitter(r, c, d){ const x = X(c), y = Y(r), rot = d[1] > 0 ? 0 : 180;
+    return `<g transform="translate(${x} ${y}) rotate(${rot})">
+      <rect x="-14" y="-4" width="6" height="14" fill="#6b5f8a" stroke="${INK}" stroke-width="1.8"/>
+      <rect x="-12" y="-11" width="22" height="13" rx="3" fill="#d6d0ea" stroke="${INK}" stroke-width="2.2"/>
+      <rect x="8" y="-9" width="6" height="9" rx="1.5" fill="#3a2f55" stroke="${INK}" stroke-width="1.8"/>
+      <circle cx="13" cy="-4.5" r="2.4" fill="#ff2a55" class="pulse"/></g>`; },
+  exit(r, c){ const x = c*T, y = r*T;
+    return `<rect x="${x+5}" y="${y+10}" width="${T-10}" height="${T-20}" rx="5" fill="none" stroke="#39ff9e" stroke-width="7" opacity=".2"/>
+      <rect x="${x+5}" y="${y+10}" width="${T-10}" height="${T-20}" rx="5" fill="#0d2a22" stroke="#39ff9e" stroke-width="2"/>
+      <text x="${x+T/2}" y="${y+T/2+5}" text-anchor="middle" font-family="Prompt" font-weight="700" font-size="13" fill="#39ff9e">ออก</text>`; },
+  sw(r, c, gi){ const x = X(c), y = Y(r), on = gi !== undefined, col = on ? this.gc[gi] : "#ff3ea5";
+    return `${on?`<circle cx="${x}" cy="${y}" r="24" fill="url(#vGlow0)"/>`:""}
+      <circle cx="${x}" cy="${y}" r="15" fill="${on?"#123a4a":"#1c0f38"}" stroke="${col}" stroke-width="2.5"/>
+      <circle cx="${x}" cy="${y}" r="9" fill="none" stroke="${col}" stroke-width="1.4" opacity=".7"/>
+      <text x="${x}" y="${y+6}" text-anchor="middle" font-family="VT323" font-size="17" fill="${col}">A</text>`; },
+  door(r, c, open){ const x = c*T, y = r*T;
+    if (open) return `<rect x="${x+2}" y="${y+2}" width="${T-4}" height="7" fill="url(#vHaz)" stroke="${INK}" stroke-width="1.6"/>
+      <rect x="${x+2}" y="${y+11}" width="${T-4}" height="${T-13}" fill="none" stroke="#ffd23f" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>`;
+    return `<rect x="${x+2}" y="${y+2}" width="${T-4}" height="${T-4}" fill="url(#vHaz)" stroke="${INK}" stroke-width="2"/>`; },
+  beam(b){ const [x1, y, x2] = beamEnds(b);
+    if (b.blocked) return `<circle cx="${x1-4}" cy="${y-4}" r="5" fill="#ff2a55" opacity=".6" class="pulse"/>`;
+    return `<g class="pulse"><path d="M${x1} ${y-4} L${x2} ${y-9} L${x2} ${y+9} L${x1} ${y-2}Z" fill="#ff2a55" opacity=".18"/>
+      <line x1="${x1}" y1="${y-4}" x2="${x2}" y2="${y}" stroke="#ff2a55" stroke-width="5" opacity=".5" stroke-linecap="round"/>
+      <line x1="${x1}" y1="${y-4}" x2="${x2}" y2="${y}" stroke="#ffd1dc" stroke-width="1.6" stroke-linecap="round"/></g>`; },
+  gpath(g, i){ return `<path d="${pathD(g.path)}" fill="none" stroke="${this.gc[i]}" stroke-width="2.5" stroke-dasharray="2 6" stroke-linecap="round" opacity=".8"/>`; },
+  ppath(p){ return `<path d="${pathD(p.plan)}" fill="none" stroke="#ffd23f" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round" opacity=".85"/>`; },
+  kid(x, y, o){ return `<g transform="translate(${x} ${y})" opacity="${o.op||1}">
+    ${o.shadow?`<ellipse cx="0" cy="17" rx="12" ry="3.5" fill="#000" opacity=".4"/>`:""}
+    <rect x="-10" y="1" width="20" height="15" rx="7" fill="${o.suit}" stroke="${o.line}" stroke-width="2.5"/>
+    <path d="M-4 1 V7 M4 1 V7" stroke="${o.line}" stroke-width="1.4"/>
+    <circle cx="0" cy="-8" r="12.5" fill="${o.skin}" stroke="${o.line}" stroke-width="2.5"/>
+    <path d="M-12.5 -10 Q-10 -21 0 -21 Q10 -21 12.5 -10 L-12.5 -10Z" fill="${o.cap}" stroke="${o.line}" stroke-width="2"/>
+    <path d="M-12.5 -10 L-19 -9" stroke="${o.line}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M-13 -6 Q-17 -6 -16 0" fill="none" stroke="${o.phones}" stroke-width="3.5" stroke-linecap="round"/><rect x="-17" y="-8" width="5" height="8" rx="2" fill="${o.phones}" stroke="${o.line}" stroke-width="1.5"/>
+    <rect x="12" y="-8" width="5" height="8" rx="2" fill="${o.phones}" stroke="${o.line}" stroke-width="1.5"/>
+    <circle cx="-4.5" cy="-6" r="2" fill="${o.line}"/><circle cx="4.5" cy="-6" r="2" fill="${o.line}"/>
+    <path d="M-2.5 -1.5 Q0 1 2.5 -1.5" fill="none" stroke="${o.line}" stroke-width="1.6" stroke-linecap="round"/></g>`; },
+  ghost(r, c, i){ const x = X(c), y = Y(r) - 2, col = this.gc[i], o = { suit:col, skin:col, cap:col, phones:col, line:col, op:.5 };
+    return `<g class="bob">${this.kid(x-2, y, { ...o, suit:"#2ee6ff", skin:"#2ee6ff", cap:"#2ee6ff", phones:"#2ee6ff", line:"#2ee6ff" })}
+      ${this.kid(x+2, y, { ...o, suit:"#ff3ea5", skin:"#ff3ea5", cap:"#ff3ea5", phones:"#ff3ea5", line:"#ff3ea5" })}
+      <rect x="${x-14}" y="${y-22}" width="28" height="40" fill="url(#vScan)"/>
+      <rect x="${x+6}" y="${y-28}" width="20" height="11" rx="2" fill="#160a2e" stroke="${col}" stroke-width="1.4"/>
+      <text x="${x+16}" y="${y-19}" text-anchor="middle" font-family="VT323" font-size="12" fill="${col}">◀◀${i+1}</text></g>`; },
+  player(r, c){ return this.kid(X(c), Y(r) - 2, { suit:"#ffd23f", skin:"#ffdcb8", cap:"#ff3ea5", phones:"#2ee6ff", line:INK, shadow:true }); },
+  hud:`<div class="room"><small>▶ PLAY · TAPE 05</small><b>ทุกอย่างพร้อมกัน</b></div><div><div class="rec">● REC</div><div class="gh"><span class="on1"></span><span class="on2"></span><span></span><span></span></div></div>`,
+  hint:"เทป #2 กำลังจะไปบังกล้องด้านบน · <b>รอจังหวะ</b>",
+  timer:`<div class="timer"><span>00:06</span><span class="bar"><i></i></span><span>00:10</span></div>`,
+  btns:["ลบเทป","◀◀ กรอกลับ","เริ่มใหม่"],
+};
+
+/* ================= 6. นักดำน้ำจิ๋ว ================= */
+const sea = {
+  cls:"t-sea", title:"6 · นักดำน้ำจิ๋ว", tag:"ทะเลใส · ทราย · ฟองอากาศ",
+  desc:"ตัวเอกเป็นนักดำน้ำหมวกกลม เงาคือร่างฟองอากาศที่ลอยตามรอยเดิม สวิตช์เป็นหอยที่อ้าปากเมื่อมีคนยืน ประตูเป็นสาหร่าย กับดักเป็นปลาไหลไฟฟ้า ทางออกเป็นหอยมุกยักษ์",
+  bullets:["สดใส ผ่อนคลาย เด็กและผู้หญิงชอบ","หลอดเวลาเป็นถังออกซิเจน เข้าใจทันทีว่าหมดแล้วต้องขึ้นใหม่","สัตว์ทะเลเพิ่มเป็นของในห้องได้อีกเยอะ (ปู เต่า แมงกะพรุน)"],
+  chips:["#0f8aa3","#063a55","#f0d6a0","#ff7f6e","#ffd166"],
+  gc:["#ffd166","#ff9ad5"],
+  deco(){ let s = ""; [[40,620,5,0],[60,560,3,1.5],[320,600,6,.8],[300,520,3.5,2.6],[200,660,4,3.2]].forEach(([x,y,r,d]) => s += `<circle class="rise" style="animation-delay:-${d}s" cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#fff" stroke-width="1.5" opacity=".7"/>`);
+    return `<svg class="deco" viewBox="0 0 360 700" preserveAspectRatio="none">
+      <g fill="#fff" opacity=".07"><path d="M60 0 L110 0 L40 700 L0 700Z"/><path d="M200 0 L230 0 L180 700 L130 700Z"/><path d="M300 0 L340 0 L330 700 L270 700Z"/></g>${s}</svg>`; },
+  defs(){ return `
+    <radialGradient id="dPearl" cx=".4" cy=".35"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#ffeef6"/><stop offset="1" stop-color="#d9b8d0"/></radialGradient>
+    <radialGradient id="dGlow"><stop offset="0" stop-color="#fff6c8" stop-opacity=".7"/><stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="dBub0" cx=".35" cy=".3"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="#ffd166" stop-opacity=".25"/><stop offset="1" stop-color="#ffd166" stop-opacity=".45"/></radialGradient>
+    <radialGradient id="dBub1" cx=".35" cy=".3"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="#ff9ad5" stop-opacity=".25"/><stop offset="1" stop-color="#ff9ad5" stop-opacity=".45"/></radialGradient>
+    <linearGradient id="dHelm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9fdff" stop-opacity=".9"/><stop offset="1" stop-color="#7fd8ea" stop-opacity=".55"/></linearGradient>`; },
+  floor(r, c){ const x = c*T, y = r*T, h = hash(r, c);
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#f0d6a0"/>
+      <path d="M${x+4} ${y+14+h%6} q8 -4 16 0 t16 0 M${x+8} ${y+30+h%5} q8 -4 16 0 t12 0" fill="none" stroke="#d9b77a" stroke-width="1.6" stroke-linecap="round"/>
+      ${h % 5 === 0 ? `<circle cx="${x+34}" cy="${y+10}" r="2.2" fill="#fff6e0" stroke="#c9a46a" stroke-width="1"/>` : ""}`; },
+  wall(r, c){ const x = c*T, y = r*T, h = hash(r, c);
+    return `<rect x="${x}" y="${y}" width="${T}" height="${T}" fill="#2c5a76"/><circle cx="${x+12}" cy="${y+30}" r="7" fill="#264f68"/><circle cx="${x+32}" cy="${y+14}" r="5" fill="#264f68"/>` +
+      edges(r, c, (a,b,c2,d,side)=>{ const mx = (a+c2)/2, my = (b+d)/2, col = ["#ff7f6e","#ff9ad5","#ffb36b"][h%3];
+        const coral = h % 2 ? `<g class="sway"><path d="M${mx} ${my} v-9 m0 4 l-5 -5 m5 2 l5 -6" stroke="${col}" stroke-width="3.2" stroke-linecap="round" fill="none"/></g>` : `<circle cx="${mx}" cy="${my}" r="4" fill="${col}" stroke="${INK}" stroke-width="1.4"/>`;
+        return `<line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="#1b3d52" stroke-width="3.5" stroke-linecap="round"/>${side==="t"?coral:""}`; }); },
+  emitter(r, c, d){ const x = X(c), y = Y(r), rot = d[1] > 0 ? 0 : 180;
+    return `<g transform="translate(${x} ${y}) rotate(${rot})">
+      <path d="M-16 -9 Q4 -12 14 -2 Q16 4 6 7 Q-6 10 -16 9Z" fill="#c9d94a" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <circle cx="5" cy="-3" r="2.8" fill="#fff" stroke="${INK}" stroke-width="1.2"/><circle cx="5.6" cy="-3" r="1.3" fill="${INK}"/>
+      <path d="M8 3 L14 2" stroke="${INK}" stroke-width="1.6" stroke-linecap="round"/></g>`; },
+  exit(r, c){ const x = X(c), y = Y(r);
+    return `<circle cx="${x}" cy="${y}" r="28" fill="url(#dGlow)" class="pulse"/>
+      <path d="M${x-17} ${y+8} Q${x} ${y+20} ${x+17} ${y+8} Z" fill="#ffb3c7" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M${x-17} ${y+6} Q${x-18} ${y-16} ${x} ${y-17} Q${x+18} ${y-16} ${x+17} ${y+6} Q${x} ${y-2} ${x-17} ${y+6}Z" fill="#ffc9d8" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M${x} ${y-15} V${y} M${x-9} ${y-12} L${x-5} ${y+1} M${x+9} ${y-12} L${x+5} ${y+1}" stroke="#e68aa6" stroke-width="1.4"/>
+      <circle cx="${x}" cy="${y+8}" r="6" fill="url(#dPearl)" stroke="${INK}" stroke-width="1.6"/>`; },
+  sw(r, c, gi){ const x = X(c), y = Y(r) + 4, on = gi !== undefined;
+    return on ? `<circle cx="${x}" cy="${y-4}" r="22" fill="url(#dGlow)"/>
+      <path d="M${x-15} ${y} Q${x} ${y+12} ${x+15} ${y} Z" fill="#8fc7e8" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M${x-15} ${y-2} Q${x-14} ${y-18} ${x} ${y-19} Q${x+14} ${y-18} ${x+15} ${y-2} Q${x} ${y-8} ${x-15} ${y-2}Z" fill="#a9d8f2" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+      <circle cx="${x}" cy="${y+1}" r="5" fill="${this.gc[gi]}" stroke="${INK}" stroke-width="1.6"/><circle cx="${x-1.5}" cy="${y-.5}" r="1.5" fill="#fff"/>`
+      : `<path d="M${x-15} ${y} Q${x-14} ${y-14} ${x} ${y-14} Q${x+14} ${y-14} ${x+15} ${y} Q${x} ${y+8} ${x-15} ${y}Z" fill="#a9d8f2" stroke="${INK}" stroke-width="2.2"/>`; },
+  door(r, c, open){ const x = c*T, y = r*T;
+    const strand = (sx, bend) => `<path d="M${sx} ${y+T} Q${sx+bend} ${y+T*.66} ${sx} ${y+T*.4} Q${sx-bend} ${y+T*.2} ${sx+bend*.6} ${y+2}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
+      <path d="M${sx} ${y+T} Q${sx+bend} ${y+T*.66} ${sx} ${y+T*.4} Q${sx-bend} ${y+T*.2} ${sx+bend*.6} ${y+2}" fill="none" stroke="#3fae6a" stroke-width="4" stroke-linecap="round"/>`;
+    return open ? `<g class="sway">${strand(x+5, -4)}</g><g class="sway">${strand(x+T-5, 4)}</g>` : `<g>${strand(x+9, 5)}${strand(x+T/2, -5)}${strand(x+T-9, 5)}</g>`; },
+  beam(b){ const [x1, y, x2] = beamEnds(b);
+    if (b.blocked) return `<path d="M${x1-2} ${y-6} l-4 4 4 2 -4 4" fill="none" stroke="#fff36b" stroke-width="2" stroke-linecap="round"/>`;
+    let d = `M${x1} ${y}`; const n = Math.round(Math.abs(x2 - x1) / 8);
+    for (let i = 1; i <= n; i++) d += ` L${x1 + (x2 - x1) * i / n} ${y + (i % 2 ? -4 : 4) * (i === n ? 0 : 1)}`;
+    return `<g class="pulse"><path d="${d}" fill="none" stroke="#7ff3ff" stroke-width="9" opacity=".3" stroke-linejoin="round"/>
+      <path d="${d}" fill="none" stroke="#fff36b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="#fff" stroke-width="1" stroke-linejoin="round"/></g>`; },
+  gpath(g, i){ return g.path.slice(1).map(([r, c]) => `<circle cx="${X(c)}" cy="${Y(r)}" r="3" fill="none" stroke="${this.gc[i]}" stroke-width="1.6" opacity=".85"/>`).join(""); },
+  ppath(p){ return `<path d="${pathD(p.plan)}" fill="none" stroke="#ff7f4e" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round"/>`; },
+  diver(x, y, o){ return `<g transform="translate(${x} ${y})" opacity="${o.op||1}">
+    ${o.bubble?"":`<ellipse cx="0" cy="17" rx="12" ry="3.5" fill="#000" opacity=".2"/>
+    <rect x="8" y="-2" width="7" height="15" rx="3.5" fill="#9aa8b5" stroke="${INK}" stroke-width="2"/>`}
+    <rect x="-10" y="1" width="20" height="15" rx="7" fill="${o.suit}" stroke="${o.line}" stroke-width="2.5"/>
+    ${o.bubble?"":`<circle cx="0" cy="-8" r="9.5" fill="#ffdcb8"/><circle cx="-3.8" cy="-8" r="1.8" fill="${INK}"/><circle cx="3.8" cy="-8" r="1.8" fill="${INK}"/><path d="M-2 -4 Q0 -2 2 -4" stroke="${INK}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`}
+    <circle cx="0" cy="-8" r="13" fill="${o.helm}" stroke="${o.line}" stroke-width="2.5"/>
+    <path d="M-7 -15 Q-4 -18 0 -18.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/>
+    ${o.bubble?"":`<rect x="-9" y="2" width="18" height="3.5" rx="1.5" fill="#e6bd5c" stroke="${INK}" stroke-width="1.4"/>`}
+    <g class="rise"><circle cx="9" cy="-22" r="2.2" fill="none" stroke="#fff" stroke-width="1.2"/><circle cx="12" cy="-30" r="1.5" fill="none" stroke="#fff" stroke-width="1.1"/></g></g>`; },
+  ghost(r, c, i){ const x = X(c), y = Y(r) - 2, col = this.gc[i];
+    return `<g class="bob">${this.diver(x, y, { suit:`url(#dBub${i})`, helm:`url(#dBub${i})`, line:col, bubble:true })}
+      <circle cx="${x+14}" cy="${y-18}" r="7" fill="${col}" stroke="${INK}" stroke-width="1.6"/><text x="${x+14}" y="${y-14.5}" text-anchor="middle" font-family="Itim" font-size="11" fill="${INK}">${i+1}</text></g>`; },
+  player(r, c){ return this.diver(X(c), Y(r) - 2, { suit:"#ff8a3d", helm:"url(#dHelm)", line:INK }); },
+  hud:`<div class="room"><small>ห้อง 5/30 · แนวปะการัง</small><b>ทุกอย่างพร้อมกัน</b></div><div class="gh"><span class="on1"></span><span class="on2"></span><span></span><span></span></div>`,
+  hint:"ฟองอากาศ #2 กำลังจะลอยไปบังปลาไหลด้านบน · <b>รอจังหวะ</b>",
+  timer:`<div class="timer"><span>O₂</span><span class="tank"><i></i></span></div>`,
+  btns:["ลบฟอง","ใช้ฟองเลย","เริ่มใหม่"],
+};
+
+function board(th) {
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${th.defs()}</defs>`;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) s += isWall(MAP[r][c]) ? th.wall(r, c) : th.floor(r, c);
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const ch = MAP[r][c];
+    if (ch in DIR) s += th.emitter(r, c, DIR[ch]);
+    if (ch === "E") s += th.exit(r, c);
+    if (ch === "a") s += th.sw(r, c, SCENE.pressed[r + "," + c]);
+    if (ch === "A") s += th.door(r, c, SCENE.doorOpen);
+  }
+  SCENE.ghosts.forEach((g, i) => s += th.gpath(g, i));
+  s += th.ppath(SCENE.player);
+  SCENE.beams.forEach(b => s += th.beam(b));
+  SCENE.ghosts.forEach((g, i) => s += th.ghost(g.at[0], g.at[1], i));
+  s += th.player(SCENE.player.at[0], SCENE.player.at[1]);
+  return s + "</svg>";
+}
+const row = document.getElementById("row");
+for (const th of [ninja, vhs, sea]) {
+  const el = document.createElement("section");
+  el.className = "opt";
+  el.innerHTML = `
+    <div><div class="tag">${th.tag}</div><h2>${th.title}</h2></div>
+    <div class="phone ${th.cls}">${th.deco()}
+      <div class="hud">${th.hud}</div>
+      <div class="board">${board(th)}</div>
+      <div class="hint">${th.hint}</div>
+      ${th.timer}
+      <div class="btns"><div>${th.btns[0]}</div><div class="main">${th.btns[1]}</div><div>${th.btns[2]}</div></div>
+    </div>
+    <p>${th.desc}</p>
+    <ul>${th.bullets.map(b => `<li>${b}</li>`).join("")}</ul>
+    <div class="chips">${th.chips.map(c => `<i style="background:${c}"></i>`).join("")}</div>`;
+  row.appendChild(el);
+}
+</script>
+</body>
+</html>
