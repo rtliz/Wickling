@@ -26,6 +26,7 @@
 | `src/render/board.ts` | วาดกระดานด้วย Canvas 2D (สไปรต์ SVG ในโค้ด) · 3 ระดับกราฟิก |
 | `src/ui/tree.ts` | หน้าต้นไม้สกิล + วิดีโอตัวอย่างสกิล (ยกจากต้นแบบ ยังเป็น `@ts-nocheck`) |
 | `src/main.ts` | ตัวควบคุมเกม HUD ปุ่ม เสียง ลูปหลัก |
+| `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev/localhost · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
 | `prototypes/echo-me/` | ต้นแบบ HTML ไฟล์เดียว + mock แนวภาพ/ต้นไม้สกิล (ห้าม import เข้าโค้ดจริง) |
 
@@ -37,7 +38,7 @@
 | ค่า | ใช้ | สถานะ |
 |---|---|---|
 | package id | `com.rtliz.wickling` | เสนอ (ตามแบบเกม rtliz อื่น) · ยังไม่ได้ลง Capacitor · ยืนยันกับเจ้าของก่อนสร้าง Android |
-| Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · แผน Spark พอ (ยังไม่ใช้ Firestore) · ก่อนอัป Blaze ต้องตั้ง budget alert |
+| Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · แผน Spark พอ (ยังไม่ใช้ Firestore) · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
 | key เซฟ | `wickling.save.v1` · สำรองเซฟเสีย `wickling.save.bad` · `SAVE_VERSION = 1` | ล็อก |
 | ลำดับห้องใน `LEVELS` | ดาวในเซฟอ้างด้วยลำดับ → เพิ่มต่อท้ายเท่านั้น | ล็อกหลังปล่อย |
 | ตัวสุ่มหอคอย (`genTower`, seed) | ห้องของแต่ละชั้นต้องเหมือนเดิม | ล็อกหลังปล่อย |

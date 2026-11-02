@@ -8,6 +8,7 @@ import { loadSave, writeSave, type SaveData } from "./core/save";
 import { BR, ICON, nodeById } from "./core/skills";
 import { createBoard, COL, type Quality } from "./render/board";
 import { initTree, openTree } from "./ui/tree";
+import { initAnalytics, track } from "./platform/analytics";
 
 // ---------- สถานะ ----------
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -85,6 +86,7 @@ function onWin() {
   if (levelIdx >= 0) save.best[levelIdx] = Math.max(save.best[levelIdx] || 0, stars);
   else save.tower.best = Math.max(save.tower.best, save.tower.floor);
   writeSave(save);
+  track("level_complete", { level: levelIdx < 0 ? "tower" : String(levelIdx + 1), floor: levelIdx < 0 ? save.tower.floor : 0, ghosts: n, par, stars, skills: save.skills.eq.filter(Boolean).join("+") || "none" });
   $("winTitle").textContent = n < par ? "เหนือชั้น!" : "ผ่านแล้ว!";
   $("winStars").innerHTML = "★".repeat(stars) + "<s>" + "★".repeat(3 - stars) + "</s>";
   $("winMsg").textContent = n < par ? `ใช้เงาแค่ ${n} ตัว น้อยกว่าที่ออกแบบไว้ (${par})`
@@ -243,3 +245,4 @@ function frame(now: number) {
 renderSkillBar();
 loadLevel(0);
 requestAnimationFrame(frame);
+initAnalytics();
