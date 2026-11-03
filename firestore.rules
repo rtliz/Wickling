@@ -7,10 +7,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // กระดานถาวร (all) / รายสัปดาห์ (W…) / รายเดือน (M…): คนที่ล็อกอินอ่านได้ (client query ด้วย limit(50)) · เขียนไม่ได้
-    // boards-dev = แต้มจาก pnpm dev (ไม่มีรางวัล)
-    match /{boards}/{board}/scores/{uid} {
-      allow read: if boards in ['boards', 'boards-dev'] && request.auth != null;
+    // กระดานถาวร (all) / รายสัปดาห์ (W…) / รายเดือน (M…): คนที่ล็อกอินอ่านได้ · เขียนไม่ได้
+    // list ต้องมี limit ≤ 50 (กันอ่านทั้งกระดานทีเดียว = บิลพุ่ง) · ข้อมูลทดสอบ boards-dev อ่านไม่ได้ (มีแค่ใน emulator)
+    match /boards/{board}/scores/{uid} {
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && request.query.limit <= 50;
       allow write: if false;
     }
 

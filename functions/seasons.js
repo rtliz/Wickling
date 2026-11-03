@@ -1,12 +1,15 @@
 // กระดานรายสัปดาห์ / รายเดือน / ถาวร และรางวัลหัวใจ — server คิดแต้มและตัดสินรางวัลทั้งหมด (แบบ meowchime/functions/seasons.js)
 // หน้าตาและรอบแบบ LumiFlip (สัปดาห์/เดือน/ทั้งหมด, รางวัล REWARD_TIERS, claimSeason) แต่ client เขียนแต้มเองไม่ได้
 //
-// boards/{all|W2026-11-02|M2026-11}/scores/{uid}  { uid, name, pts, at }  คนที่ล็อกอินอ่านได้ (limit 50) · client เขียนไม่ได้ (firestore.rules)
+// boards/{all|W2026-11-02|M2026-11}/scores/{uid}  { uid, name, pts, at, g }  คนที่ล็อกอินอ่านได้ (limit ≤ 50) · client เขียนไม่ได้ (firestore.rules)
+//   g = บัญชีผูก Google ตอนได้แต้มล่าสุด · อันดับรางวัล (lockRanks) และกระดานสัปดาห์/เดือนในเกมนับเฉพาะ g == true
+//   (บอทสร้างบัญชี guest ได้ไม่จำกัด จึงห้ามแย่งที่รางวัล) · กระดานถาวรแสดงทุกคน (ไม่มีรางวัล)
 // players/{uid}                                   { name, nameAt, day: { d, n }, credit, lastAt } สถานะฝั่ง server · client อ่าน/เขียนไม่ได้
 // players/{uid}/won/{r0|t12}                      { at } ห้อง/ชั้นที่นับแต้มแล้ว (ชนะซ้ำไม่ได้แต้ม)
 // seasons/{W…|M…}                                 { ranks: { sha256(uid): อันดับ } } ผลที่ล็อกแล้ว
 // seasonClaims/{uid}                              { ids } รอบที่รับรางวัลแล้ว
-// boards-dev / players-dev = ข้อมูลจาก pnpm dev (ไม่มีรางวัล)
+// deleted/{uid}                                   { at } บัญชีที่ลบแล้ว (submitWin/claimSeason ปฏิเสธ)
+// boards-dev / players-dev = ข้อมูลทดสอบ เขียนได้เฉพาะใน Functions emulator (wins.js)
 import { createHash } from 'node:crypto';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -17,15 +20,16 @@ const ALREADY_EXISTS = 6;
 const RATE = { max: 10, windowMs: 60 * 60_000 };
 const CLAIMS_KEPT = 8;
 
-export const cleanName = str => (typeof str === 'string' ? str : '').replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+// ชื่อ: กติกาเดียวกับหน้าล็อกอินของเกม (src/core/name.ts รวมมาใน game.js)
+export { cleanName, nameLength } from './game.js';
 const hashUid = uid => createHash('sha256').update(uid).digest('hex');
-const hasGoogle = auth => 'google.com' in (auth?.token?.firebase?.identities ?? {});
+export const hasGoogle = auth => 'google.com' in (auth?.token?.firebase?.identities ?? {});
 
 export function createSeasons({ db, rate = RATE }) {
   // +pts ให้กระดานถาวร สัปดาห์ และเดือนของเวลา server ตอนนี้ (เรียกใน transaction)
-  function writePoints(t, uid, name, pts, now, dev = false) {
+  function writePoints(t, uid, name, pts, now, dev = false, g = false) {
     const boards = dev ? 'boards-dev' : 'boards';
-    const entry = { uid, name, pts: FieldValue.increment(pts), at: Timestamp.fromMillis(now) };
+    const entry = { uid, name, pts: FieldValue.increment(pts), at: Timestamp.fromMillis(now), g };
     for (const id of [ALL_BOARD, weekId(now), monthId(now)]) t.set(db.doc(`${boards}/${id}/scores/${uid}`), entry, { merge: true });
   }
 
@@ -33,7 +37,8 @@ export function createSeasons({ db, rate = RATE }) {
     const ref = db.doc(`seasons/${id}`);
     const cur = await ref.get();
     if (cur.exists) return cur.get('ranks');
-    const top = await db.collection(`boards/${id}/scores`).orderBy('pts', 'desc').orderBy('at').limit(BOARD_SIZE).get();
+    // เฉพาะแถวบัญชี Google (ดัชนี g + pts desc + at ใน firestore.indexes.json)
+    const top = await db.collection(`boards/${id}/scores`).where('g', '==', true).orderBy('pts', 'desc').orderBy('at').limit(BOARD_SIZE).get();
     const ranks = Object.fromEntries(top.docs.map((d, i) => [hashUid(d.id), i + 1]));
     const created = await ref.create({ ranks, lockedAt: FieldValue.serverTimestamp() }).then(() => true, e => {
       if (e.code !== ALREADY_EXISTS) throw e;
@@ -47,6 +52,7 @@ export function createSeasons({ db, rate = RATE }) {
   async function claim(auth, _data, now = Date.now()) {
     const uid = auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'sign in first');
+    if ((await db.doc(`deleted/${uid}`).get()).exists) throw new HttpsError('permission-denied', 'account deleted');
     await limitRate(db, `season-${uid}`, rate, 'too many season claims');
     const me = hashUid(uid);
     const ids = [prevWeekId(now), prevMonthId(now)];

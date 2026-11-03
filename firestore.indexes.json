@@ -4,8 +4,32 @@
       "collectionGroup": "scores",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "pts", "order": "DESCENDING" },
-        { "fieldPath": "at", "order": "ASCENDING" }
+        {
+          "fieldPath": "pts",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "scores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "g",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pts",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "at",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
@@ -14,8 +38,14 @@
       "collectionGroup": "scores",
       "fieldPath": "uid",
       "indexes": [
-        { "order": "ASCENDING", "queryScope": "COLLECTION" },
-        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
       ]
     }
   ]

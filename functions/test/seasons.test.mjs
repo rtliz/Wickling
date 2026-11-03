@@ -18,12 +18,13 @@ const seasons = createSeasons({ db, rate: { max: 1000, windowMs: 3_600_000 } });
 const NOW = Date.parse('2026-11-11T05:00:00Z'); // พุธ 11 พ.ย. เวลาไทย
 const NEXT_WEEK = NOW + 7 * 86400e3;
 const NEXT_MONTH = Date.parse('2026-12-02T05:00:00Z');
-const row = (board, uid, pts, atMs = NOW) => db.doc(`boards/${board}/scores/${uid}`).set({ uid, name: uid, pts, at: Timestamp.fromMillis(atMs) });
+const row = (board, uid, pts, atMs = NOW, g = true) => db.doc(`boards/${board}/scores/${uid}`).set({ uid, name: uid, pts, at: Timestamp.fromMillis(atMs), g });
 
 before(async () => {
-  for (const c of ['boards', 'seasons', 'seasonClaims', 'rate']) await db.recursiveDelete(db.collection(c));
+  for (const c of ['boards', 'seasons', 'seasonClaims', 'rate', 'deleted']) await db.recursiveDelete(db.collection(c));
   const w = weekId(NOW), m = monthId(NOW);
   await row(w, 'a', 30); await row(w, 'b', 20, NOW); await row(w, 'c', 20, NOW + 1000);
+  await row(w, 'bot', 999, NOW, false);   // บอท guest แต้มสูงสุดแต่ไม่ผูก Google → ไม่ติดอันดับรางวัล
   await row(m, 'a', 90);
 });
 
@@ -46,7 +47,7 @@ test('รอบที่ยังไม่จบรับไม่ได้', as
   assert.deepEqual((await seasons.claim(google('a'), {}, NOW)).rewards, []);
 });
 
-test('รับรางวัลได้ครั้งเดียว · แต้มเท่ากันคนถึงก่อนอยู่สูงกว่า', async () => {
+test('รับรางวัลได้ครั้งเดียว · แต้มเท่ากันคนถึงก่อนอยู่สูงกว่า · แถว guest (g=false) ไม่แย่งอันดับ', async () => {
   const a = await seasons.claim(google('a'), {}, NEXT_WEEK);
   assert.deepEqual(a.rewards, [{ id: weekId(NOW), rank: 1, hearts: 10 }]);
   assert.equal(a.hearts, 10);
@@ -56,12 +57,17 @@ test('รับรางวัลได้ครั้งเดียว · แ�
 });
 
 test('guest ต้องผูก Google ก่อน และยังรับภายหลังได้', async () => {
-  await row(weekId(NEXT_WEEK), 'g', 5, NEXT_WEEK);
+  await row(weekId(NEXT_WEEK), 'g', 5, NEXT_WEEK);   // ได้แต้มตอนผูก Google แล้ว (g = true) แต่ token ตอนรับยังเป็น guest
   const after = NEXT_WEEK + 7 * 86400e3;
   const r = await seasons.claim(guest('g'), {}, after);
   assert.equal(r.needGoogle, true);
   assert.equal(r.hearts, 10);
   assert.equal((await seasons.claim(google('g'), {}, after)).hearts, 10);
+});
+
+test('บัญชีที่ลบแล้ว (deleted/{uid}) รับรางวัลไม่ได้', async () => {
+  await db.doc('deleted/zz').set({ at: new Date() });
+  assert.equal((await seasons.claim(google('zz'), {}, NEXT_WEEK).catch(e => e)).code, 'permission-denied');
 });
 
 test('รางวัลเดือนแยกจากสัปดาห์ · ไม่ติดอันดับไม่ได้อะไร', async () => {

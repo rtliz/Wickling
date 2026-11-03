@@ -15,14 +15,12 @@ export interface Player { uid: string; google: boolean; name: string | null; ema
 type Hint = "guest" | "google" | "offline";
 const HINT_KEY = "wickling.login";
 
-// ชื่อเล่นผู้เล่น (ยกกติกาจาก LumiFlip main.js: NAME_MIN/NAME_MAX/cleanName) · ตั้งที่หน้าล็อกอิน แก้ได้ในหน้าบัญชี
-// เก็บใน localStorage แยกจากเซฟ: ใช้แสดงผลอย่างเดียว ไม่มีกระดานคะแนน ไม่ส่งขึ้น server และไม่ใช่ของมีค่า → ไม่ต้องขึ้น SAVE_VERSION
-// ไม่ตั้งเป็น displayName ของ Firebase Auth (LumiFlip ก็ไม่ตั้ง) · ทุกที่ที่แสดงชื่อต้องใช้ textContent เท่านั้น
+// ชื่อเล่นผู้เล่น (กติกาใน core/name.ts ตัวเดียวกับ server) · ตั้งที่หน้าล็อกอิน แก้ได้ในหน้าบัญชี
+// เก็บใน localStorage แยกจากเซฟ (ไม่ใช่ของมีค่า → ไม่ต้องขึ้น SAVE_VERSION) · ไม่ตั้งเป็น displayName ของ Firebase Auth (LumiFlip ก็ไม่ตั้ง)
+// ชื่อบนกระดานอันดับ server ทำความสะอาดซ้ำด้วยกติกาเดียวกัน · ทุกที่ที่แสดงชื่อต้องใช้ textContent เท่านั้น
+import { NAME_MIN, cleanName, nameLength } from "../core/name";
+export { NAME_MIN, NAME_MAX, cleanName, nameLength } from "../core/name";
 const NAME_KEY = "wickling.name";
-export const NAME_MIN = 2;
-export const NAME_MAX = 16;
-export const cleanName = (str: string | null | undefined) =>
-  (str ?? "").replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, NAME_MAX);
 
 type AuthMod = typeof import("firebase/auth");
 let loaded: Promise<{ auth: Auth; m: AuthMod }> | null = null;
@@ -67,7 +65,7 @@ export const Account = {
   name(): string | null {
     let n = "";
     try { n = cleanName(localStorage.getItem(NAME_KEY)); } catch { /* ไม่เป็นไร */ }
-    return n.length >= NAME_MIN ? n : null;
+    return nameLength(n) >= NAME_MIN ? n : null;
   },
   setName(n: string | null) {
     try { n ? localStorage.setItem(NAME_KEY, cleanName(n)) : localStorage.removeItem(NAME_KEY); } catch { /* ไม่เป็นไร */ }

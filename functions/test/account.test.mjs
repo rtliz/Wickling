@@ -98,5 +98,6 @@ test('cleanup ลบข้อมูลกระดาน: players(+won), players
   for (const p of ['players/b1', 'players-dev/b1', 'players/b1/won/r0', 'players-dev/b1/won/r0', 'boards/all/scores/b1', 'rate/win-b1', 'boards/W2026-11-02/scores/b1', 'boards/M2026-11/scores/b1',
     'boards-dev/W2026-11-02/scores/b1', 'seasonClaims/b1', 'rate/season-b1']) assert.equal(await exists(p), false, p);
   assert.equal(await exists('boards/W2026-11-02/scores/b2'), true);
+  assert.equal(await exists('deleted/b1'), true);
   assert.equal(await exists('seasons/W2026-10-26'), true);
 });

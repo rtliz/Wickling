@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, limit, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, where, limit, serverTimestamp, increment, getCountFromServer } from 'firebase/firestore';
 import { weekId, monthId } from '../season-rules.js';
 
 const [host, port] = (process.env.FIRESTORE_EMULATOR_HOST ?? '').split(':');
@@ -23,7 +23,12 @@ test('firestore.rules กระดาน (server-only)', async ctx => {
 
   await t('อ่านกระดานถาวรเมื่อล็อกอิน (limit 50)', true, () => getDocs(query(collection(as('z'), 'boards/all/scores'), orderBy('pts', 'desc'), limit(50))));
   await t('อ่านกระดานสัปดาห์เมื่อล็อกอิน', true, () => getDoc(doc(as('z'), `boards/${w}/scores/a`)));
-  await t('อ่าน boards-dev เมื่อล็อกอิน', true, () => getDoc(doc(as('z'), `boards-dev/${w}/scores/a`)));
+  await t('อ่าน boards-dev ไม่ได้ (ข้อมูลทดสอบมีแค่ใน emulator)', false, () => getDoc(doc(as('z'), `boards-dev/${w}/scores/a`)));
+  await t('list ไม่มี limit ไม่ได้', false, () => getDocs(query(collection(as('z'), 'boards/all/scores'), orderBy('pts', 'desc'))));
+  await t('list limit 51 ไม่ได้', false, () => getDocs(query(collection(as('z'), 'boards/all/scores'), orderBy('pts', 'desc'), limit(51))));
+  await t('list เฉพาะ Google (g == true) limit 50 ได้', true, () => getDocs(query(collection(as('z'), `boards/${w}/scores`), where('g', '==', true), orderBy('pts', 'desc'), limit(50))));
+  await t('นับอันดับ (count ไม่มี limit) ไม่ได้ → เกมแสดง 50+', false, () => getCountFromServer(query(collection(as('z'), 'boards/all/scores'), where('pts', '>', 1))));
+  await t('ไม่ล็อกอิน list ไม่ได้', false, () => getDocs(query(collection(anon(), 'boards/all/scores'), limit(10))));
   await t('ไม่ล็อกอินอ่านกระดานไม่ได้', false, () => getDoc(doc(anon(), `boards/${w}/scores/a`)));
   await t('เขียนแถวตัวเองในสัปดาห์นี้ไม่ได้', false, () => setDoc(doc(as('a'), `boards/${w}/scores/a`), { uid: 'a', name: 'ภูติ', pts: 4, at: serverTimestamp() }));
   await t('เพิ่มแต้มตัวเองด้วย increment ไม่ได้', false, () => setDoc(doc(as('a'), `boards/all/scores/a`), { pts: increment(1) }, { merge: true }));
