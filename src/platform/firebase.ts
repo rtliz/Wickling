@@ -1,5 +1,5 @@
 // Firebase เว็บแอปของ Wickling (ค่า config เป็นค่าสาธารณะ ไม่ใช่ความลับ) · โหลดแบบ lazy ไม่ให้หน้าแรกช้า
-// ใช้ร่วมกันโดย analytics.ts และ billing.ts (บัญชี guest แบบ anonymous สำหรับส่งใบเสร็จให้ server ตรวจ)
+// แอป Firebase ตัวเดียว ใช้ร่วมกันโดย analytics.ts, account.ts (หน้าล็อกอิน guest/Google) และ billing.ts (ผ่าน account.ts)
 export const firebaseConfig = {
   apiKey: "AIzaSyAGMtuhmM5AFhMrFQKmAxYGFzSADglrUPA",
   authDomain: "wickling-rtliz.firebaseapp.com",

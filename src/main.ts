@@ -4,7 +4,7 @@ import {
 } from "./core/sim";
 import { LEVELS } from "./core/levels";
 import { genTower } from "./core/tower";
-import { loadSave, writeSave, type SaveData } from "./core/save";
+import { loadSave, writeSave, earnedStars, type SaveData } from "./core/save";
 import { BR, ICON, nodeById } from "./core/skills";
 import { createBoard, COL, type Quality } from "./render/board";
 import { initTree, openTree } from "./ui/tree";
@@ -12,6 +12,7 @@ import { initAnalytics, track } from "./platform/analytics";
 import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, roomIsFree, clearedCount, dailyHearts } from "./core/hearts";
 import { Ads, isNative } from "./platform/ads";
 import { Billing, type GrantEvent } from "./platform/billing";
+import { Account } from "./platform/account";
 import type { ProductId } from "./platform/products";
 import { App } from "@capacitor/app";
 
@@ -329,6 +330,149 @@ tb.addEventListener("pointerdown", ev => { if (has("t1")) { tb.setPointerCapture
 tb.addEventListener("pointermove", ev => { if (scrub != null) scrubAt(ev); });
 for (const e of ["pointerup", "pointercancel"]) tb.addEventListener(e, () => { scrub = null; });
 
+// ---------- บัญชี (ยกจาก LumiFlip main.js: requireLogin / backToGate / linkGoogle / signOut / deleteAccount / renderAccount) ----------
+// ความคืบหน้าอยู่ในเซฟบนเครื่อง ไม่ได้อยู่กับบัญชี → ออกจากระบบ/ลบบัญชีไม่ลบเซฟ (บอกผู้เล่นในหน้าถามยืนยันทุกครั้ง)
+const SPIRIT_SVG = `<svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkHero"/></svg>`;
+const errCode = (err: unknown) => (err as { code?: string })?.code ?? "";
+let gateOpen = false;
+
+// หน้าล็อกอิน: ปิดเองไม่ได้จนกว่าจะเลือก guest หรือ Google
+function requireLogin() {
+  gateOpen = true;
+  $("profileOv").hidden = true;
+  $("login").hidden = false;
+  Account.preload();
+}
+
+function setLoginBusy(busy: boolean) {
+  for (const id of ["googleBtn", "guestBtn"]) $<HTMLButtonElement>(id).disabled = busy;
+}
+
+async function loginWith(kind: "guest" | "google") {
+  if ($<HTMLButtonElement>("guestBtn").disabled) return;
+  unlockAudio();
+  setLoginBusy(true);
+  try {
+    const res = await Account.signIn(kind);
+    gateOpen = false;
+    $("login").hidden = true;
+    renderAccount();
+    if (res === "offline") toast("ยังไม่มีเน็ต เล่นไปก่อนได้เลย จะสร้างบัญชีให้เมื่อต่อเน็ต");
+    else toast(kind === "google" ? `เข้าสู่ระบบแล้ว · ${Account.user?.name || "Google"}` : "ยินดีต้อนรับ ภูติน้อย");
+    if (Billing.pending.size) Billing.retryPending().catch(() => 0);
+  } catch {
+    toast("เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง");   // รวมกรณีผู้เล่นกดยกเลิกเอง (แบบ LumiFlip)
+  } finally {
+    setLoginBusy(false);
+  }
+}
+$("googleBtn").onclick = () => loginWith("google");
+$("guestBtn").onclick = () => loginWith("guest");
+
+// ถามยืนยัน · คืน true เมื่อกดปุ่มยืนยัน
+let askDone: ((ok: boolean) => void) | null = null;
+function ask(title: string, text: string, yes: string) {
+  askDone?.(false);
+  $("askTitle").textContent = title; $("askText").textContent = text; $("askYes").textContent = yes;
+  $("askOv").hidden = false;
+  return new Promise<boolean>(res => { askDone = res; });
+}
+function closeAsk(ok: boolean) { $("askOv").hidden = true; askDone?.(ok); askDone = null; }
+$("askNo").onclick = () => closeAsk(false);
+$("askYes").onclick = () => closeAsk(true);
+
+// guest → Google: uid เดิม ใบเสร็จที่ผูกกับบัญชีนี้ยังอยู่
+async function linkGoogle() {
+  const b = $<HTMLButtonElement>("pLink");
+  b.disabled = true;
+  try {
+    await Account.linkGoogle();
+    renderAccount();
+    toast("ผูกบัญชี Google แล้ว");
+  } catch (err) {
+    toast(errCode(err) === "auth/credential-already-in-use"
+      ? "บัญชี Google นี้เคยใช้กับเกมนี้แล้ว · ออกจากระบบแล้วเข้าด้วย Google แทนได้"
+      : "ผูกบัญชีไม่สำเร็จ ลองใหม่อีกครั้ง");
+  } finally { b.disabled = false; }
+}
+
+async function signOut() {
+  const guest = !Account.user?.google;
+  if (!(await ask("ออกจากระบบ?", guest
+    ? "บัญชีผู้เยี่ยมชมนี้จะเข้ากลับไม่ได้อีก · ความคืบหน้าในเกมบนเครื่องนี้ยังอยู่ครบ"
+    : "เข้าด้วย Google บัญชีเดิมได้ทุกเมื่อ · ความคืบหน้าในเกมบนเครื่องนี้ยังอยู่ครบ", "ออกจากระบบ"))) return;
+  await Account.signOut().catch(() => { Account.user = null; Account.setHint(null); });
+  backToGate();
+}
+
+// ออกจากบัญชีแล้วกลับไปหน้าล็อกอิน (เล่นต่อไม่ได้จนกว่าจะเข้าใหม่)
+function backToGate() {
+  $("profileOv").hidden = true;
+  renderAccount();
+  requireLogin();
+}
+
+// Play บังคับให้แอปที่สร้างบัญชีต้องลบบัญชีในแอปได้ · ถามยืนยันสองครั้ง
+async function deleteAccount() {
+  if (!(await ask("ลบบัญชีถาวร?", "บัญชีนี้และข้อมูลของบัญชีบนเซิร์ฟเวอร์จะถูกลบ กู้คืนไม่ได้ · ความคืบหน้าในเกมบนเครื่องนี้ยังอยู่", "ลบบัญชี"))) return;
+  const google = !!Account.user?.google;
+  if (!(await ask("ยืนยันอีกครั้ง", google ? "แน่ใจนะ? ขั้นต่อไปให้เลือกบัญชี Google เดิมเพื่อยืนยันตัวตน แล้วบัญชีจะถูกลบทันที" : "แน่ใจนะ? ลบแล้วย้อนกลับไม่ได้", "ลบถาวร"))) return;
+  const b = $<HTMLButtonElement>("pDelete");
+  b.disabled = true;
+  try {
+    await Account.deleteAccount();
+  } catch (err) {
+    return toast(errCode(err) === "auth/user-mismatch" ? "บัญชี Google ไม่ตรงกับบัญชีนี้ ยังไม่ได้ลบ" : "ลบบัญชีไม่สำเร็จ ลองใหม่อีกครั้ง");
+  } finally { b.disabled = false; }
+  backToGate();
+  toast("ลบบัญชีแล้ว");
+}
+
+function renderAccount() {
+  const u = Account.user, offline = Account.hint() === "offline";
+  const av = $("pAvatar");
+  if (u?.photo) {
+    // รูปจาก Google: ตั้งผ่าน property (ไม่ใช้ innerHTML กับข้อมูลจากบัญชี)
+    const img = document.createElement("img");
+    img.alt = ""; img.referrerPolicy = "no-referrer"; img.src = u.photo;
+    img.onerror = () => { av.innerHTML = SPIRIT_SVG; };
+    av.replaceChildren(img);
+  } else av.innerHTML = SPIRIT_SVG;
+  $("pName").textContent = u?.name || (u?.google ? "ผู้เล่น Google" : "ผู้เยี่ยมชม");
+  $("pType").textContent = u ? (u.google ? `บัญชี Google${u.email ? " · " + u.email : ""}` : "บัญชีผู้เยี่ยมชม")
+    : offline ? "ผู้เยี่ยมชม · ยังไม่ได้เชื่อมต่อ (รอเน็ต)" : "";
+  const stars = earnedStars(save);
+  $("pStats").innerHTML = `<div><b>${stars}</b><small>ดาวที่ได้</small></div><div><b>${clearedCount(save)}</b><small>ห้องที่ผ่าน</small></div><div><b>${save.tower.best}</b><small>หอคอยสูงสุด</small></div>`;
+  $("pLink").hidden = !u || u.google;
+  $("pNote").textContent = u && !u.google
+    ? "ผูก Google แล้วยังเป็นบัญชีเดิม และไม่หายเมื่อลบแอป · ความคืบหน้าในเกมเก็บไว้ในเครื่องนี้"
+    : "ความคืบหน้าในเกมเก็บไว้ในเครื่องนี้ ออกจากระบบแล้วก็ยังอยู่";
+  $("pDelete").hidden = !u;
+}
+
+function openProfile() { renderAccount(); $("profileOv").hidden = false; }
+$("pClose").onclick = () => { $("profileOv").hidden = true; };
+$("pLink").onclick = linkGoogle;
+$("pSignOut").onclick = signOut;
+$("pDelete").onclick = deleteAccount;
+Account.onChange = renderAccount;
+
+// splash ในแอป (ยกจาก LumiFlip setupSplash): ลบออกเมื่อแอนิเมชันจบ เกมโหลดอยู่ข้างใต้ไม่รอ splash · ?nosplash / ?splashat=ms เฉพาะ dev
+function setupSplash() {
+  const el = document.getElementById("splash");
+  if (!el) return;
+  const q = new URLSearchParams(location.search);
+  if (import.meta.env.DEV && q.has("nosplash")) return el.remove();
+  if (import.meta.env.DEV && q.has("splashat")) {   // หยุดภาพไว้ที่เวลานี้ (แคปภาพตรวจงาน)
+    for (const a of el.getAnimations({ subtree: true })) { a.currentTime = Number(q.get("splashat")); a.pause(); }
+    return;
+  }
+  const done = () => { clearTimeout(timer); el.removeEventListener("animationend", onEnd); el.remove(); };
+  const onEnd = (e: AnimationEvent) => { if (e.animationName === "sp-out") done(); };
+  el.addEventListener("animationend", onEnd);
+  const timer = setTimeout(done, 3500);   // กันค้างถ้า animationend ไม่มา
+}
+
 // ---------- HUD ----------
 function banner(html: string) { $("banner").innerHTML = html; }
 
@@ -403,6 +547,7 @@ function renderLevelChips() {
     const b = document.createElement("button"); b.className = cls; b.innerHTML = html; b.onclick = onclick;
     if (label) b.setAttribute("aria-label", label); box.appendChild(b);
   };
+  add(`${SPIRIT_SVG}<small>บัญชี</small>`, "acct", openProfile, "บัญชีผู้เล่น");
   add("ต้นไม้สกิล ✦", "tree", () => openTree());
     // แตะห้องที่กำลังเล่นอยู่ = ไม่ทำอะไร (เริ่มใหม่ต้องกดปุ่ม "เริ่มห้องใหม่" ซึ่งบอกว่าใช้หัวใจ)
   const go = (i: number) => () => { if (i !== levelIdx || phase === "win") loadLevel(i); };
@@ -415,6 +560,7 @@ function renderLevelChips() {
     try { localStorage.setItem(QKEY, JSON.stringify({ quality: qSetting })); } catch { /* ไม่เป็นไร */ }
     renderLevelChips();
   }, "ระดับกราฟิก");
+  document.body.classList.toggle("q-low", quality() === "low");
 }
 
 initTree(save, () => { renderSkillBar(); updateHud(); renderLevelChips(); if (phase === "ready") startRound(); });
@@ -422,7 +568,7 @@ initTree(save, () => { renderSkillBar(); updateHud(); renderLevelChips(); if (ph
 // ---------- ลูปหลัก ----------
 function frame(now: number) {
   requestAnimationFrame(frame);
-  if (paused) { last = now; lastFrame = 0; return; }   // โฆษณาเต็มจอ: ไม่เดิน sim ไม่วาด ไม่นับเฟรมช้า
+  if (paused || gateOpen) { last = now; lastFrame = 0; return; }   // โฆษณาเต็มจอ / หน้าล็อกอินบังทั้งจอ: ไม่เดิน sim ไม่วาด ไม่นับเฟรมช้า
   if (lastFrame && qSetting === "auto" && qAuto !== "low" && !document.hidden) {
     slowFrames = now - lastFrame > 24 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
     if (slowFrames > 90) { qAuto = qAuto === "high" ? "mid" : "low"; slowFrames = 0; renderLevelChips(); }
@@ -466,6 +612,8 @@ Ads.onShowing = on => { paused = on; };
 let lastBack = 0;
 if (isNative) App.addListener("backButton", () => {
   if (Ads.busy) return;
+  if (!$("askOv").hidden) return closeAsk(false);
+  if (!$("profileOv").hidden) { $("profileOv").hidden = true; return; }
   if (!$("offerOv").hidden) return closeOffer();
   if (!$("heartsOv").hidden) return closeHearts();
   if (!$("treeOv").hidden) { $("treeClose").click(); return; }
@@ -478,9 +626,16 @@ if (isNative) App.addListener("backButton", () => {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) return;
   if (refreshDay(H)) { writeSave(save); afterHeartGained(); }
+  if (Account.hint() === "offline") Account.ensure().then(ok => ok && renderAccount()).catch(() => {});
   if (Billing.pending.size) Billing.retryPending().catch(() => 0);
 });
 
+setupSplash();
+// ครั้งแรก/หลังออกจากระบบ: หน้าล็อกอินขึ้นทันที (ใต้ splash) · เคยเข้าแล้ว: อ่านบัญชีตอนว่าง ถ้าบัญชีหายไปค่อยเปิดหน้าล็อกอิน
+if (Account.needsGate()) requireLogin();
+const startAccount = () => Account.init().then(ok => { renderAccount(); if (!ok) requireLogin(); }).catch(() => {});
+if (gateOpen) startAccount();
+else "requestIdleCallback" in window ? requestIdleCallback(startAccount, { timeout: 3000 }) : setTimeout(startAccount, 1500);
 if (refreshDay(H)) writeSave(save);
 renderSkillBar();
 loadLevel(0);
@@ -489,5 +644,5 @@ requestAnimationFrame(frame);
 initAnalytics();
 Ads.init().then(() => { if (adsOn()) Ads.showBanner(); });
 // ให้สคริปต์ทดสอบ/แคปภาพอ่านและตั้งสถานะได้ (pnpm dev เท่านั้น)
-if (import.meta.env.DEV) (window as unknown as { __wk: unknown }).__wk = { save, H, openHearts, openOffer, renderHearts, loadLevel, adsOn, Ads, writeSave };
+if (import.meta.env.DEV) (window as unknown as { __wk: unknown }).__wk = { save, H, openHearts, openOffer, renderHearts, loadLevel, adsOn, Ads, writeSave, Account, requireLogin, openProfile, renderAccount };
 Billing.init({ onGrant, onRevoked, shouldRestore }).catch(() => {});

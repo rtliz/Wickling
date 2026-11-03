@@ -4,64 +4,17 @@
 // ล้มเหลวกลางทาง (เน็ตหลุด, แอปปิด) = ไม่ finish ใบเสร็จยังค้างที่ Google → เปิดแอปครั้งหน้า/retryPending() ส่งของต่อ
 // server ส่งใบเสร็จเดิมซ้ำด้วย purchaseId เดิม → ฝั่งเกมกันให้ของซ้ำด้วย purchaseId (hearts.tx)
 //
-// ⚠️ IAP_SERVER_READY = false: Functions ยังไม่ได้ deploy (โปรเจกต์ยังเป็น Spark) → ซ่อนปุ่มซื้อทั้งหมดใน build จริง
-//    เปิดเป็น true ได้ก็ต่อเมื่อทำครบตาม functions/README.md (Blaze, budget, deploy, สิทธิ์ Play, เปิด Anonymous Auth)
+// ⚠️ IAP_SERVER_READY = false: ยังไม่ได้สร้างสินค้า/ให้สิทธิ์ service account ใน Play → ซ่อนปุ่มซื้อทั้งหมดใน build จริง
+//    เปิดเป็น true ได้ก็ต่อเมื่อทำครบตาม functions/README.md
 import { isNative } from "./ads";
-import { firebaseApp } from "./firebase";
+import { Account } from "./account";
+import { callFunction as call } from "./cloud";
 import { PRODUCTS, FALLBACK_PRICES, type ProductId, type Grant } from "./products";
 
 export const IAP_SERVER_READY = false;
-const FUNCTIONS_REGION = "asia-southeast1";     // ต้องตรงกับ REGION ใน functions/index.js
-const FIREBASE_PROJECT = "wickling-rtliz";
-const FN_TIMEOUT_MS = 20_000;
-const FN_RETRY_MS = [1500, 5000];               // ลองใหม่ไม่เกิน 2 ครั้ง (รวม 3) · RESOURCE_EXHAUSTED ไม่ลองซ้ำทันที
-const FN_RETRYABLE = new Set(["NETWORK", "UNAVAILABLE", "INTERNAL", "DEADLINE_EXCEEDED", "UNKNOWN"]);
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-const fnError = (status: string, message?: string) => Object.assign(new Error(message || status), { status });
 
-// ---------- บัญชี guest (Firebase Anonymous Auth) ใช้แค่ให้ server รู้ว่าใบเสร็จเป็นของใคร ----------
-// เกมไม่มีหน้าล็อกอิน · โหลด firebase/auth เฉพาะตอนต่อร้านจริง (IAP_SERVER_READY)
-let authUser: Promise<{ uid: string; token: () => Promise<string> } | null> | null = null;
-function account() {
-  return (authUser ??= (async () => {
-    try {
-      const [app, { getAuth, signInAnonymously }] = await Promise.all([firebaseApp(), import("firebase/auth")]);
-      const auth = getAuth(app);
-      await auth.authStateReady();
-      const u = auth.currentUser ?? (await signInAnonymously(auth)).user;
-      return { uid: u.uid, token: () => u.getIdToken() };
-    } catch { authUser = null; return null; }
-  })());
-}
-
-async function callOnce(name: string, data: unknown) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = await (await account())?.token().catch(() => null);
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), FN_TIMEOUT_MS);
-  let res: Response, body: { error?: { status?: string; message?: string }; result?: unknown };
-  try {
-    res = await fetch(`https://${FUNCTIONS_REGION}-${FIREBASE_PROJECT}.cloudfunctions.net/${name}`, {
-      method: "POST", headers, body: JSON.stringify({ data }), signal: ctl.signal,
-    });
-    body = await res.json().catch(() => ({}));
-  } catch { throw fnError("NETWORK"); }
-  finally { clearTimeout(timer); }
-  if (body?.error) throw fnError(body.error.status ?? "UNKNOWN", body.error.message);
-  if (!res.ok) throw fnError(res.status >= 500 || res.status === 429 ? "UNAVAILABLE" : "FAILED");
-  return body.result;
-}
-
-async function callFunction(name: string, data: unknown): Promise<any> {
-  for (let i = 0; ; i++) {
-    try { return await callOnce(name, data); }
-    catch (err) {
-      if (!FN_RETRYABLE.has((err as { status?: string }).status ?? "") || i >= FN_RETRY_MS.length) throw err;
-      await sleep(FN_RETRY_MS[i]);
-    }
-  }
-}
+// ใบเสร็จผูกกับบัญชีที่เข้าสู่ระบบอยู่ (Account: guest หรือ Google จากหน้าล็อกอิน) · ไม่มีบัญชี = ซื้อไม่ได้
+const callFunction = (name: string, data: unknown) => call(name, data, () => Account.token());
 
 export interface GrantEvent { productId: ProductId; purchaseId: string; grant: Grant; restored: boolean }
 export interface BillingHandlers {
@@ -98,9 +51,8 @@ export const Billing = {
     const C = (window as any).CdvPurchase;
     if (!C) return;
     const { store, ProductType, Platform } = C;
-    const user = await account();
-    // แนบ md5(uid) ไปกับการซื้อ (obfuscatedAccountId) server จึงรู้ว่าใบเสร็จเป็นของบัญชีไหน
-    store.applicationUsername = () => user?.uid;
+    // แนบ md5(uid) ไปกับการซื้อ (obfuscatedAccountId) server จึงรู้ว่าใบเสร็จเป็นของบัญชีไหน · อ่านตอนสั่งซื้อ (เปลี่ยนบัญชีได้)
+    store.applicationUsername = () => Account.user?.uid;
     store.obfuscator = "legacy";
     store.register(Object.entries(PRODUCTS).map(([id, p]) => ({
       id, type: p.once ? ProductType.NON_CONSUMABLE : ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY,
@@ -171,7 +123,7 @@ export const Billing = {
       await this.handlers.onGrant({ productId, purchaseId: `mock-${productId}-${Date.now()}`, grant: structuredClone(PRODUCTS[productId].grant), restored: false });
       return true;
     }
-    if (!(await account())) return false;
+    if (!(await Account.ensure())) return false;
     const offer = this.store?.get(productId)?.getOffer();
     if (!offer) return false;
     return !(await offer.order());

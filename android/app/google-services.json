@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "812461468465",
+    "project_id": "wickling-rtliz",
+    "storage_bucket": "wickling-rtliz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:812461468465:android:303469947fa22bc84ede10",
+        "android_client_info": {
+          "package_name": "com.wickling.puzzle"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "812461468465-jjb725sdb7ik2s67l746016qqmi32fam.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wickling.puzzle",
+            "certificate_hash": "6882055e84d3c57e9dd46ddb0cfe14c8cbe9253d"
+          }
+        },
+        {
+          "client_id": "812461468465-nlhn3eapn3f8uvjppo8dcofl6l4stlcb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wickling.puzzle",
+            "certificate_hash": "7b6e8b0c9af7c3e8fe1dd8cf65243f2851cae88a"
+          }
+        },
+        {
+          "client_id": "812461468465-susoesg09a0ltg94qi9vv1e3t04i692u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDExjMEIlYFitJoKmo8xHuuqSGVUODL5S8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "812461468465-susoesg09a0ltg94qi9vv1e3t04i692u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

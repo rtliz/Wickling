@@ -11,6 +11,9 @@ importers:
       '@capacitor-community/admob':
         specifier: ^8.3.0
         version: 8.3.0
+      '@capacitor-firebase/authentication':
+        specifier: ^8.6.0
+        version: 8.6.0(@capacitor/core@8.6.0)(firebase@13.1.0)
       '@capacitor/android':
         specifier: ^8.6.0
         version: 8.6.0(@capacitor/core@8.6.0)
@@ -48,6 +51,15 @@ packages:
   '@capacitor-community/admob@8.3.0':
     resolution: {integrity: sha512-3KcvQ7eY05MwuR6ZyMj+XUMmjH2+dtOJPM8EFhO2dyVOmVxfQhgscI4puEjE29CAieCo3wybEJcCoST4uv2+1g==}
     engines: {node: '>=22.0.0'}
+
+  '@capacitor-firebase/authentication@8.6.0':
+    resolution: {integrity: sha512-ePL+7lVEt5eSFiTTI2Mi/B53oB00B8Wd7Nc3WroYiLybgnfFs49yvcO90cjImk2keY7sGT7CGgmquLcxVaHzyw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+      firebase: ^12.6.0
+    peerDependenciesMeta:
+      firebase:
+        optional: true
 
   '@capacitor/android@8.6.0':
     resolution: {integrity: sha512-6IJS0TCfV/F/8+324CCwYd3xL6r+TH0W7zzaxYzPz9IV3YWCNvsZDuCCPHUIBC5iASb9od827ddSJ6rz+9Pu1Q==}
@@ -1178,6 +1190,12 @@ snapshots:
       '@capacitor/core': 8.6.0
       '@rdlabo/capacitor-docgen': 0.4.1
       '@webview-native-ui/engine': 1.0.0(@capacitor/core@8.6.0)
+
+  '@capacitor-firebase/authentication@8.6.0(@capacitor/core@8.6.0)(firebase@13.1.0)':
+    dependencies:
+      '@capacitor/core': 8.6.0
+    optionalDependencies:
+      firebase: 13.1.0
 
   '@capacitor/android@8.6.0(@capacitor/core@8.6.0)':
     dependencies:

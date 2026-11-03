@@ -8,8 +8,66 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Noto+Sans+Thai:wght@400;600&display=swap">
 <link rel="stylesheet" href="/src/style.css">
+<style>
+  /* splash ในแอป ~2 วินาที (แบบ LumiFlip) · transform/opacity เท่านั้น · พื้น #0c0911 เท่ากับหน้าเปิดเนทีฟ
+     ภูติอยู่กลางจอ กว้าง 34vmin ตรงกับ splash.png (scripts/android-art.mjs) จึงต่อจากหน้าเปิดเนทีฟได้เนียน
+     ภาพต่ำ: ไม่มีแสงฟุ้ง/ควัน · ภาพกลาง: ไม่มีควัน (อ่านจาก wickling.settings ในสคริปต์ด้านล่าง) */
+  #splash{position:fixed;inset:0;z-index:100;background:#0c0911;pointer-events:none;overflow:hidden;--hw:34vmin;
+    animation:sp-out .35s ease-in 1.75s forwards}
+  #splash .c{position:absolute;left:50%;top:50%;width:0;height:0}
+  #splash svg{position:absolute;display:block;overflow:visible}
+  #splash .hero{width:var(--hw);height:calc(var(--hw)*1.375);left:calc(var(--hw)*-.5);top:calc(var(--hw)*-.6875);animation:sp-pop .5s cubic-bezier(.2,1.4,.4,1) both}
+  #splash .gh{width:calc(var(--hw)*.46);height:calc(var(--hw)*.6325);left:calc(var(--hw)*-.23);top:calc(var(--hw)*-.316);opacity:0;
+    animation:sp-ghost .6s ease-out both;animation-delay:var(--d)}
+  #splash .glow{position:absolute;width:calc(var(--hw)*3);height:calc(var(--hw)*3);left:calc(var(--hw)*-1.5);top:calc(var(--hw)*-1.5);border-radius:50%;
+    background:radial-gradient(closest-side,rgba(255,177,59,.45),rgba(255,143,59,.14) 55%,rgba(255,143,59,0));opacity:0;transform:scale(.5);animation:sp-glow .9s ease-out .1s forwards}
+  #splash .wisp{position:absolute;width:calc(var(--hw)*.3);height:calc(var(--hw)*.3);border-radius:50%;opacity:0;
+    background:radial-gradient(closest-side,var(--c),rgba(201,184,255,0));animation:sp-wisp 1.3s ease-out both;animation-delay:var(--d)}
+  #splash .txt{position:absolute;left:0;right:0;top:calc(50% + var(--hw)*.78);text-align:center;opacity:0;transform:translateY(10px);animation:sp-txt .55s ease-out .8s forwards}
+  #splash h1{margin:0;color:#fff6c0;font:800 clamp(30px,9vw,46px)/1.15 Prompt,"Noto Sans Thai",system-ui,sans-serif;letter-spacing:.02em}
+  #splash p{margin:4px 0 0;color:#ffb13b;font:600 clamp(16px,4.6vw,22px)/1.3 Prompt,"Noto Sans Thai",system-ui,sans-serif}
+  #splash.q-mid .wisp,#splash.q-low .wisp,#splash.q-low .glow{display:none}
+  @keyframes sp-pop{0%{transform:scale(.88)}55%{transform:scale(1.07)}100%{transform:none}}
+  @keyframes sp-ghost{0%{opacity:0;transform:scale(.55)}100%{opacity:.85;transform:translate(var(--gx),var(--gy))}}
+  @keyframes sp-glow{to{opacity:1;transform:none}}
+  @keyframes sp-wisp{0%{opacity:0;transform:translate(var(--wx),0) scale(.6)}40%{opacity:.5}100%{opacity:0;transform:translate(var(--wx),calc(var(--hw)*-.9)) scale(1.3)}}
+  @keyframes sp-txt{to{opacity:1;transform:none}}
+  @keyframes sp-out{to{opacity:0}}
+  @media (prefers-reduced-motion:reduce){#splash{animation-duration:.01s;animation-delay:.6s}#splash *{animation:none!important}#splash .txt,#splash .glow{opacity:1;transform:none}#splash .gh,#splash .wisp{display:none}}
+</style>
 </head>
 <body>
+<!-- ภาพภูติใช้ร่วมกัน (splash / หน้าล็อกอิน / บัญชี) · เส้นหมึก #1b1430 แบบสไปรต์ในเกม (render/board.ts) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="wkF" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a2b"/><stop offset=".45" stop-color="#ffb13b"/><stop offset="1" stop-color="#fff6c0"/></linearGradient>
+  <linearGradient id="wkS0" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c9b8ff" stop-opacity=".15"/><stop offset=".5" stop-color="#c9b8ff" stop-opacity=".75"/><stop offset="1" stop-color="#fbf9ff"/></linearGradient>
+  <linearGradient id="wkS1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#8fe3d0" stop-opacity=".15"/><stop offset=".5" stop-color="#8fe3d0" stop-opacity=".75"/><stop offset="1" stop-color="#fbf9ff"/></linearGradient>
+  <path id="wkBody" d="M0 -24 Q8 -14 13 -2 Q16 14 0 16 Q-16 14 -13 -2 Q-10 -10 -4 -14 Q-3 -8 0 -8 Q-2 -16 0 -24Z"/>
+  <g id="wkFace"><ellipse cx="-4.5" cy="2" rx="2" ry="2.6" fill="#1b1430"/><ellipse cx="4.5" cy="2" rx="2" ry="2.6" fill="#1b1430"/>
+    <circle cx="-3.8" cy="1" r=".8" fill="#fff"/><circle cx="5.2" cy="1" r=".8" fill="#fff"/>
+    <path d="M-2 7 Q0 9 2 7" fill="none" stroke="#1b1430" stroke-width="1.5" stroke-linecap="round"/></g>
+  <g id="wkHero"><use href="#wkBody" fill="url(#wkF)" stroke="#1b1430" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M0 -4 Q4 0 4 4 Q0 8 -4 4 Q-4 0 0 -4Z" fill="#fff6c0" opacity=".55"/><use href="#wkFace"/></g>
+  <g id="wkGhost0"><path d="M-6 15 Q-14 21 -7 26 Q0 30 -5 31" fill="none" stroke="#c9b8ff" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    <use href="#wkBody" fill="url(#wkS0)" stroke="#1b1430" stroke-width="2.2" stroke-linejoin="round" opacity=".85"/><use href="#wkFace"/></g>
+  <g id="wkGhost1"><path d="M-6 15 Q-14 21 -7 26 Q0 30 -5 31" fill="none" stroke="#8fe3d0" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+    <use href="#wkBody" fill="url(#wkS1)" stroke="#1b1430" stroke-width="2.2" stroke-linejoin="round" opacity=".85"/><use href="#wkFace"/></g>
+</defs></svg>
+
+<!-- splash: ภูติตะเกียงจุดติด → เงาควันสองตัวแยกออกมา (กติกาเกม: รอบที่จบกลายเป็นเงา) → ชื่อเกม · ลบทิ้งเมื่อจบ (setupSplash ใน main.ts) -->
+<div id="splash" aria-hidden="true">
+  <div class="c">
+    <i class="glow"></i>
+    <i class="wisp" style="--c:rgba(201,184,255,.7);--wx:calc(var(--hw)*-.75);--d:.45s;left:calc(var(--hw)*-.15);top:calc(var(--hw)*-.2)"></i>
+    <i class="wisp" style="--c:rgba(143,227,208,.7);--wx:calc(var(--hw)*.75);--d:.6s;left:calc(var(--hw)*-.15);top:calc(var(--hw)*-.2)"></i>
+    <svg class="gh" viewBox="-16 -26 32 44" style="--gx:calc(var(--hw)*-.95);--gy:calc(var(--hw)*-.42);--d:.35s"><use href="#wkGhost0"/></svg>
+    <svg class="gh" viewBox="-16 -26 32 44" style="--gx:calc(var(--hw)*.95);--gy:calc(var(--hw)*-.42);--d:.5s"><use href="#wkGhost1"/></svg>
+    <svg class="hero" viewBox="-16 -26 32 44"><use href="#wkHero"/></svg>
+  </div>
+  <div class="txt"><h1>Wickling</h1><p>ภูติตะเกียง</p></div>
+</div>
+<script>try{var q=JSON.parse(localStorage.getItem("wickling.settings")||"{}").quality;if(q==="low"||q==="mid")document.getElementById("splash").className="q-"+q}catch(e){}</script>
+
 <header>
   <div>
     <div class="sub" id="lvlNo">ห้อง 1/5</div>
@@ -68,6 +126,42 @@
   <p>หัวใจไม่จำกัด 2 ชั่วโมง ลองห้องใหม่ได้เรื่อย ๆ ไม่ต้องห่วงหัวใจ</p>
   <div class="row"><button id="oLater">ไว้ก่อน</button><button id="oBuy" class="primary"></button></div>
 </div></div>
+<!-- หน้าล็อกอิน (ยกจาก LumiFlip #login): ครั้งแรกที่เปิดเกม และหลังออกจากระบบ/ลบบัญชี · ปิดเองไม่ได้จนกว่าจะเลือก -->
+<div id="login" class="ov gate" hidden><div class="card login">
+  <div class="lg-hero" aria-hidden="true">
+    <i class="lg-glow"></i>
+    <svg class="g0" viewBox="-16 -26 32 44"><use href="#wkGhost0"/></svg>
+    <svg class="g1" viewBox="-16 -26 32 44"><use href="#wkGhost1"/></svg>
+    <svg class="me" viewBox="-16 -26 32 44"><use href="#wkHero"/></svg>
+  </div>
+  <h2>Wickling<small>ภูติตะเกียง</small></h2>
+  <p>เล่นได้เลย ไม่ต้องสมัคร จะผูกบัญชี Google ทีหลังก็ได้</p>
+  <button id="googleBtn" class="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#ea4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.4 0 24 0 14.6 0 6.6 5.4 2.6 13.3l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285f4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.1z"/><path fill="#fbbc05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34a853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>เข้าด้วย Google</span></button>
+  <div class="or"><span>หรือ</span></div>
+  <button id="guestBtn" class="primary">เล่นแบบผู้เยี่ยมชม</button>
+  <p class="note">ความคืบหน้าเก็บไว้ในเครื่องนี้ · ผูก Google ทีหลังได้ในหน้าบัญชี</p>
+</div></div>
+
+<!-- บัญชี: ผูก Google / ออกจากระบบ / ลบบัญชี (ข้อความจากบัญชีใส่ด้วย textContent เท่านั้น) -->
+<div id="profileOv" class="ov" hidden><div class="card profile">
+  <button class="x" id="pClose" aria-label="ปิด">✕</button>
+  <div class="pav" id="pAvatar" aria-hidden="true"></div>
+  <h2 id="pName"></h2>
+  <small class="ptype" id="pType"></small>
+  <div class="pstats" id="pStats"></div>
+  <button id="pLink" class="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#ea4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.4 0 24 0 14.6 0 6.6 5.4 2.6 13.3l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285f4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.1z"/><path fill="#fbbc05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34a853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>ผูกบัญชี Google</span></button>
+  <p class="pnote" id="pNote"></p>
+  <button id="pSignOut">ออกจากระบบ</button>
+  <button id="pDelete" class="danger">ลบบัญชีถาวร</button>
+</div></div>
+
+<!-- ถามยืนยัน (ออกจากระบบ / ลบบัญชี) -->
+<div id="askOv" class="ov" hidden><div class="card">
+  <h2 id="askTitle"></h2>
+  <p id="askText"></p>
+  <div class="row"><button id="askNo">ยกเลิก</button><button id="askYes" class="primary"></button></div>
+</div></div>
+
 <div id="treeOv" hidden>
 <div class="phone" id="phone">
     <div class="panel top">
