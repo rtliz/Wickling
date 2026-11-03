@@ -25,3 +25,9 @@
     @com.getcapacitor.annotation.CapacitorPlugin *;
     @com.getcapacitor.PluginMethod *;
 }
+
+# @capacitor-firebase/authentication อ้างคลาส Facebook ที่เราไม่ได้ใช้ (แบบเดียวกับ LumiFlip)
+-dontwarn com.facebook.CallbackManager$Factory
+-dontwarn com.facebook.CallbackManager
+-dontwarn com.facebook.FacebookCallback
+-dontwarn com.facebook.login.LoginManager
