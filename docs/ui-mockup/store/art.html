@@ -8,7 +8,9 @@ svg{display:block}
 .sub{font:600 42px Prompt,sans-serif;fill:#ffb13b}
 .tag{font:600 27px Prompt,sans-serif;fill:#f6ecd6}
 </style></head><body>
-<!-- ?v=icon = 512×512 · ?v=feature = 1024×500 -->
+<!-- ?v=icon = 512×512 · ?v=feature = 1024×500
+     Android (สร้างด้วย node scripts/android-art.mjs): ?v=fg / ?v=bg = ไอคอน adaptive 108dp · ?v=round = ไอคอนกลม
+     ?v=splash&w=..&h=.. = หน้าเปิดเนทีฟ (พื้น #0c0911 + ภูติกลางจอ กว้าง 34% ของด้านสั้น ตรงกับ #splash ใน index.html) -->
 <svg width="0" height="0" style="position:absolute"><defs>
 <linearGradient id="f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff5a2b"/><stop offset=".45" stop-color="#ffb13b"/><stop offset="1" stop-color="#fff6c0"/></linearGradient>
 <linearGradient id="s0" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c9b8ff" stop-opacity=".15"/><stop offset=".5" stop-color="#c9b8ff" stop-opacity=".75"/><stop offset="1" stop-color="#fbf9ff"/></linearGradient>
@@ -36,6 +38,27 @@ svg{display:block}
   <use href="#hero" transform="translate(256 290) scale(7.2)"/>
 </svg>
 
+<!-- adaptive icon: เนื้อหาอยู่ในวงกลมปลอดภัย 66/108 ตรงกลาง (Android ตัดขอบเป็นรูปทรงต่าง ๆ) -->
+<svg id="fg" width="432" height="432" viewBox="0 0 432 432" style="display:none">
+  <use href="#ghost0" transform="translate(122 190) scale(2)" opacity=".85"/>
+  <use href="#ghost1" transform="translate(310 190) scale(2)" opacity=".85"/>
+  <use href="#hero" transform="translate(216 238) scale(4.9)"/>
+</svg>
+<svg id="bg" width="432" height="432" viewBox="0 0 512 512" style="display:none">
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#tiles)"/>
+  <circle cx="256" cy="262" r="240" fill="url(#glow)"/>
+</svg>
+<svg id="round" width="512" height="512" viewBox="0 0 512 512" style="display:none">
+  <clipPath id="circ"><circle cx="256" cy="256" r="256"/></clipPath>
+  <g clip-path="url(#circ)"><rect width="512" height="512" fill="url(#bg)"/><rect width="512" height="512" fill="url(#tiles)"/>
+  <circle cx="256" cy="262" r="240" fill="url(#glow)"/>
+  <use href="#ghost0" transform="translate(120 206) scale(2.8)" opacity=".85"/>
+  <use href="#ghost1" transform="translate(392 206) scale(2.8)" opacity=".85"/>
+  <use href="#hero" transform="translate(256 290) scale(6.4)"/></g>
+</svg>
+<svg id="splash" style="display:none"><rect width="100%" height="100%" fill="#0c0911"/><use id="spHero" href="#hero"/></svg>
+
 <svg id="feature" width="1024" height="500" viewBox="0 0 1024 500" style="display:none">
   <rect width="1024" height="500" fill="url(#bg)"/>
   <rect width="1024" height="500" fill="url(#tiles)"/>
@@ -48,6 +71,17 @@ svg{display:block}
   <text class="tag" x="484" y="334">เล่นพลาดไม่แพ้ แค่ได้เงาตัวเองมาช่วย</text>
 </svg>
 <script>
-document.getElementById(new URLSearchParams(location.search).get('v') === 'feature' ? 'feature' : 'icon').style.display = 'block';
+const q = new URLSearchParams(location.search), v = q.get('v') || 'icon';
+const el = document.getElementById(['feature', 'fg', 'bg', 'round', 'splash'].includes(v) ? v : 'icon');
+el.style.display = 'block';
+if (v === 'fg' || v === 'round') document.documentElement.style.background = document.body.style.background = 'transparent';
+const size = Number(q.get('s'));
+if (size && v !== 'splash') { el.setAttribute('width', size); el.setAttribute('height', size); }
+if (v === 'splash') {
+  // ภูติกว้าง 34% ของด้านสั้น (viewBox ของตัวภูติกว้าง 32 หน่วย, กล่อง y -26..18 → กลางกล่อง y = -4) วางกลางจอพอดี
+  const w = Number(q.get('w')), h = Number(q.get('h')), k = 0.34 * Math.min(w, h) / 32;
+  el.setAttribute('width', w); el.setAttribute('height', h); el.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  document.getElementById('spHero').setAttribute('transform', `translate(${w / 2} ${h / 2 + 4 * k}) scale(${k})`);
+}
 </script>
 </body></html>

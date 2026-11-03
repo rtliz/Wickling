@@ -16,7 +16,12 @@
     </style>
 
 
+    <!-- หน้าเปิดเนทีฟ: Android 12+ ใช้สีพื้น + ภูติจากไอคอน · รุ่นเก่าใช้ @drawable/splash (สร้างด้วย scripts/android-art.mjs)
+         พื้น #0c0911 เท่ากับ #splash ในเกม จึงต่อกันเนียน -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- พื้นหลังหน้าเปิด/ไอคอน: ตรงกับ #splash ใน index.html และ android.backgroundColor ใน capacitor.config.json -->
+    <color name="ic_launcher_background">#0C0911</color>
 </resources>
