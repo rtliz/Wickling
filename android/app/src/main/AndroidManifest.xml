@@ -38,7 +38,7 @@
              TODO ก่อนปล่อยจริง: สร้างแอป Wickling ใน AdMob แล้วเปลี่ยนเป็น id จริง (ห้ามใช้ id ของ LumiFlip) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-8745889359156577~9573034348" />
     </application>
 
     <!-- Permissions -->

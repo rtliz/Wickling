@@ -29,7 +29,7 @@
 | `src/render/board.ts` | วาดกระดานด้วย Canvas 2D (สไปรต์ SVG ในโค้ด) · 3 ระดับกราฟิก |
 | `src/ui/tree.ts` | หน้าต้นไม้สกิล + วิดีโอตัวอย่างสกิล (ยกจากต้นแบบ ยังเป็น `@ts-nocheck`) |
 | `src/main.ts` | ตัวควบคุมเกม HUD ปุ่ม เสียง ลูปหลัก |
-| `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id ทดสอบของ Google · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
+| `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id จริงของ Wickling (`testing: true` จนกว่าจะปล่อย) · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
 | `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ · `IAP_SERVER_READY = false` ซ่อนปุ่มซื้อใน build จริง · ร้านจำลองเฉพาะ `pnpm dev` |
 | `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
 | `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · **ยังไม่ deploy** |
@@ -52,7 +52,7 @@
 | ตัวสุ่มหอคอย (`genTower`, seed) | ห้องของแต่ละชั้นต้องเหมือนเดิม | ล็อกหลังปล่อย |
 | id สกิล (`root t1 t2 t3 s1 s2 s3 l1 l2 l3 cap`) | เซฟอ้างด้วย id | ล็อก |
 | product id IAP | `remove_ads` (ครั้งเดียว ฿35), `unlimited_hearts_2h` (ซื้อซ้ำได้ ฿19) · id ร่วมทั้งสตูดิโอ | เสนอ · ยังไม่สร้างใน Play Console (แพ็กแรก/คำใบ้ตัดไว้ก่อน ยังไม่มีระบบคำใบ้) |
-| AdMob | ตอนนี้ id ทดสอบของ Google (`AD_CONFIG` + `AndroidManifest.xml`) | ยังไม่ได้สร้างแอปใน AdMob |
+| AdMob | app `ca-app-pub-8745889359156577~9573034348` · banner `/1650100260` · interstitial `/3677709836` · rewarded `/8259952676` (`AD_CONFIG` + `AndroidManifest.xml`) | สร้างแล้ว 2026-11-03 · `testing: true` จนกว่าจะปล่อย (ตั้ง `false` ตอน build ปล่อยจริง) |
 | ระดับกราฟิก | อัตโนมัติ / สูง / กลาง / ต่ำ (`wickling.settings`) | ทำแล้ว |
 | id ใน studio-cms | `wickling` | ยังไม่ได้เพิ่มใน `studio-cms/src/games.ts` |
 

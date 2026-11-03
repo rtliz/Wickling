@@ -9,15 +9,14 @@ import {
 
 export const isNative = Capacitor.isNativePlatform();
 
-// ⚠️ ตอนนี้เป็น id ทดสอบของ Google ทั้งหมด (https://developers.google.com/admob/android/test-ads) · ปลอดภัย กดได้
-// TODO ก่อนปล่อยจริง: สร้างแอป Wickling ใน AdMob แล้วใส่ id จริงตรงนี้ + APPLICATION_ID ใน android/app/src/main/AndroidManifest.xml
-//   แล้วตั้ง testing = false · ห้ามใช้ id ของ LumiFlip หรือเกมอื่น · ห้ามกดโฆษณาจริงของตัวเอง
+// id จริงของแอป Wickling ใน AdMob (ใส่ 2026-11-03) · ห้ามใช้ id ของเกมอื่น · ห้ามกดโฆษณาจริงของตัวเอง
+// testing = true: SDK ส่งโฆษณาทดสอบแม้ใช้ id จริง (ปลอดภัย กดได้) · TODO ก่อนปล่อยจริง: ตั้ง testing = false
 export const AD_CONFIG = {
   testing: true,
-  appId: "ca-app-pub-3940256099942544~3347511713",          // test app id (ต้องตรงกับ AndroidManifest.xml)
-  bannerId: "ca-app-pub-3940256099942544/9214589741",       // test adaptive banner
-  interstitialId: "ca-app-pub-3940256099942544/1033173712", // test interstitial
-  rewardedId: "ca-app-pub-3940256099942544/5224354917",     // test rewarded
+  appId: "ca-app-pub-8745889359156577~9573034348",          // ต้องตรงกับ APPLICATION_ID ใน AndroidManifest.xml
+  bannerId: "ca-app-pub-8745889359156577/1650100260",       // wickling_banner
+  interstitialId: "ca-app-pub-8745889359156577/3677709836", // wickling_interstitial
+  rewardedId: "ca-app-pub-8745889359156577/8259952676",     // wickling_rewarded
 };
 
 const setBannerHeight = (px: number) => document.documentElement.style.setProperty("--banner-h", `${px}px`);
