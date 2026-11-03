@@ -52,6 +52,44 @@
     <use href="#wkBody" fill="url(#wkS0)" stroke="#1b1430" stroke-width="2.2" stroke-linejoin="round" opacity=".85"/><use href="#wkFace"/></g>
   <g id="wkGhost1"><path d="M-6 15 Q-14 21 -7 26 Q0 30 -5 31" fill="none" stroke="#8fe3d0" stroke-width="3" stroke-linecap="round" opacity=".55"/>
     <use href="#wkBody" fill="url(#wkS1)" stroke="#1b1430" stroke-width="2.2" stroke-linejoin="round" opacity=".85"/><use href="#wkFace"/></g>
+  <!-- ไอคอน UI (ยกจาก docs/ui-mockup/ux-v2 ที่เจ้าของเกมอนุมัติ) · ใช้ผ่าน ic() ใน main.ts -->
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2b8"/><stop offset="1" stop-color="#ff9a24"/></linearGradient>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.5 C5 16 2.3 12.5 2.3 8.6 A5.2 5.2 0 0 1 12 6.6 A5.2 5.2 0 0 1 21.7 8.6 C21.7 12.5 19 16 12 21.5Z" fill="#ff6b6b" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 8.5 Q6.5 6.6 8.6 6.4" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".7"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.6 L14.7 9 L21.5 9.5 L16.3 14 L17.9 20.7 L12 17.1 L6.1 20.7 L7.7 14 L2.5 9.5 L9.3 9Z" fill="url(#gold)" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-star0" viewBox="0 0 24 24"><path d="M12 2.6 L14.7 9 L21.5 9.5 L16.3 14 L17.9 20.7 L12 17.1 L6.1 20.7 L7.7 14 L2.5 9.5 L9.3 9Z" fill="#3a2d55" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5 L19.5 12 L7 19.5Z" fill="currentColor" stroke="#1b1430" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6 L18 18 M18 6 L6 18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 9.5 Q9 6.8 12 6.8 Q15 6.8 15 9.3 Q15 11 12.8 12 Q12 12.5 12 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5 V19 M5 12 H19" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 L10 17.5 L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M7.5 11 V8 A4.5 4.5 0 0 1 16.5 8 V11" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="5" y="10.5" width="14" height="10" rx="3" fill="currentColor" stroke="#1b1430" stroke-width="1.4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.5 L12 4 L20.5 11.5 M6 10 V20 H18 V10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20 V14.5 H14 V20" fill="currentColor"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M5 20 C5 14 12 16 12 11 C12 6 7 7 8 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 4.5"/><circle cx="6" cy="19" r="2.6" fill="currentColor"/><path d="M17 4 A3.6 3.6 0 0 1 20.6 7.6 C20.6 10.5 17 14 17 14 C17 14 13.4 10.5 13.4 7.6 A3.6 3.6 0 0 1 17 4Z" fill="currentColor" stroke="#1b1430" stroke-width="1.2"/><circle cx="17" cy="7.6" r="1.3" fill="#1b1430"/></symbol>
+  <symbol id="i-tower" viewBox="0 0 24 24"><g fill="#c9b8ff" stroke="#1b1430" stroke-width="1.5" stroke-linejoin="round"><path d="M4 21 H20 V17.5 H4Z"/><path d="M6 17.5 V14 H18 V17.5Z"/><path d="M8 14 V10.5 H16 V14Z"/><path d="M9.5 10.5 V7.5 H14.5 V10.5Z"/></g><path d="M12 1.8 Q14.4 4.4 14 6 Q12 7 10 6 Q9.6 4.4 12 1.8Z" fill="#ffb13b" stroke="#1b1430" stroke-width="1.2" stroke-linejoin="round"/><path d="M3 11.5 L5.5 10 H18.5 L21 11.5 M5 15 L6.5 14 M17.5 14 L19 15" fill="none" stroke="#e6bd5c" stroke-width="1.4" stroke-linecap="round" opacity="0"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><path d="M12 21 V12 M12 14 L6 9 M12 14 L18 9 M12 12 V5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="4.5" r="2.6" fill="currentColor" stroke="#1b1430" stroke-width="1.2"/><circle cx="5.5" cy="8.5" r="2.6" fill="currentColor" stroke="#1b1430" stroke-width="1.2"/><circle cx="18.5" cy="8.5" r="2.6" fill="currentColor" stroke="#1b1430" stroke-width="1.2"/><circle cx="12" cy="20" r="2.2" fill="currentColor"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 3.5 H17 V10 A5 5 0 0 1 7 10Z" fill="url(#gold)" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/><path d="M7 5.5 H3.8 Q3.8 10.5 7.6 11.2 M17 5.5 H20.2 Q20.2 10.5 16.4 11.2" fill="none" stroke="#1b1430" stroke-width="1.7" stroke-linecap="round"/><path d="M12 15 V18.5 M8 21 H16 L15 18.5 H9Z" fill="#e6bd5c" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-trophy-l" viewBox="0 0 24 24"><path d="M7 3.5 H17 V10 A5 5 0 0 1 7 10Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 5.5 H3.8 Q3.8 10.5 7.6 11.2 M17 5.5 H20.2 Q20.2 10.5 16.4 11.2 M12 15 V18.5 M8 21 H16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21 Q4 14 12 14 Q20 14 20 21Z" fill="currentColor"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8 H19 L20 21 H4Z" fill="#ff9a24" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 11 V6.5 A3.5 3.5 0 0 1 15.5 6.5 V11" fill="none" stroke="#1b1430" stroke-width="1.9" stroke-linecap="round"/><path d="M7 8 H17" stroke="#ffd36b" stroke-width="1.6" opacity=".7"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.6" fill="none" stroke="currentColor" stroke-width="3.6" stroke-dasharray="3.1 2.77"/><circle cx="12" cy="12" r="6.2" fill="currentColor"/><circle cx="12" cy="12" r="2.6" fill="#1f172b"/></symbol>
+  <symbol id="i-replay" viewBox="0 0 24 24"><path d="M19.5 12 A7.5 7.5 0 1 1 12 4.5 H15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M13 1.5 L16.5 4.5 L13 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7 H15 A5 5 0 0 1 15 17 H8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M12 3.5 L8.5 7 L12 10.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ghost" viewBox="0 0 24 24"><path d="M12 3 Q18.5 3 18.5 11 V20.5 L16 18.5 L14 20.5 L12 18.5 L10 20.5 L8 18.5 L5.5 20.5 V11 Q5.5 3 12 3Z" fill="#fbf9ff" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round" opacity=".95"/><circle cx="9.6" cy="11" r="1.5" fill="#1b1430"/><circle cx="14.4" cy="11" r="1.5" fill="#1b1430"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5 H8 L13 5 V19 L8 14.5 H4Z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M16 9 Q18.5 12 16 15 M18.5 6.5 Q23 12 18.5 17.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-gfx" viewBox="0 0 24 24"><path d="M12 2.5 L14 9.5 L21.5 12 L14 14.5 L12 21.5 L10 14.5 L2.5 12 L10 9.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12 H21 M12 3 Q7 12 12 21 Q17 12 12 3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7 V12 L15.5 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-noad" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3" fill="#2c2250" stroke="#1b1430" stroke-width="1.7"/><path d="M6 15 L9 9 L12 15 M7 13 H11" fill="none" stroke="#ffd36b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20 L20 4" stroke="#ff6b6b" stroke-width="2.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3.5" fill="#2c2250" stroke="currentColor" stroke-width="2"/><path d="M10 9 L15.5 12 L10 15Z" fill="currentColor"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 9 H16 M8 12.5 H16 M8 16 H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20 L5 15.5 L16 4.5 L19.5 8 L8.5 19Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4 H5 V20 H10 M9 12 H20 M16 8 L20 12 L16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7 H19.5 M9 7 V4.5 H15 V7 M6.5 7 L7.5 20 H16.5 L17.5 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14 A4 4 0 0 0 15.7 14.3 L19 11 A4 4 0 0 0 13.3 5.3 L12 6.6 M14 10 A4 4 0 0 0 8.3 9.7 L5 13 A4 4 0 0 0 10.7 18.7 L12 17.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chest" viewBox="0 0 24 24"><path d="M3.5 11 Q3.5 5 12 5 Q20.5 5 20.5 11Z" fill="#a8520f" stroke="#1b1430" stroke-width="1.7" stroke-linejoin="round"/><rect x="3.5" y="11" width="17" height="9" rx="1.5" fill="#d9822b" stroke="#1b1430" stroke-width="1.7"/><rect x="10" y="9.5" width="4" height="5" rx="1" fill="#ffd36b" stroke="#1b1430" stroke-width="1.4"/></symbol>
+  <symbol id="i-gate" viewBox="0 0 24 24"><path d="M5 21 V10 Q5 3 12 3 Q19 3 19 10 V21Z" fill="#ffb13b" stroke="#1b1430" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 21 V11 Q8.5 7 12 7 Q15.5 7 15.5 11 V21Z" fill="#fff6c0" opacity=".85"/></symbol>
+  <symbol id="i-fog" viewBox="0 0 24 24"><path d="M6 17 A4 4 0 0 1 6.5 9 A5.5 5.5 0 0 1 17 8.5 A4 4 0 0 1 18 17Z" fill="#43365f" stroke="#1b1430" stroke-width="1.6" stroke-linejoin="round"/></symbol>
 </defs></svg>
 
 <!-- splash: ภูติตะเกียงจุดติด → เงาควันสองตัวแยกออกมา (กติกาเกม: รอบที่จบกลายเป็นเงา) → ชื่อเกม · ลบทิ้งเมื่อจบ (setupSplash ใน main.ts) -->
@@ -68,60 +106,135 @@
 </div>
 <script>try{var q=JSON.parse(localStorage.getItem("wickling.settings")||"{}").quality;if(q==="low"||q==="mid")document.getElementById("splash").className="q-"+q}catch(e){}</script>
 
-<header>
-  <div>
-    <div class="sub" id="lvlNo">ห้อง 1/5</div>
-    <h1 id="lvlName">สวิตช์แรก</h1>
+<!-- โครงจอ UX v2 (docs/ui-mockup/ux-v2 · เจ้าของเกมอนุมัติ 2026-11-03): แถบบน · หน้าแรก / แผนที่ / หน้าเล่น / ต้นไม้ · แถบเมนูล่าง
+     แบนเนอร์โฆษณากันที่ไว้ล่างสุดทุกหน้า (body padding-bottom = --banner-h ที่ ads.ts ตั้งตามขนาดจริง) -->
+<div id="app">
+  <div class="top" id="topbar">
+    <button class="avatar" id="tbAvatar" aria-label="โปรไฟล์"><svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkHero"/></svg></button>
+    <button class="chip" id="tbHearts" aria-label="หัวใจและร้าน"><svg class="ic " aria-hidden="true"><use href="#i-heart"/></svg><span id="tbHeartsN">5</span><span class="plus"><svg class="ic s" aria-hidden="true"><use href="#i-plus"/></svg></span></button>
+    <div class="chip" aria-label="ดาว"><svg class="ic " aria-hidden="true"><use href="#i-star"/></svg><span id="tbStars">0</span></div>
+    <span class="sp"></span>
+    <button class="ibtn" id="tbShop" aria-label="ร้าน"><svg class="ic " aria-hidden="true"><use href="#i-bag"/></svg></button>
+    <button class="ibtn" id="tbSettings" aria-label="ตั้งค่า"><svg class="ic " aria-hidden="true"><use href="#i-gear"/></svg></button>
   </div>
-  <button id="hearts" class="hearts" aria-label="หัวใจ แตะเพื่อดูรายละเอียด"></button>
-  <div class="ghosts">
-    <div class="dots" id="dots" role="group" aria-label="เงาที่ใช้แล้ว แตะจุดสีเพื่อปรับเงา"></div>
-  </div>
-</header>
 
-<div id="stage">
-  <canvas id="cv" aria-label="กระดานเกม แตะช่องเพื่อเดิน"></canvas>
-  <!-- คำอธิบายเต็มของห้อง (ปุ่ม ?) · แตะที่ไหนก็ได้เพื่อปิด · ข้อความมาจากข้อมูลห้องในโค้ด ไม่ใช่จากผู้เล่น -->
-  <div id="helpPop" hidden><div class="hcard"><p id="helpText"></p><small id="helpMore"></small></div></div>
-  <div id="win" hidden><div class="card">
-    <h2 id="winTitle">ผ่านแล้ว!</h2>
-    <div class="stars" id="winStars"></div>
-    <p id="winMsg"></p>
-    <div class="row">
-      <button id="btnRetry">เล่นห้องนี้อีก</button>
-      <button id="btnNext" class="primary">ห้องต่อไป</button>
+  <!-- 1 หน้าแรก -->
+  <section class="scr" id="scrHome">
+    <div class="stage"><i class="halo"></i>
+      <svg class="mascot" viewBox="-170 -120 340 240" aria-hidden="true"><use href="#wkGhost0" transform="translate(-112 12) scale(2.8)"/><use href="#wkGhost1" transform="translate(112 12) scale(2.8)"/><use href="#wkHero" transform="translate(0 6) scale(5.4)"/></svg></div>
+    <div class="logo"><b>Wickling</b><span>ภูติตะเกียง</span></div>
+    <button class="btn primary playbig" id="homePlay"><span class="t"><svg class="ic l" aria-hidden="true"><use href="#i-play"/></svg><span id="homePlayT">เล่นต่อ</span></span><span class="s" id="homePlayS"></span></button>
+    <div class="modes">
+      <button class="mode" id="homeMap"><span class="mico"><svg class="ic l" aria-hidden="true"><use href="#i-map"/></svg></span><b>เส้นทาง</b><small><svg class="ic s" aria-hidden="true"><use href="#i-check"/></svg><span id="homeMapN"></span></small></button>
+      <button class="mode" id="homeTower"><span class="mico"><svg class="ic l" aria-hidden="true"><use href="#i-tower"/></svg></span><b>หอคอย ∞</b><small id="homeTowerN"></small></button>
+      <button class="mode" id="homeTree"><span class="mico"><svg class="ic l" aria-hidden="true"><use href="#i-tree"/></svg></span><b>ต้นไม้</b><small><svg class="ic s" aria-hidden="true"><use href="#i-star"/></svg><span id="homeTreeN"></span></small><i class="dot" id="homeTreeDot" hidden></i></button>
     </div>
-  </div></div>
-</div>
+    <div class="duo">
+      <button class="wide" id="homeRank"><svg class="ic l" aria-hidden="true"><use href="#i-trophy"/></svg><span>อันดับ<small id="homeRankS">สัปดาห์นี้</small></span></button>
+      <button class="wide" id="homeShop"><svg class="ic l" aria-hidden="true"><use href="#i-heart"/></svg><span>หัวใจและร้าน<small id="homeShopS"></small></span></button>
+    </div>
+  </section>
 
-<!-- แถวข้อความ: คำใบ้บรรทัดเดียว (แตะเพื่อซ่อน) + ปุ่ม ? เปิดคำอธิบายเต็มของห้อง -->
-<div class="tiprow">
-  <div id="banner" role="status" aria-live="polite"></div>
-  <button id="btnHelp" class="help" aria-label="คำใบ้ห้องนี้">?</button>
+  <!-- 2 แผนที่: ทางเดินโคมไฟ บทละสี · ห้องล่างสุดคือห้องแรก (เลื่อนขึ้น = ไปข้างหน้า) -->
+  <section class="scr" id="scrMap" hidden><div class="map-scroll" id="mapScroll"><div class="map-inner" id="mapInner"></div></div></section>
+
+  <!-- 3 หน้าเล่น -->
+  <section class="scr" id="scrPlay" hidden>
+    <div class="hud">
+      <button class="ibtn" id="btnBack" aria-label="กลับ"><svg class="ic " aria-hidden="true"><use href="#i-back"/></svg></button>
+      <div class="title"><b id="lvlNo">ห้อง 1</b><small id="lvlName"></small></div>
+      <button id="hearts" class="chip hearts" aria-label="หัวใจ แตะเพื่อดูรายละเอียด"></button>
+      <button class="ibtn" id="btnGear" aria-label="ตั้งค่า"><svg class="ic " aria-hidden="true"><use href="#i-gear"/></svg></button>
+    </div>
+    <div class="strip"><span class="goal" id="goal"></span>
+      <span class="gdots"><svg class="ic s" aria-hidden="true"><use href="#i-ghost"/></svg><span class="dots" id="dots" role="group" aria-label="เงาที่ใช้แล้ว แตะจุดสีเพื่อปรับเงา"></span></span></div>
+    <div id="stage">
+      <canvas id="cv" aria-label="กระดานเกม แตะช่องเพื่อเดิน"></canvas>
+      <!-- คำอธิบายเต็มของห้อง (ปุ่ม ?) · แตะที่ไหนก็ได้เพื่อปิด · ข้อความมาจากข้อมูลห้องในโค้ด ไม่ใช่จากผู้เล่น -->
+      <div id="helpPop" hidden><div class="hcard"><p id="helpText"></p><small id="helpMore"></small></div></div>
+      <div id="gmenu" hidden></div>
+    </div>
+    <div class="timer" id="timerBar" aria-label="เวลาที่เหลือ"><span class="wax" id="bar"></span><span class="fl"></span><span class="rest"></span></div>
+    <!-- แถวข้อความ: คำใบ้บรรทัดเดียว (แตะเพื่อซ่อน) + ปุ่ม ? เปิดคำอธิบายเต็มของห้อง -->
+    <div class="tiprow">
+      <div id="banner" role="status" aria-live="polite"></div>
+      <button id="btnHelp" class="help" aria-label="คำใบ้ห้องนี้"><svg class="ic " aria-hidden="true"><use href="#i-help"/></svg></button>
+    </div>
+    <div class="dock">
+      <div class="skills" id="skillBar"></div>
+      <div class="acts">
+        <button id="btnEnd" class="act" disabled aria-label="จบรอบนี้ให้กลายเป็นเงาเลย"><svg class="ic " aria-hidden="true"><use href="#i-ghost"/></svg><span>เป็นเงา</span></button>
+        <button id="btnUndo" class="act" disabled aria-label="ลบเงาล่าสุด"><svg class="ic " aria-hidden="true"><use href="#i-undo"/></svg><span>ลบเงา</span></button>
+        <button id="btnReset" class="act" aria-label="เริ่มห้องใหม่"><svg class="ic " aria-hidden="true"><use href="#i-replay"/></svg><span>เริ่มใหม่</span><i class="hcost" id="resetCost" hidden aria-hidden="true"><svg class="ic " aria-hidden="true"><use href="#i-heart"/></svg>1</i></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 ต้นไม้สกิล: ที่ว่างให้ #treeOv (src/ui/tree.ts) ด้านล่าง วางทับพอดีระหว่างแถบบนกับเมนูล่าง -->
+  <section class="scr" id="scrTree" hidden></section>
+
+  <nav class="nav" id="nav">
+    <button data-nav="home" class="on"><svg class="ic " aria-hidden="true"><use href="#i-home"/></svg><span>หน้าแรก</span></button>
+    <button data-nav="map"><svg class="ic " aria-hidden="true"><use href="#i-map"/></svg><span>แผนที่</span></button>
+    <button data-nav="tree"><svg class="ic " aria-hidden="true"><use href="#i-tree"/></svg><span>ต้นไม้</span><i class="dot" id="navTreeDot" hidden></i></button>
+    <button data-nav="rank"><svg class="ic " aria-hidden="true"><use href="#i-trophy-l"/></svg><span>อันดับ</span></button>
+  </nav>
 </div>
-<div class="timer" id="timerBar" aria-label="เวลาที่เหลือ"><span class="wax" id="bar"></span><span class="fl"></span><span class="rest"></span></div>
-<div class="skills" id="skillBar"></div>
-<div class="controls">
-  <button id="btnEnd" disabled aria-label="จบรอบนี้ให้กลายเป็นเงาเลย"><svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkGhost0"/></svg><span>เป็นเงา</span></button>
-  <button id="btnUndo" disabled aria-label="ลบเงาล่าสุด"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 4 10l5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 10H14a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span>ลบเงา</span></button>
-  <button id="btnReset" aria-label="เริ่มห้องใหม่"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M18.5 2.5v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>เริ่มใหม่</span><i class="hcost" id="resetCost" hidden aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.5S3.5 15.2 3.5 9.1A4.6 4.6 0 0 1 12 6.6a4.6 4.6 0 0 1 8.5 2.5c0 6.1-8.5 11.4-8.5 11.4z" fill="var(--heart)" stroke="#1b1430" stroke-width="2"/></svg>1</i></button>
-</div>
-<div class="levels" id="levels"></div>
-<div id="gmenu" hidden></div>
 <div id="toast" class="gtoast" role="status" aria-live="polite"></div>
 
-<!-- หัวใจ: หน้าหัวใจหมด + ร้าน (ปุ่มซื้อ/ดูโฆษณาโชว์เฉพาะเมื่อมีให้ใช้) -->
-<div id="heartsOv" class="ov" hidden><div class="card">
-  <h2 id="hTitle">หัวใจ</h2>
-  <div class="hbig" id="hBig"></div>
-  <p id="hText"></p>
-  <div class="opts">
-    <button id="hAd" class="opt"><span>ดูโฆษณา รับหัวใจ +1<small id="hAdLeft"></small></span></button>
-    <button id="hUnl" class="opt primary"><span>หัวใจไม่จำกัด 2 ชั่วโมง<small>เล่นห้องใหม่ได้ไม่ต้องใช้หัวใจ</small></span><b id="hUnlPrice"></b></button>
-    <button id="hNoAds" class="opt"><span>ลบโฆษณา<small>ไม่มีโฆษณาคั่นและแบนเนอร์ + หัวใจวันละ 8 ดวง</small></span><b id="hNoAdsPrice"></b></button>
+<!-- ผลห้อง/ชั้น: ชีตล่างทับหน้าเล่น · ห้อง: ด่านต่อไป / เล่นใหม่ / แผนที่ · หอคอย: ขึ้นชั้นต่อไป / เล่นใหม่ / หน้าแรก -->
+<div id="win" class="sheet-wrap" hidden><div class="dim"></div><div class="sheet pop win">
+  <svg class="rays" viewBox="-100 -100 200 200" aria-hidden="true"><g fill="#ffd36b"><path d="M-7 0L0 -98L7 0z"/><path transform="rotate(30)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(60)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(90)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(120)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(150)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(180)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(210)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(240)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(270)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(300)" d="M-7 0L0 -98L7 0z"/><path transform="rotate(330)" d="M-7 0L0 -98L7 0z"/></g></svg>
+  <div class="winstars" id="winStars"></div>
+  <h2 id="winTitle">ผ่านแล้ว</h2>
+  <p class="sub" id="winMsg"></p>
+  <div class="newbest" id="winBest" hidden><svg class="ic s" aria-hidden="true"><use href="#i-trophy"/></svg>สูงสุดใหม่ของคุณ</div>
+  <div class="reward" id="winChips"></div>
+  <button class="btn primary lg" id="btnNext"><span id="btnNextT">ด่านต่อไป</span><svg class="ic " aria-hidden="true"><use href="#i-play"/></svg></button>
+  <div class="row2">
+    <button class="btn" id="btnRetry"><svg class="ic " aria-hidden="true"><use href="#i-replay"/></svg><span>เล่นใหม่</span></button>
+    <button class="btn" id="btnWinOut"><svg class="ic " aria-hidden="true"><use href="#i-map"/></svg><span id="btnWinOutT">แผนที่</span></button>
   </div>
-  <p class="wait" id="hWait">หัวใจเติมเต็มตอนเที่ยงคืน · อีก <b id="hCount">--:--:--</b></p>
-  <div class="row"><button id="hRestore">กู้คืนการซื้อ</button><button id="hClose">ปิด</button></div>
+</div></div>
+
+<!-- หัวใจและร้าน: ชีตเต็มจอ ✕ ที่หัว · หน้าหัวใจหมดใช้ชีตเดียวกัน (ปุ่มซื้อ/ดูโฆษณาโชว์เฉพาะเมื่อมีให้ใช้) -->
+<div id="heartsOv" class="sheet-wrap" hidden><div class="sheet full">
+  <div class="sh-head"><h2><svg class="ic l" aria-hidden="true"><use href="#i-heart"/></svg><span id="hTitle">หัวใจและร้าน</span></h2><button class="ibtn" id="hClose" aria-label="ปิด"><svg class="ic " aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sh-body">
+    <div class="panel corners"><div class="hearts5" id="hBig"></div>
+      <p class="hnote" id="hWait"><svg class="ic s" aria-hidden="true"><use href="#i-clock"/></svg><span>เติมเต็มตอนเที่ยงคืน · อีก <b id="hCount">--:--:--</b></span></p>
+      <p class="hnote" id="hText"></p></div>
+    <div class="offer" id="hAdRow"><span class="oico"><svg class="ic l" aria-hidden="true"><use href="#i-video"/></svg></span><div class="tx">ดูโฆษณา รับ 1 หัวใจ<small id="hAdLeft"></small></div><button class="btn primary" id="hAd"><svg class="ic s" aria-hidden="true"><use href="#i-heart"/></svg>+1</button></div>
+    <div class="offer tagged" id="hUnlRow"><span class="tagbest">คุ้มสุด</span><span class="oico"><svg class="ic l" aria-hidden="true"><use href="#i-heart"/></svg></span><div class="tx">หัวใจไม่จำกัด 2 ชม.<small>ซื้อซ้ำได้</small></div><button class="btn primary" id="hUnl"><b id="hUnlPrice"></b></button></div>
+    <div class="offer" id="hNoAdsRow"><span class="oico"><svg class="ic l" aria-hidden="true"><use href="#i-noad"/></svg></span><div class="tx">ลบโฆษณา<small>ซื้อครั้งเดียว · หัวใจ 8/วัน</small></div><button class="btn primary" id="hNoAds"><b id="hNoAdsPrice"></b></button></div>
+    <button class="btn ghosty" id="hRestore">กู้คืนการซื้อ</button>
+  </div>
+</div></div>
+
+<!-- อันดับ (ยกหน้าตา/รอบ/รางวัลจาก LumiFlip): สัปดาห์ · เดือน · ทั้งหมด · ชื่อผู้เล่นใส่ด้วย textContent เท่านั้น -->
+<div id="rankOv" class="sheet-wrap" hidden><div class="sheet full">
+  <div class="sh-head"><h2><svg class="ic l" aria-hidden="true"><use href="#i-trophy"/></svg>อันดับ</h2><button class="ibtn" id="rankClose" aria-label="ปิด"><svg class="ic " aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sh-body">
+    <div class="seg" id="rankSeg" role="radiogroup"><button data-scope="week" class="on">สัปดาห์</button><button data-scope="month">เดือน</button><button data-scope="all">ทั้งหมด</button></div>
+    <div class="lb-prizes" id="rankPrizes"></div>
+    <div class="lb-meta"><span><svg class="ic s" aria-hidden="true"><use href="#i-trophy-l"/></svg>ชนะห้อง/ชั้นใหม่ = 1 แต้ม</span><span id="rankEnds"></span></div>
+    <ul class="lb-list" id="rankList"></ul>
+    <div class="mine" id="rankMine" hidden><span class="rk" id="rankMineN">–</span><span class="nm" id="rankMineName"></span><span class="sc"><svg class="ic s" aria-hidden="true"><use href="#i-star"/></svg><span id="rankMinePts">0</span></span></div>
+  </div>
+</div></div>
+
+<!-- ตั้งค่า -->
+<div id="settingsOv" class="sheet-wrap" hidden><div class="sheet full">
+  <div class="sh-head"><h2><svg class="ic l" aria-hidden="true"><use href="#i-gear"/></svg>ตั้งค่า</h2><button class="ibtn" id="setClose" aria-label="ปิด"><svg class="ic " aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sh-body">
+    <button class="srow" id="setSound" role="switch"><svg class="ic " aria-hidden="true"><use href="#i-sound"/></svg><span class="grow">เสียง</span><span class="tgl on" id="setSoundT"></span></button>
+    <div class="srow col"><svg class="ic " aria-hidden="true"><use href="#i-gfx"/></svg><span class="grow">คุณภาพภาพ<small>ต่ำ = ลื่นขึ้นบนเครื่องเก่า<span id="setQAuto"></span></small></span>
+      <div class="seg sm" id="setQ" role="radiogroup"><button data-q="auto">อัตโนมัติ</button><button data-q="high">สูง</button><button data-q="mid">กลาง</button><button data-q="low">ต่ำ</button></div></div>
+    <div class="srow"><svg class="ic " aria-hidden="true"><use href="#i-globe"/></svg><span class="grow">ภาษา</span><span class="pill">ไทย</span></div>
+    <button class="srow" id="setHelp"><svg class="ic " aria-hidden="true"><use href="#i-help"/></svg><span class="grow">วิธีเล่น</span></button>
+    <a class="srow" href="https://rtliz-studio.web.app/privacy/wickling/" target="_blank" rel="noopener"><svg class="ic " aria-hidden="true"><use href="#i-lock"/></svg><span class="grow">นโยบายความเป็นส่วนตัว</span></a>
+    <p class="ver">Wickling · ภูติตะเกียง v<span id="setVer"></span></p>
+  </div>
 </div></div>
 
 <!-- เสนอหัวใจไม่จำกัด ทุก 10 ห้องที่ผ่าน (แทนโฆษณาคั่นรอบนั้น) -->
@@ -157,18 +270,21 @@
   <button type="button" id="loginClose">ยกเลิก</button>
 </form></div>
 
-<!-- บัญชี: ผูก Google / ออกจากระบบ / ลบบัญชี (ข้อความจากบัญชีใส่ด้วย textContent เท่านั้น) -->
-<div id="profileOv" class="ov" hidden><div class="card profile">
-  <button class="x" id="pClose" aria-label="ปิด">✕</button>
-  <div class="pav" id="pAvatar" aria-hidden="true"></div>
-  <h2 id="pName"></h2>
-  <button type="button" id="pRename" class="prename">เปลี่ยนชื่อ</button>
-  <small class="ptype" id="pType"></small>
-  <div class="pstats" id="pStats"></div>
-  <button id="pLink" class="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#ea4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.4 0 24 0 14.6 0 6.6 5.4 2.6 13.3l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285f4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.1z"/><path fill="#fbbc05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34a853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>ผูกบัญชี Google</span></button>
-  <p class="pnote" id="pNote"></p>
-  <button id="pSignOut">ออกจากระบบ</button>
-  <button id="pDelete" class="danger">ลบบัญชีถาวร</button>
+<!-- โปรไฟล์: ชีตเต็มจอ ✕ ที่หัว · ผูก Google / ออกจากระบบ / ลบบัญชี (ข้อความจากบัญชีใส่ด้วย textContent เท่านั้น) -->
+<div id="profileOv" class="sheet-wrap" hidden><div class="sheet full profile">
+  <div class="sh-head"><h2><svg class="ic l" aria-hidden="true"><use href="#i-user"/></svg>โปรไฟล์</h2><button class="ibtn" id="pClose" aria-label="ปิด"><svg class="ic " aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sh-body">
+    <div class="panel corners pcard">
+      <div class="pav" id="pAvatar" aria-hidden="true"></div>
+      <div class="pinfo"><b id="pName"></b><span class="pill" id="pType"></span></div>
+      <button class="ibtn" id="pRename" aria-label="เปลี่ยนชื่อ"><svg class="ic " aria-hidden="true"><use href="#i-pencil"/></svg></button>
+    </div>
+    <div class="stats" id="pStats"></div>
+    <button class="srow link" id="pLink"><svg class="ic " aria-hidden="true"><use href="#i-link"/></svg><span class="grow">ผูกบัญชี Google<small>เก็บบัญชีไว้ข้ามเครื่อง · รับรางวัลอันดับ</small></span></button>
+    <p class="pnote" id="pNote"></p>
+    <button class="srow" id="pSignOut"><svg class="ic " aria-hidden="true"><use href="#i-out"/></svg><span class="grow">ออกจากระบบ</span></button>
+    <button class="srow danger" id="pDelete"><svg class="ic " aria-hidden="true"><use href="#i-trash"/></svg><span class="grow">ลบบัญชี<small>ลบถาวร ต้องยืนยัน 2 ครั้ง</small></span></button>
+  </div>
 </div></div>
 
 <!-- ถามยืนยัน (ออกจากระบบ / ลบบัญชี) -->
@@ -178,18 +294,17 @@
   <div class="row"><button id="askNo">ยกเลิก</button><button id="askYes" class="primary"></button></div>
 </div></div>
 
+<!-- ต้นไม้สกิล (src/ui/tree.ts) · แสดงเป็นหน้าระหว่างแถบบนกับเมนูล่าง (แถบหัวของมันซ่อน ใช้แถบบนของเกมแทน) -->
 <div id="treeOv" hidden>
 <div class="phone" id="phone">
     <div class="panel top">
       <div><small>ภูติตะเกียง · ใช้ดาวจากด่าน</small><b>ต้นไม้เปลวไฟ</b></div>
       <div class="stars"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" fill="#e6bd5c" stroke="#1b1430" stroke-width="1.6" stroke-linejoin="round"/></svg><span id="stars">0</span></div>
-      <button class="bonus" id="treeBonus">+20 ★ ทดสอบ</button>
       <div class="close" id="treeClose" role="button" aria-label="ปิด">✕</div>
     </div>
     <div class="tree" id="tree"><svg class="links" id="links"></svg></div>
-    <div class="panel slots"><span>ติดตัวเข้าด่าน</span><div class="slot" id="slot0"></div><div class="slot" id="slot1"></div><span id="slotHint">เลือกได้ 2 สกิล</span></div>
+    <div class="panel slots"><span>ติดตัวเข้าด่าน</span><div class="slot" id="slot0"></div><div class="slot" id="slot1"></div><span id="slotHint">เลือกได้ 2 สกิล</span><button class="bonus" id="treeBonus">+20 ★ ทดสอบ</button></div>
     <div class="panel detail" id="detail"></div>
-    <div class="toast" id="toast"></div>
   </div>
 </div>
 <script type="module" src="/src/main.ts"></script>

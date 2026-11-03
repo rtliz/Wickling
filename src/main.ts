@@ -4,8 +4,8 @@ import {
 } from "./core/sim";
 import { LEVELS } from "./core/levels";
 import { genTower } from "./core/tower";
-import { loadSave, writeSave, earnedStars, type SaveData } from "./core/save";
-import { BR, ICON, nodeById } from "./core/skills";
+import { loadSave, writeSave, earnedStars, starsLeft, type SaveData } from "./core/save";
+import { BR, ICON, NODES, nodeById } from "./core/skills";
 import { createBoard, COL, type Quality } from "./render/board";
 import { initTree, openTree } from "./ui/tree";
 import { initAnalytics, track } from "./platform/analytics";
@@ -14,6 +14,10 @@ import { Ads, isNative } from "./platform/ads";
 import { Billing, type GrantEvent } from "./platform/billing";
 import { Account, cleanName, NAME_MIN } from "./platform/account";
 import type { ProductId } from "./platform/products";
+import { Boards, type Row } from "./platform/boards";
+import { weekId, monthId, weekEndsAt, monthEndsAt, REWARD_TIERS, BOARD_SIZE } from "./core/season-rules";
+import type { Proof, ProofRound, Op } from "./core/proof";
+import { version as APP_VERSION } from "../package.json";
 import { App } from "@capacitor/app";
 
 // ---------- สถานะ ----------
@@ -34,7 +38,9 @@ const board = createBoard($<HTMLCanvasElement>("cv"), $("stage"));
 // ระดับกราฟิก · อัตโนมัติ = เริ่มสูง แล้วลดเองถ้าเฟรมช้า (กฎ performance.md)
 const QKEY = "wickling.settings";
 let qSetting: "auto" | Quality = "auto", qAuto: Quality = "high";
-try { qSetting = JSON.parse(localStorage.getItem(QKEY) || "{}").quality || "auto"; } catch { /* ใช้ค่าเริ่มต้น */ }
+let soundOn = true;
+try { const st = JSON.parse(localStorage.getItem(QKEY) || "{}"); qSetting = st.quality || "auto"; soundOn = st.sound !== false; } catch { /* ใช้ค่าเริ่มต้น */ }
+const saveSettings = () => { try { localStorage.setItem(QKEY, JSON.stringify({ quality: qSetting, sound: soundOn })); } catch { /* ไม่เป็นไร */ } };
 const quality = (): Quality => (qSetting === "auto" ? qAuto : qSetting);
 let slowFrames = 0, lastFrame = 0;
 
@@ -42,7 +48,7 @@ let slowFrames = 0, lastFrame = 0;
 let ac: AudioContext | null = null;
 function unlockAudio() { if (!ac) { try { ac = new AudioContext(); } catch { /* ไม่มีเสียงก็เล่นได้ */ } } }
 function note(f: number, dur: number, type: OscillatorType = "sine", vol = .12) {
-  if (!ac) return;
+  if (!ac || !soundOn) return;
   const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
   o.type = type; o.frequency.value = f;
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
@@ -58,19 +64,32 @@ function loadLevel(i: number) {
   ghosts = [];
   $("win").hidden = true;
   $("helpPop").hidden = true;
+  proof = { v: 1, kind: i < 0 ? "t" : "r", n: i < 0 ? save.tower.floor : i, eq: [...save.skills.eq], rounds: [] };
   renderSkillBar();
   startRound();
-  renderLevelChips();
 }
+
+// ---------- หลักฐานการชนะ (src/core/proof.ts) ----------
+// จดทุกการแตะ/สกิล/การปรับเงาของห้องนี้ · ชนะห้อง/ชั้นใหม่ → ส่งให้ server เล่นซ้ำแล้วให้แต้มอันดับ (functions/wins.js)
+let proof: Proof = { v: 1, kind: "r", n: 0, eq: [null, null], rounds: [] };
+const proofRound = (): ProofRound => {
+  const last = proof.rounds[proof.rounds.length - 1];
+  if (last && !last.inp.length) return last;
+  const rd: ProofRound = { ops: [], inp: [] };
+  proof.rounds.push(rd);
+  return rd;
+};
+const proofOp = (op: Op) => proofRound().ops.push(op);
 
 function startRound() {
   clearTimeout(zapTimer);
   r = newRound(room, ghosts); phase = "ready"; flash = null;
+  proofRound();
   $("gmenu").hidden = true;
   updateHud();
   // คำใบ้บรรทัดเดียวขึ้นครั้งแรกที่เปิดห้องนี้ (ต่อการเปิดแอป) · ดูซ้ำ/อ่านเต็มได้ที่ปุ่ม ?
   const key = levelIdx < 0 ? `t${save.tower.floor}` : String(levelIdx);
-  if (ghosts.length === 0 && !tipSeen.has(key)) { tipSeen.add(key); banner(room.def.tip ?? ""); }
+  if (ghosts.length === 0 && screen === "play" && !tipSeen.has(key)) { tipSeen.add(key); banner(room.def.tip ?? ""); }
   else banner(ghosts.length ? `รอบ <b>${ghosts.length + 1}</b> · แตะเพื่อเดิน` : "");
 }
 const tipSeen = new Set<string>();
@@ -112,7 +131,7 @@ function onWin() {
   phase = "win"; flash = { color: COL.exit, at: performance.now() };
   [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => note(f, .25), i * 110));
   const n = ghosts.length, par = room.def.par, stars = starsFor(n, par);
-  const before = clearedCount(save);
+  const before = clearedCount(save), starsBefore = earnedStars(save);
   H.attempt = null;
   if (levelIdx >= 0) save.best[levelIdx] = Math.max(save.best[levelIdx] || 0, stars);
   else save.tower.best = Math.max(save.tower.best, save.tower.floor);
@@ -121,13 +140,28 @@ function onWin() {
   writeSave(save);
   if (adsOn() && before < HEARTS.adsAfterCleared) Ads.showBanner();
   track("level_complete", { level: levelIdx < 0 ? "tower" : String(levelIdx + 1), floor: levelIdx < 0 ? save.tower.floor : 0, ghosts: n, par, stars, skills: save.skills.eq.filter(Boolean).join("+") || "none" });
-  $("winTitle").textContent = n < par ? "เหนือชั้น!" : "ผ่านแล้ว!";
-  $("winStars").innerHTML = "★".repeat(stars) + "<s>" + "★".repeat(3 - stars) + "</s>";
-  $("winMsg").textContent = n < par ? `ใช้เงาแค่ ${n} ตัว น้อยกว่าที่ออกแบบไว้ (${par})`
-    : `ใช้เงา ${n} ตัว` + (stars < 3 ? (par === 0 ? " · ลองผ่านโดยไม่ใช้เงาเลยเพื่อรับ 3 ดาว" : ` · ลองใช้แค่ ${par} ตัวเพื่อรับ 3 ดาว`) : "");
-  $("btnNext").textContent = levelIdx < 0 ? `ขึ้นชั้น ${save.tower.floor + 1}` : levelIdx < LEVELS.length - 1 ? "ห้องต่อไป" : "ไปหอคอย ∞";
+  const gained = earnedStars(save) - starsBefore;
+  if (levelIdx >= 0) {
+    $("winStars").innerHTML = [0, 1, 2].map(k => ic(k < stars ? "star" : "star0")).join("");
+    $("winTitle").textContent = n < par ? "เหนือชั้น!" : "ผ่านแล้ว";
+    $("winMsg").textContent = `ห้อง ${levelIdx + 1} · ${room.def.name}`;
+    $("btnNextT").textContent = levelIdx < LEVELS.length - 1 ? "ด่านต่อไป" : "ไปหอคอย ∞";
+    $("btnWinOut").innerHTML = `${ic("map")}<span>แผนที่</span>`;
+  } else {
+    $("winStars").innerHTML = ic("tower", "xl");
+    $("winTitle").textContent = `ชั้น ${save.tower.floor} สำเร็จ`;
+    $("winMsg").textContent = "หอคอย ∞";
+    $("btnNextT").textContent = "ขึ้นชั้นต่อไป";
+    $("btnWinOut").innerHTML = `${ic("home")}<span>หน้าแรก</span>`;
+  }
+  $("winBest").hidden = !(levelIdx < 0 && lastWinFirst);
+  // ชิปรางวัล: ดาวที่ได้เพิ่ม · จำนวนเงาที่ใช้ (เทียบเป้า) · แต้มอันดับ (ขึ้นเมื่อ server นับแล้ว)
+  $("winChips").innerHTML = `<div class="chip">${ic("star")}<span>+${gained}</span></div>`
+    + `<div class="chip" title="เป้า 3 ดาว: ใช้เงาไม่เกิน ${par}">${ic("ghost", "s")}<span>${n} เงา</span><small>/ ${par}</small></div>`
+    + `<div class="chip" id="winPts" hidden>${ic("trophy", "s")}<span>+1 อันดับ</span></div>`;
+  if (lastWinFirst) submitWin();
   $("win").hidden = false;
-  banner(""); updateHud(); renderLevelChips();
+  banner(""); updateHud();
 }
 
 function tick() {
@@ -147,16 +181,23 @@ $("cv").addEventListener("pointerdown", ev => {
   const p = board.cellAt(ev.clientX, ev.clientY);
   if (!p || !tapCell(room, r, p)) return;
   if (phase === "ready" && !payHeart()) return;
+  proofRound().inp.push([r.t, "tap", p[0], p[1]]);
   if (phase === "ready") { phase = "run"; last = performance.now(); banner(""); $("helpPop").hidden = true; updateHud(); }
 });
-$("btnEnd").onclick = () => { if (phase === "run") { r.outcome = "timeout"; endRound("จบรอบเอง"); } };
-$("btnUndo").onclick = () => { if (phase === "ready" && ghosts.length) { ghosts.pop(); startRound(); } };
+$("btnEnd").onclick = () => { if (phase === "run") { proofRound().inp.push([r.t, "end"]); r.outcome = "timeout"; endRound("จบรอบเอง"); } };
+$("btnUndo").onclick = () => { if (phase === "ready" && ghosts.length) { proofOp(["undo"]); ghosts.pop(); startRound(); } };
 $("btnReset").onclick = () => loadLevel(levelIdx);
 $("btnRetry").onclick = async () => { await afterWin(); loadLevel(levelIdx); };
 $("btnNext").onclick = async () => {
   await afterWin();
   if (levelIdx < 0) { save.tower.floor++; writeSave(save); loadLevel(-1); }
   else loadLevel(levelIdx < LEVELS.length - 1 ? levelIdx + 1 : -1);
+};
+// ออกจากหน้าผล: ห้อง → แผนที่ · หอคอย → หน้าแรก
+$("btnWinOut").onclick = async () => {
+  await afterWin();
+  $("win").hidden = true;
+  if (levelIdx < 0) { save.tower.floor++; writeSave(save); show("home"); } else show("map");
 };
 
 // ---------- หัวใจ (กติกาใน core/hearts.ts) ----------
@@ -187,6 +228,7 @@ function renderHearts() {
   const inf = unlimited(H);
   const html = HEART_SVG + (inf ? `∞<small>${timeLeft(H.until - Date.now())}</small>` : `${H.n}`);
   if (html !== heartsHtml) { heartsHtml = html; $("hearts").innerHTML = html; }
+  $("tbHeartsN").textContent = inf ? "∞" : String(H.n);
   $("hearts").classList.toggle("empty", !inf && H.n <= 0);
   $("hearts").classList.toggle("unl", inf);
   $("hearts").setAttribute("aria-label", inf ? `หัวใจไม่จำกัด เหลือเวลา ${timeLeft(H.until - Date.now())} ชั่วโมง` : `หัวใจ ${H.n} ดวง`);
@@ -227,18 +269,20 @@ function openHearts(empty: boolean) {
 function closeHearts() { clearInterval(countTimer); $("heartsOv").hidden = true; }
 
 function renderHeartsPanel() {
-  const inf = unlimited(H);
-  $("hTitle").textContent = hEmpty && !inf && H.n <= 0 ? "หัวใจหมดแล้ว" : "หัวใจ";
-  $("hBig").innerHTML = HEART_SVG + (inf ? `∞<small>เหลือ ${timeLeft(H.until - Date.now())} ชม.</small>` : `${H.n}<small>/ ${dailyHearts(H)} ต่อวัน</small>`);
-  $("hText").textContent = "ห้องหรือชั้นที่ยังไม่เคยผ่านใช้หัวใจ 1 ดวงต่อการเริ่ม (เล่นกี่รอบในห้องก็ได้) · ห้องที่ผ่านแล้วและห้อง 1–2 เล่นฟรี";
+  const inf = unlimited(H), daily = dailyHearts(H);
+  $("hTitle").textContent = hEmpty && !inf && H.n <= 0 ? "หัวใจหมดแล้ว" : "หัวใจและร้าน";
+  $("hBig").innerHTML = inf ? `<span class="inf">${ic("heart", "l")}∞<small>เหลือ ${timeLeft(H.until - Date.now())} ชม.</small></span>`
+    : Array.from({ length: Math.max(daily, H.n) }, (_, k) => ic("heart", k < H.n ? "" : "off")).join("");
+  $("hBig").setAttribute("aria-label", inf ? "หัวใจไม่จำกัด" : `หัวใจ ${H.n} จาก ${daily} ดวงต่อวัน`);
+  $("hText").textContent = "ห้อง/ชั้นใหม่ใช้ 1 ดวงต่อการเริ่ม · ห้องที่ผ่านแล้วและห้อง 1–2 ฟรี";
   const adLeft = HEARTS.adPerDay - H.ad;
   // ดูโฆษณาได้เฉพาะตอนหัวใจหมด (หัวใจจึงไม่เกินเพดาน 8) และวันละ 3 ครั้ง
-  $("hAd").hidden = !Ads.available || inf || H.n > 0;
+  $("hAdRow").hidden = !Ads.available || inf || H.n > 0;
   $<HTMLButtonElement>("hAd").disabled = adLeft <= 0;
-  $("hAdLeft").textContent = adLeft > 0 ? `วันนี้ดูได้อีก ${adLeft} ครั้ง` : "วันนี้ดูครบ 3 ครั้งแล้ว";
-  $("hUnl").hidden = !Billing.available;
+  $("hAdLeft").textContent = adLeft > 0 ? `วันนี้เหลือ ${adLeft} ครั้ง` : "วันนี้ดูครบ 3 ครั้งแล้ว";
+  $("hUnlRow").hidden = !Billing.available;
   priceTag("hUnl", "hUnlPrice", "unlimited_hearts_2h");
-  $("hNoAds").hidden = !Billing.available || H.noAds || hEmpty;
+  $("hNoAdsRow").hidden = !Billing.available || H.noAds;
   priceTag("hNoAds", "hNoAdsPrice", "remove_ads");
   $("hRestore").hidden = !Billing.available;
   $("hWait").hidden = inf;
@@ -361,6 +405,7 @@ function pressSkill(id: SkillId) {
   if (phase !== "run") return;
   const msg = useSkill(room, ghosts, r, id);
   if (!msg) return;
+  proofRound().inp.push([r.t, "sk", id]);
   if (id === "t3") flash = { color: COL.player, at: performance.now() };
   note(id === "t2" ? 880 : 640, .3, "triangle", .07);
   banner(msg); updateHud();
@@ -542,24 +587,30 @@ async function deleteAccount() {
   toast("ลบบัญชีแล้ว");
 }
 
-function renderAccount() {
-  const u = Account.user, offline = Account.hint() === "offline";
-  const av = $("pAvatar");
-  if (u?.photo) {
+function avatarInto(el: HTMLElement) {
+  const photo = Account.user?.photo;
+  if (photo) {
     // รูปจาก Google: ตั้งผ่าน property (ไม่ใช้ innerHTML กับข้อมูลจากบัญชี)
     const img = document.createElement("img");
-    img.alt = ""; img.referrerPolicy = "no-referrer"; img.src = u.photo;
-    img.onerror = () => { av.innerHTML = SPIRIT_SVG; };
-    av.replaceChildren(img);
-  } else av.innerHTML = SPIRIT_SVG;
+    img.alt = ""; img.referrerPolicy = "no-referrer"; img.src = photo;
+    img.onerror = () => { el.innerHTML = SPIRIT_SVG; };
+    el.replaceChildren(img);
+  } else el.innerHTML = SPIRIT_SVG;
+}
+
+function renderAccount() {
+  const u = Account.user, offline = Account.hint() === "offline";
+  avatarInto($("pAvatar")); avatarInto($("tbAvatar"));
   $("pName").textContent = Account.name() ?? (cleanName(u?.name) || (u?.google ? "ผู้เล่น Google" : "ผู้เยี่ยมชม"));
-  $("pType").textContent = u ? (u.google ? `บัญชี Google${u.email ? " · " + u.email : ""}` : "บัญชีผู้เยี่ยมชม")
-    : offline ? "ผู้เยี่ยมชม · ยังไม่ได้เชื่อมต่อ (รอเน็ต)" : "";
-  const stars = earnedStars(save);
-  $("pStats").innerHTML = `<div><b>${stars}</b><small>ดาวที่ได้</small></div><div><b>${clearedCount(save)}</b><small>ห้องที่ผ่าน</small></div><div><b>${save.tower.best}</b><small>หอคอยสูงสุด</small></div>`;
+  $("pType").innerHTML = u?.google ? `${ic("link", "s")}<span></span>` : "<span></span>";
+  $("pType").querySelector("span")!.textContent = u ? (u.google ? "ผูก Google แล้ว" : "ผู้เยี่ยมชม") : offline ? "ผู้เยี่ยมชม · รอเน็ต" : "";
+  const stat = (icon: string, val: string, label: string) => `<div class="stat">${ic(icon, "l")}<div><b>${val}</b><small>${label}</small></div></div>`;
+  const rooms = Object.keys(save.best).filter(k => Number(k) < LEVELS.length).length;
+  $("pStats").innerHTML = stat("gate", `${rooms}/${LEVELS.length}`, "ห้องที่ผ่าน") + stat("star", String(earnedStars(save)), "ดาวสะสม")
+    + stat("tower", `ชั้น ${save.tower.best}`, "หอคอยสูงสุด") + stat("trophy", weekRank ? `#${weekRank}` : "–", "อันดับสัปดาห์");
   $("pLink").hidden = !u || u.google;
   $("pNote").textContent = u && !u.google
-    ? "ผูก Google แล้วยังเป็นบัญชีเดิม และไม่หายเมื่อลบแอป · ความคืบหน้าในเกมเก็บไว้ในเครื่องนี้"
+    ? "ผูก Google แล้วยังเป็นบัญชีเดิม ไม่หายเมื่อลบแอป และรับรางวัลอันดับได้ · ความคืบหน้าในเกมเก็บไว้ในเครื่องนี้"
     : "ความคืบหน้าในเกมเก็บไว้ในเครื่องนี้ ออกจากระบบแล้วก็ยังอยู่";
   $("pDelete").hidden = !u;
 }
@@ -570,7 +621,242 @@ $("pRename").onclick = () => openLogin("rename");
 $("pLink").onclick = linkGoogle;
 $("pSignOut").onclick = signOut;
 $("pDelete").onclick = deleteAccount;
-Account.onChange = renderAccount;
+Account.onChange = () => { renderAccount(); if (Account.user) { flushWins(); claimSeasons(); } };
+
+// ---------- ไอคอน UI (symbol จาก docs/ui-mockup/ux-v2 ใน index.html) ----------
+function ic(name: string, cls = "") { return `<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`; }
+
+// ---------- หน้าจอ: หน้าแรก / แผนที่ / หน้าเล่น / ต้นไม้ + เมนูล่าง ----------
+type Screen = "home" | "map" | "play" | "tree";
+let screen: Screen = "home";
+function show(to: Screen) {
+  screen = to;
+  for (const [id, sc] of [["scrHome", "home"], ["scrMap", "map"], ["scrPlay", "play"], ["scrTree", "tree"]] as const) $(id).hidden = sc !== to;
+  document.body.classList.toggle("playing", to === "play");
+  for (const b of $("nav").querySelectorAll<HTMLButtonElement>("button")) b.classList.toggle("on", b.dataset.nav === to);
+  if (to === "tree") {
+    // ต้นไม้วางระหว่างแถบบนกับเมนูล่าง (วัดจริง เพราะ safe-area/แบนเนอร์ต่างกันแต่ละเครื่อง)
+    const de = document.documentElement.style;
+    de.setProperty("--top-h", `${$("topbar").getBoundingClientRect().bottom + 8}px`);
+    de.setProperty("--nav-h", `${window.innerHeight - $("nav").getBoundingClientRect().top + 4 - (parseFloat(getComputedStyle(document.body).paddingBottom) || 0)}px`);
+    openTree();
+  } else $("treeOv").hidden = true;
+  if (to !== "play") { $("win").hidden = true; $("gmenu").hidden = true; }
+  renderTop();
+  if (to === "home") renderHome();
+  if (to === "map") renderMap();
+}
+for (const b of $("nav").querySelectorAll<HTMLButtonElement>("button")) b.onclick = () => (b.dataset.nav === "rank" ? openRank() : show(b.dataset.nav as Screen));
+const play = (i: number) => { show("play"); loadLevel(i); };
+$("btnBack").onclick = () => show(levelIdx < 0 ? "home" : "map");
+$("btnGear").onclick = openSettings;
+
+// แถบบน: รูป · หัวใจ (+ ไปร้าน) · ดาวที่ใช้ได้ · ร้าน · ตั้งค่า
+function canBuySkill() { const left = starsLeft(save); return NODES.some(n => !save.skills.owned.includes(n.id) && n.req.every(q => save.skills.owned.includes(q)) && n.cost > 0 && n.cost <= left); }
+function renderTop() {
+  $("tbStars").textContent = String(starsLeft(save));
+  const dot = canBuySkill();
+  $("navTreeDot").hidden = !dot;
+  $("homeTreeDot").hidden = !dot;
+}
+$("tbAvatar").onclick = openProfile;
+$("tbHearts").onclick = () => openHearts(false);
+$("tbShop").onclick = () => openHearts(false);
+$("tbSettings").onclick = openSettings;
+
+// ---------- หน้าแรก ----------
+const nextRoom = () => { for (let i = 0; i < LEVELS.length; i++) if (!save.best[i]) return i; return -1; };
+function renderHome() {
+  const nx = nextRoom();
+  $("homePlayT").textContent = clearedCount(save) ? "เล่นต่อ" : "เริ่มเล่น";
+  $("homePlayS").textContent = nx < 0 ? `หอคอย ∞ · ชั้น ${save.tower.floor}` : `ห้อง ${nx + 1} · ${LEVELS[nx].name}`;
+  $("homeMapN").textContent = `${Object.keys(save.best).filter(k => Number(k) < LEVELS.length).length}/${LEVELS.length}`;
+  $("homeTowerN").textContent = `ชั้น ${save.tower.floor}`;
+  $("homeTreeN").textContent = String(starsLeft(save));
+  $("homeRankS").textContent = weekRank ? `ที่ ${weekRank} สัปดาห์นี้` : "รางวัลหัวใจ";
+  $("homeShopS").textContent = unlimited(H) ? "ไม่จำกัดอยู่" : `เหลือ ${H.n} ดวง`;
+}
+$("homePlay").onclick = () => { unlockAudio(); play(nextRoom()); };
+$("homeMap").onclick = () => show("map");
+$("homeTower").onclick = () => { unlockAudio(); play(-1); };
+$("homeTree").onclick = () => show("tree");
+$("homeRank").onclick = () => openRank();
+$("homeShop").onclick = () => openHearts(false);
+
+// ---------- แผนที่: ทางเดินโคมไฟ (บท 1 = ห้อง 1–5 · บท 2 = ห้อง 6–13 · บท 3 = เร็ว ๆ นี้) ----------
+const CHAPTERS = [
+  { name: "บทที่ 1 · พื้นฐาน", icon: "gate", from: 0, to: 4 },
+  { name: "บทที่ 2 · สกิล", icon: "tree", from: 5, to: LEVELS.length - 1 },
+];
+const MAP_STEP = 96, MAP_CHAP = 88, MAP_XS = [0.5, 0.74, 0.3, 0.7, 0.36, 0.5, 0.28, 0.72, 0.4, 0.7, 0.3, 0.62, 0.5];
+let mapBuilt = "";
+function renderMap() {
+  const box = $("mapInner"), W = Math.min($("mapScroll").clientWidth || 360, 560);
+  const sig = `${W}|${JSON.stringify(save.best)}`;
+  if (sig === mapBuilt) return scrollMapToCurrent();
+  mapBuilt = sig;
+  const nx = nextRoom();
+  // ห้องแรกอยู่ล่างสุด: วางจากล่างขึ้นบน · หัวบทอยู่เหนือห้องของบทนั้น
+  const pos: [number, number][] = [];
+  let y = 90;
+  const chapY: number[] = [];
+  CHAPTERS.forEach(ch => {
+    for (let i = ch.from; i <= ch.to; i++) { pos[i] = [Math.round(W * MAP_XS[i % MAP_XS.length]), y]; y += MAP_STEP; }
+    chapY.push(y - 20); y += MAP_CHAP;
+  });
+  const soonY = y + 10, H = soonY + 120;
+  const Y = (v: number) => H - v;
+  let d = "", lit = "";
+  for (let i = 0; i < pos.length; i++) {
+    const [x, yy] = pos[i];
+    if (!i) { d = `M ${x} ${Y(yy)}`; continue; }
+    const [px, py] = pos[i - 1], my = (Y(py) + Y(yy)) / 2, seg = ` C ${px} ${my}, ${x} ${my}, ${x} ${Y(yy)}`;
+    d += seg;
+    if (save.best[i - 1] && (save.best[i] || i === nx)) lit += (lit ? "" : `M ${px} ${Y(py)}`) + seg;
+  }
+  const nodes = pos.map(([x, yy], i) => {
+    const done = !!save.best[i], cur = i === nx, lock = !done && !cur;
+    const def = LEVELS[i], sk = def.skill ? nodeById(def.skill) : null;
+    const badge = sk ? `<span class="badge"><svg viewBox="0 0 24 24" style="color:${BR[sk.br].c}">${ICON[sk.icon]}</svg></span>` : "";
+    const st = done ? `<span class="stars">${[0, 1, 2].map(k => ic(k < save.best[i] ? "star" : "star0")).join("")}</span>` : "";
+    const you = cur ? `<svg class="you" viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkHero"/></svg>` : "";
+    const fin = i === CHAPTERS[0].to || i === LEVELS.length - 1 ? " fin" : "";
+    return `<button class="node${lock ? " lock" : ""}${cur ? " cur" : ""}${fin}" data-room="${i}" style="left:${x}px;top:${Y(yy)}px" aria-label="ห้อง ${i + 1} ${def.name}${lock ? " (ล็อก)" : ""}">${lock ? ic("lock") : i + 1}${badge}${st}${you}</button>`;
+  }).join("");
+  const stars = (from: number, to: number) => { let n = 0; for (let i = from; i <= to; i++) n += save.best[i] || 0; return `${ic("star", "s")}${n}/${(to - from + 1) * 3}`; };
+  const chaps = CHAPTERS.map((ch, k) => `<div class="chap" style="top:${Y(chapY[k]) - 26}px">${ic(ch.icon, "l")}${ch.name}<small>${stars(ch.from, ch.to)}</small></div>`).join("")
+    + `<div class="chap soon" style="top:${Y(soonY) - 26}px">${ic("fog", "l")}บทที่ 3<small>เร็ว ๆ นี้</small></div>`;
+  box.style.width = `${W}px`; box.style.height = `${H}px`;
+  box.innerHTML = `<svg class="path" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      <path d="${d}" fill="none" stroke="#1b1430" stroke-width="12" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="#7c6ea6" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 13" opacity=".7"/>
+      ${lit ? `<path d="${lit}" fill="none" stroke="#ffb13b" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 13"/>` : ""}
+    </svg>${chaps}${nodes}<div class="map-fog"></div>`;
+  for (const b of box.querySelectorAll<HTMLButtonElement>(".node")) b.onclick = () => {
+    const i = Number(b.dataset.room);
+    if (b.classList.contains("lock")) return toast("ผ่านห้องก่อนหน้าก่อนนะ");
+    unlockAudio(); play(i);
+  };
+  scrollMapToCurrent();
+}
+function scrollMapToCurrent() {
+  const cur = $("mapInner").querySelector<HTMLElement>(".node.cur") ?? $("mapInner").querySelector<HTMLElement>(".node:not(.lock):last-of-type");
+  const sc = $("mapScroll");
+  sc.scrollTop = cur ? Math.max(0, cur.offsetTop - sc.clientHeight * 0.55) : sc.scrollHeight;
+}
+
+// ---------- อันดับ (หน้าตา/รอบ/รางวัลแบบ LumiFlip · แต้มจาก server เท่านั้น) ----------
+let rankScope: "week" | "month" | "all" = "week", rankLoad = 0, weekRank = 0;
+const SCOPES = { week: { id: () => weekId(), ends: weekEndsAt, tier: "W" }, month: { id: () => monthId(), ends: monthEndsAt, tier: "M" }, all: { id: () => "all", ends: null, tier: "" } } as const;
+function openRank() {
+  $("rankOv").hidden = false;
+  flushWins();
+  claimSeasons();
+  loadRank();
+}
+$("rankClose").onclick = () => { $("rankOv").hidden = true; };
+for (const b of $("rankSeg").querySelectorAll<HTMLButtonElement>("button")) b.onclick = () => { rankScope = b.dataset.scope as typeof rankScope; loadRank(); };
+async function loadRank() {
+  const load = ++rankLoad, sc = SCOPES[rankScope];
+  for (const b of $("rankSeg").querySelectorAll<HTMLButtonElement>("button")) { b.classList.toggle("on", b.dataset.scope === rankScope); b.setAttribute("aria-checked", String(b.dataset.scope === rankScope)); }
+  // รางวัลหัวใจ (สัปดาห์/เดือน) + เวลาที่เหลือ
+  const tiers = sc.tier ? REWARD_TIERS[sc.tier] : [];
+  let from = 1;
+  $("rankPrizes").hidden = !tiers.length;
+  $("rankPrizes").innerHTML = tiers.map(([upto, hearts], k) => {
+    const label = from === upto ? `ที่ ${upto}` : `${from}–${upto}`; from = upto + 1;
+    return `<div>${k < 3 ? `<span class="medal ${["g", "s", "b"][k]}" style="width:22px;height:22px;font-size:11px">${k + 1}</span>` : ""}<span>${label}</span><b>${ic("heart")}${hearts}</b></div>`;
+  }).join("");
+  if (sc.ends) { const h = Math.max(1, Math.ceil((sc.ends() - Date.now()) / 3600e3)); $("rankEnds").innerHTML = `${ic("clock", "s")}<span>เหลือ ${h >= 48 ? `${Math.ceil(h / 24)} วัน` : `${h} ชม.`}</span>`; }
+  else $("rankEnds").innerHTML = `${ic("clock", "s")}<span>ไม่รีเซ็ต</span>`;
+  const list = $("rankList");
+  const note = (msg: string) => { const li = document.createElement("li"); li.className = "note"; li.textContent = msg; list.replaceChildren(li); };
+  $("rankMine").hidden = true;
+  if (!Account.user) return note("เชื่อมต่อเน็ตเพื่อดูอันดับ");
+  note("กำลังโหลด…");
+  try {
+    const id = sc.id();
+    const [rows, mine] = await Promise.all([Boards.top(id), Boards.mine(id)]);
+    const meIn = rows.findIndex(x => x.uid === Account.user?.uid);
+    const myRank = mine > 0 ? (meIn >= 0 ? meIn + 1 : await Boards.rank(id, mine)) : 0;
+    if (load !== rankLoad) return;
+    if (rankScope === "week") { weekRank = myRank; renderHome(); }
+    renderRankRows(rows, mine, myRank);
+  } catch {
+    if (load === rankLoad) note("โหลดอันดับไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่");
+  }
+}
+// ชื่อผู้เล่นคนอื่นมาจาก server → textContent เท่านั้น (กฎกันแฮกข้อ 7)
+function renderRankRows(rows: Row[], mine: number, myRank: number) {
+  const list = $("rankList"), me = Account.user?.uid;
+  if (!rows.length) { const li = document.createElement("li"); li.className = "note"; li.textContent = "ยังไม่มีใครขึ้นกระดานนี้ ชนะห้องใหม่เพื่อเป็นคนแรก!"; list.replaceChildren(li); }
+  else list.replaceChildren(...rows.slice(0, BOARD_SIZE).map((row, k) => {
+    const li = document.createElement("li");
+    li.className = (k < 3 ? `t${k + 1}` : "") + (row.uid === me ? " me" : "");
+    li.innerHTML = (k < 3 ? `<span class="medal ${["g", "s", "b"][k]}">${k + 1}</span>` : `<span class="rk">${k + 1}</span>`)
+      + `<span class="nm"></span><span class="sc">${ic("star", "s")}<span></span></span>`;
+    li.querySelector(".nm")!.textContent = row.name;
+    li.querySelector(".sc span")!.textContent = String(row.score);
+    return li;
+  }));
+  // แถบของเรา ค้างใต้รายการเสมอ
+  $("rankMine").hidden = mine <= 0;
+  $("rankMineN").textContent = myRank ? String(myRank) : "–";
+  $("rankMineName").textContent = `${Account.name() ?? "คุณ"} (คุณ)`;
+  $("rankMinePts").textContent = String(mine);
+}
+
+// ส่งหลักฐานการชนะ: ห้อง/ชั้นใหม่เท่านั้น · เซฟที่ถูกแก้/เคยใช้ดาวทดสอบไม่ส่ง (กฎกันแฮกข้อ 5) · ส่งห่างกัน ≥ 30 วิ
+let lastFlush = 0, flushTimer = 0;
+function submitWin() {
+  if (save.lb.flagged || save.lb.debug || !Account.name()) return;
+  Boards.enqueue(JSON.parse(JSON.stringify(proof)) as Proof, Account.name()!);
+  flushWins(true);
+}
+function flushWins(fromWin = false) {
+  if (!Boards.queue().length || !Account.user) return;
+  clearTimeout(flushTimer);
+  const wait = Math.max(0, lastFlush + 30_000 - Date.now());
+  flushTimer = window.setTimeout(async () => {
+    lastFlush = Date.now();
+    const got = await Boards.flush().catch(() => 0);
+    if (got > 0 && fromWin && !$("win").hidden) $("winPts").hidden = false;
+    else if (got > 0) toast(`ได้แต้มอันดับ +${got}`);
+  }, wait);
+}
+
+// รางวัลรอบล่าสุดที่จบแล้ว: ถาม server ครั้งเดียวต่อรอบ · ยังไม่ผูก Google = ยังไม่จด ถามใหม่ทีหลัง (แบบ claimSeasons ของ LumiFlip)
+async function claimSeasons() {
+  const round = `${Account.user?.uid}:${weekId()}:${monthId()}`;
+  if (import.meta.env.DEV || !Account.user || save.lb.flagged || save.lb.debug || save.lb.checked === round) return;
+  const res = await Boards.claim().catch(() => null);
+  if (!res) return;
+  if (res.needGoogle) return toast(`ติดอันดับรอบที่แล้ว! ผูก Google เพื่อรับ ${res.hearts} หัวใจ`);
+  save.lb.checked = round;
+  if (res.hearts > 0) {
+    // หัวใจเก็บในเครื่องได้สูงสุด HEARTS.max (validate ตัดที่เกิน)
+    H.n = Math.min(HEARTS.max, H.n + res.hearts);
+    afterHeartGained();
+    toast(`รางวัลอันดับ: ได้หัวใจ +${res.hearts}`);
+  }
+  writeSave(save);
+}
+
+// ---------- ตั้งค่า ----------
+function openSettings() { renderSettings(); $("settingsOv").hidden = false; }
+function renderSettings() {
+  $("setSoundT").classList.toggle("on", soundOn);
+  $("setSound").setAttribute("aria-checked", String(soundOn));
+  for (const b of $("setQ").querySelectorAll<HTMLButtonElement>("button")) b.classList.toggle("on", b.dataset.q === qSetting);
+  const names: Record<string, string> = { high: "สูง", mid: "กลาง", low: "ต่ำ" };
+  $("setQAuto").textContent = qSetting === "auto" ? ` · ตอนนี้ ${names[qAuto]}` : "";
+  $("setVer").textContent = APP_VERSION;
+}
+$("setClose").onclick = () => { $("settingsOv").hidden = true; };
+$("setSound").onclick = () => { soundOn = !soundOn; saveSettings(); renderSettings(); if (soundOn) { unlockAudio(); note(660, .15); } };
+for (const b of $("setQ").querySelectorAll<HTMLButtonElement>("button")) b.onclick = () => { qSetting = b.dataset.q as typeof qSetting; saveSettings(); applyQuality(); };
+$("setHelp").onclick = () => ask("วิธีเล่น",
+  "แตะช่องเพื่อเดิน · เดินได้รอบละ 10 วินาที · จบรอบแล้วรอบนั้นกลายเป็นเงาที่เดินซ้ำแบบเดิม · ให้เงายืนสวิตช์เปิดประตูหรือบังเลเซอร์ แล้วพาดวงไฟไปทางออก · ใช้เงาน้อยได้ดาวมาก · ดาวใช้ปลดสกิลในต้นไม้", "เข้าใจแล้ว");
 
 // splash ในแอป (ยกจาก LumiFlip setupSplash): ลบออกเมื่อแอนิเมชันจบ เกมโหลดอยู่ข้างใต้ไม่รอ splash · ?nosplash / ?splashat=ms เฉพาะ dev
 function setupSplash() {
@@ -589,17 +875,16 @@ function setupSplash() {
 }
 
 // ---------- HUD ----------
-const GHOST_SVG = `<svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkBody" fill="#c9b8ff" stroke="#1b1430" stroke-width="2.6" stroke-linejoin="round"/></svg>`;
 const PLUS_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>`;
 let subHtml = "";
 function banner(html: string) { $("banner").innerHTML = html; }
 
 function updateHud() {
-  // บรรทัดเล็ก: เลขห้อง + เป้า 3 ดาว (★★★ ≤ ไอคอนเงา n) · ตัวเลขล้วน ไม่มีข้อความผู้เล่น
-  const where = levelIdx < 0 ? `∞ <span class="best">สูงสุด ${save.tower.best}</span>` : `${levelIdx + 1}/${LEVELS.length}`;
-  const sub = `${where}<span class="par" title="3 ดาวเมื่อใช้เงาไม่เกิน ${room.def.par} ตัว">★★★ ≤${GHOST_SVG}${room.def.par}</span>`;
-  if (sub !== subHtml) { subHtml = sub; $("lvlNo").innerHTML = sub; $("lvlNo").setAttribute("aria-label", `${levelIdx < 0 ? "หอคอย" : "ห้อง " + (levelIdx + 1)} · 3 ดาวเมื่อใช้เงาไม่เกิน ${room.def.par} ตัว`); }
-  $("lvlName").textContent = room.def.name;
+  // หัว: ห้อง N / ชั้น N + ชื่อ · แถบเป้า: ★★★ ใช้เงา ≤ par · จุดเงา (ตัวเลข/ข้อความจากโค้ด ไม่มีข้อความผู้เล่น)
+  $("lvlNo").textContent = levelIdx < 0 ? `ชั้น ${save.tower.floor}` : `ห้อง ${levelIdx + 1}`;
+  $("lvlName").textContent = levelIdx < 0 ? `หอคอย ∞ · สูงสุด ${save.tower.best}` : room.def.name;
+  const goal = `${ic("star")}${ic("star")}${ic("star")}<span>ใช้เงา ≤ ${room.def.par}</span>`;
+  if (goal !== subHtml) { subHtml = goal; $("goal").innerHTML = goal; $("goal").setAttribute("aria-label", `3 ดาวเมื่อใช้เงาไม่เกิน ${room.def.par} ตัว`); }
   $("dots").setAttribute("aria-label", `เงา ${ghosts.length} จาก ${MAX_GHOSTS} ตัว`);
   const dots = $("dots"); dots.innerHTML = "";
   for (let i = 0; i < MAX_GHOSTS; i++) {
@@ -611,7 +896,7 @@ function updateHud() {
     dots.appendChild(d);
   }
   $<HTMLButtonElement>("btnEnd").disabled = phase !== "run";
-  $("btnEnd").className = phase === "run" ? "primary" : "";
+  $("btnEnd").className = phase === "run" ? "act primary" : "act";
   $<HTMLButtonElement>("btnUndo").disabled = !(phase === "ready" && ghosts.length);
   renderHearts();
   save.skills.eq.forEach((id, i) => {
@@ -638,9 +923,9 @@ function renderSkillBar() {
       const showRec = recSk && !recShown;
       if (showRec) recShown = true;
       b.className = "empty" + (showRec ? " rec" : "");
-      b.innerHTML = (showRec ? `<svg viewBox="0 0 24 24" class="ghosted" style="color:${BR[recSk!.br].c}">${ICON[recSk!.icon]}</svg>` : PLUS_SVG) + `<small>${showRec ? recSk!.name : "สกิล"}</small>`;
+      b.innerHTML = (showRec ? `<svg viewBox="0 0 24 24" class="ghosted" style="color:${BR[recSk!.br].c}">${ICON[recSk!.icon]}</svg>` : PLUS_SVG) + `<small>${showRec ? recSk!.name : `ช่อง ${i + 1}`}</small>`;
       b.setAttribute("aria-label", showRec ? `ช่องสกิลว่าง · ห้องนี้แนะนำ ${recSk!.name} แตะเพื่อเปิดต้นไม้สกิล` : "ช่องสกิลว่าง แตะเพื่อเปิดต้นไม้สกิล");
-      b.onclick = () => openTree();
+      b.onclick = () => show("tree");
     } else {
       b.innerHTML = `<svg viewBox="0 0 24 24" style="color:${BR[n.br].c}">${ICON[n.icon]}</svg><span>${n.name}<small></small></span>`;
       b.setAttribute("aria-label", `${n.name} · ${ACTIVE_SKILLS.has(n.id) ? "กดใช้ได้รอบละครั้ง" : "ทำงานเอง"}`);
@@ -649,10 +934,7 @@ function renderSkillBar() {
     }
     bar.appendChild(b);
   });
-  // แนะนำแต่ไม่มีช่องว่าง → ให้ปุ่มต้นไม้สกิลเรืองแสงแทน
-  recTree = !!recSk && !recShown;
 }
-let recTree = false;
 
 function ghostMenu(i: number) {
   const m = $("gmenu"), g = ghosts[i];
@@ -668,45 +950,30 @@ function ghostMenu(i: number) {
   m.innerHTML = h; m.hidden = false;
   m.querySelectorAll<HTMLButtonElement>("button").forEach(b => b.onclick = () => {
     const a = b.dataset.a;
-    if (a === "del") ghosts.splice(i, 1);
-    if (a === "delay") g.delay = (g.delay + 4) % 16;
-    if (a === "twin") g.twin = !g.twin;
+    if (a === "del") { proofOp(["del", i]); ghosts.splice(i, 1); }
+    if (a === "delay") { proofOp(["delay", i]); g.delay = (g.delay + 4) % 16; }
+    if (a === "twin") { proofOp(["twin", i]); g.twin = !g.twin; }
     m.hidden = true;
     if (a !== "close") startRound();
   });
 }
 
-function renderLevelChips() {
-  const box = $("levels"); box.innerHTML = "";
-  const add = (html: string, cls: string, onclick: () => void, label?: string) => {
-    const b = document.createElement("button"); b.className = cls; b.innerHTML = html; b.onclick = onclick;
-    if (label) b.setAttribute("aria-label", label); box.appendChild(b);
-  };
-  add(`${SPIRIT_SVG}<small>บัญชี</small>`, "acct", openProfile, "บัญชีผู้เล่น");
-  add("ต้นไม้สกิล ✦", recTree ? "tree rec" : "tree", () => openTree());
-    // แตะห้องที่กำลังเล่นอยู่ = ไม่ทำอะไร (เริ่มใหม่ต้องกดปุ่ม "เริ่มห้องใหม่" ซึ่งบอกว่าใช้หัวใจ)
-  const go = (i: number) => () => { if (i !== levelIdx || phase === "win") loadLevel(i); };
-  LEVELS.forEach((_, i) => add(`${i + 1}<small>${"★".repeat(save.best[i] || 0) || "&nbsp;"}</small>`, i === levelIdx ? "on" : "", go(i), `ห้อง ${i + 1}`));
-  add(`หอคอย ∞<small>${save.tower.best ? "ชั้น " + save.tower.best : "&nbsp;"}</small>`, levelIdx < 0 ? "on" : "", go(-1), "โหมดหอคอยไม่รู้จบ");
-  const names: Record<string, string> = { auto: "อัตโนมัติ", high: "สูง", mid: "กลาง", low: "ต่ำ" };
-  add(`ภาพ<small>${names[qSetting]}${qSetting === "auto" ? "·" + names[qAuto] : ""}</small>`, "q", () => {
-    const order = ["auto", "high", "mid", "low"] as const;
-    qSetting = order[(order.indexOf(qSetting) + 1) % order.length];
-    try { localStorage.setItem(QKEY, JSON.stringify({ quality: qSetting })); } catch { /* ไม่เป็นไร */ }
-    renderLevelChips();
-  }, "ระดับกราฟิก");
+// ระดับกราฟิก: ภาพต่ำตัดแสงฟุ้ง/ลาย/แอนิเมชันเรือง (CSS .q-low)
+function applyQuality() {
   document.body.classList.toggle("q-low", quality() === "low");
+  if (!$("settingsOv").hidden) renderSettings();
 }
 
-initTree(save, () => { renderSkillBar(); updateHud(); renderLevelChips(); if (phase === "ready") startRound(); });
+initTree(save, () => { proof.eq = [...save.skills.eq]; renderSkillBar(); updateHud(); renderTop(); if (phase === "ready") startRound(); });
 
 // ---------- ลูปหลัก ----------
 function frame(now: number) {
   requestAnimationFrame(frame);
-  if (paused || gateOpen) { last = now; lastFrame = 0; return; }   // โฆษณาเต็มจอ / หน้าล็อกอินบังทั้งจอ: ไม่เดิน sim ไม่วาด ไม่นับเฟรมช้า
+  // โฆษณาเต็มจอ / หน้าล็อกอิน / ไม่ได้อยู่หน้าเล่น: ไม่เดิน sim ไม่วาด ไม่นับเฟรมช้า (กฎ performance.md)
+  if (paused || gateOpen || screen !== "play") { last = now; lastFrame = 0; return; }   // โฆษณาเต็มจอ / หน้าล็อกอินบังทั้งจอ: ไม่เดิน sim ไม่วาด ไม่นับเฟรมช้า
   if (lastFrame && qSetting === "auto" && qAuto !== "low" && !document.hidden) {
     slowFrames = now - lastFrame > 24 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-    if (slowFrames > 90) { qAuto = qAuto === "high" ? "mid" : "low"; slowFrames = 0; renderLevelChips(); }
+    if (slowFrames > 90) { qAuto = qAuto === "high" ? "mid" : "low"; slowFrames = 0; applyQuality(); }
   }
   lastFrame = now;
   if (phase === "run") while (now - last >= TICK_MS && phase === "run") { last += TICK_MS; tick(); }
@@ -752,8 +1019,13 @@ if (isNative) App.addListener("backButton", () => {
   if (!$("profileOv").hidden) { $("profileOv").hidden = true; return; }
   if (!$("offerOv").hidden) return closeOffer();
   if (!$("heartsOv").hidden) return closeHearts();
-  if (!$("treeOv").hidden) { $("treeClose").click(); return; }
+  if (!$("settingsOv").hidden) { $("settingsOv").hidden = true; return; }
+  if (!$("rankOv").hidden) { $("rankOv").hidden = true; return; }
   if (!$("gmenu").hidden) { $("gmenu").hidden = true; return; }
+  if (!$("helpPop").hidden) { $("helpPop").hidden = true; return; }
+  if (!$("win").hidden) { $("btnWinOut").click(); return; }
+  if (screen === "play") return show(levelIdx < 0 ? "home" : "map");
+  if (screen !== "home") return show("home");
   if (Date.now() - lastBack < 2000) { App.exitApp(); return; }
   lastBack = Date.now(); toast("กดย้อนกลับอีกครั้งเพื่อออกจากเกม");
 });
@@ -764,6 +1036,7 @@ document.addEventListener("visibilitychange", () => {
   if (refreshDay(H)) { writeSave(save); afterHeartGained(); }
   if (Account.hint() === "offline") Account.ensure().then(ok => ok && renderAccount()).catch(() => {});
   if (Billing.pending.size) Billing.retryPending().catch(() => 0);
+  flushWins();
 });
 
 setupSplash();
@@ -773,18 +1046,20 @@ if (Account.needsGate()) openLogin("signIn");
 else if (!Account.name()) openLogin("name");
 const startAccount = () => Account.init().then(ok => {
   renderAccount();
+  if (ok && Account.user) { flushWins(); claimSeasons(); }
   if (!ok) openLogin("signIn");
   else if (loginMode === "name" && !$("login").hidden && !nameInput.value) nameInput.value = cleanName(Account.user?.name);
 }).catch(() => {});
 if (gateOpen) startAccount();
 else "requestIdleCallback" in window ? requestIdleCallback(startAccount, { timeout: 3000 }) : setTimeout(startAccount, 1500);
 if (refreshDay(H)) writeSave(save);
-renderSkillBar();
-loadLevel(0);
+loadLevel(nextRoom() < 0 ? 0 : nextRoom());
+applyQuality();
+show("home");
 watchUnlimited();
 requestAnimationFrame(frame);
 initAnalytics();
 Ads.init().then(() => { if (adsOn()) Ads.showBanner(); });
 // ให้สคริปต์ทดสอบ/แคปภาพอ่านและตั้งสถานะได้ (pnpm dev เท่านั้น)
-if (import.meta.env.DEV) (window as unknown as { __wk: unknown }).__wk = { save, H, openHearts, openOffer, renderHearts, loadLevel, adsOn, Ads, writeSave, Account, requireLogin, openProfile, renderAccount };
+if (import.meta.env.DEV) (window as unknown as { __wk: unknown }).__wk = { save, H, openHearts, openOffer, renderHearts, loadLevel, adsOn, Ads, writeSave, Account, requireLogin, openProfile, renderAccount, show, play, openRank, openSettings, renderRankRows, onWin: () => onWin(), get proof() { return proof; } };
 Billing.init({ onGrant, onRevoked, shouldRestore }).catch(() => {});
