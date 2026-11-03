@@ -197,6 +197,17 @@ button.primary{background:linear-gradient(var(--red),var(--red-d));border-color:
 .login > button,.profile > button{flex:none;width:100%;padding:12px 10px;font-size:.95rem}
 button.google{display:flex;align-items:center;justify-content:center;gap:10px;background:#f6ecd6;color:#1b1430;border-color:#fff6c0;font-weight:600}
 button.google svg{width:20px;height:20px;flex:0 0 auto}
+.lg-google{display:flex;flex-direction:column;gap:12px;width:100%}
+.lg-google button,.login > button{flex:none;width:100%;padding:12px 10px;font-size:.95rem;min-height:44px}
+.lg-title{font-size:1.3rem!important;color:#fff6c0!important}
+.field{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;color:var(--muted);font-size:.8rem}
+.field input{width:100%;min-height:46px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--gold-soft);background:rgba(0,0,0,.32);
+  color:var(--fg);font:600 1rem var(--display);outline:none;user-select:text;-webkit-user-select:text}
+.field input::placeholder{color:var(--muted);opacity:.7;font-weight:400}
+.field input:focus{border-color:var(--gold)}
+.field input[aria-invalid="true"]{border-color:#ff9b85}
+.field-error{width:100%;margin:-4px 0 0!important;text-align:left;color:#ff9b85!important;font-size:.78rem!important}
+button.prename{flex:none;width:auto!important;min-height:40px;padding:5px 14px!important;font-size:.78rem!important;margin-top:-4px;color:var(--gold);border-radius:99px}
 .or{display:flex;align-items:center;gap:10px;width:100%;color:var(--muted);font-size:.78rem}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--gold-soft)}
 .ov .note,.ov .pnote{font-size:.76rem;line-height:1.4}

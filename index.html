@@ -126,27 +126,38 @@
   <p>หัวใจไม่จำกัด 2 ชั่วโมง ลองห้องใหม่ได้เรื่อย ๆ ไม่ต้องห่วงหัวใจ</p>
   <div class="row"><button id="oLater">ไว้ก่อน</button><button id="oBuy" class="primary"></button></div>
 </div></div>
-<!-- หน้าล็อกอิน (ยกจาก LumiFlip #login): ครั้งแรกที่เปิดเกม และหลังออกจากระบบ/ลบบัญชี · ปิดเองไม่ได้จนกว่าจะเลือก -->
-<div id="login" class="ov gate" hidden><div class="card login">
+<!-- หน้าล็อกอิน + ตั้งชื่อ (ยกจาก LumiFlip #login / #loginForm): ครั้งแรกที่เปิดเกม และหลังออกจากระบบ/ลบบัญชี · ปิดเองไม่ได้จนกว่าจะเลือก
+     โหมด name = เคยเข้าแล้วแต่ยังไม่มีชื่อ (ขอชื่ออย่างเดียว) · rename = เปลี่ยนชื่อจากหน้าบัญชี (ปิดได้) -->
+<div id="login" class="ov gate" hidden><form class="card login" id="loginForm" novalidate>
   <div class="lg-hero" aria-hidden="true">
     <i class="lg-glow"></i>
     <svg class="g0" viewBox="-16 -26 32 44"><use href="#wkGhost0"/></svg>
     <svg class="g1" viewBox="-16 -26 32 44"><use href="#wkGhost1"/></svg>
     <svg class="me" viewBox="-16 -26 32 44"><use href="#wkHero"/></svg>
   </div>
-  <h2>Wickling<small>ภูติตะเกียง</small></h2>
-  <p>เล่นได้เลย ไม่ต้องสมัคร จะผูกบัญชี Google ทีหลังก็ได้</p>
-  <button id="googleBtn" class="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#ea4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.4 0 24 0 14.6 0 6.6 5.4 2.6 13.3l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285f4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.1z"/><path fill="#fbbc05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34a853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>เข้าด้วย Google</span></button>
-  <div class="or"><span>หรือ</span></div>
-  <button id="guestBtn" class="primary">เล่นแบบผู้เยี่ยมชม</button>
-  <p class="note">ความคืบหน้าเก็บไว้ในเครื่องนี้ · ผูก Google ทีหลังได้ในหน้าบัญชี</p>
-</div></div>
+  <h2 id="lgBrand">Wickling<small>ภูติตะเกียง</small></h2>
+  <h2 id="lgTitle" class="lg-title" hidden></h2>
+  <p id="loginText">เล่นได้เลย ไม่ต้องสมัคร จะผูกบัญชี Google ทีหลังก็ได้</p>
+  <div class="lg-google" id="loginGoogle">
+    <button type="button" id="googleBtn" class="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#ea4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.4 0 24 0 14.6 0 6.6 5.4 2.6 13.3l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285f4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.1z"/><path fill="#fbbc05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34a853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>เข้าด้วย Google</span></button>
+    <div class="or"><span>หรือเล่นแบบผู้เยี่ยมชม</span></div>
+  </div>
+  <label class="field">
+    <span>ตั้งชื่อเล่นของคุณ</span>
+    <input id="nameInput" maxlength="16" autocomplete="nickname" enterkeyhint="done" spellcheck="false" placeholder="กรุณาตั้งชื่อ (2–16 ตัวอักษร)">
+  </label>
+  <p class="field-error" id="nameError" role="alert" hidden></p>
+  <button type="submit" id="guestBtn" class="primary">เริ่มเล่นเลย</button>
+  <p class="note" id="loginNote">ความคืบหน้าเก็บไว้ในเครื่องนี้ · ผูก Google ทีหลังได้ในหน้าบัญชี</p>
+  <button type="button" id="loginClose">ยกเลิก</button>
+</form></div>
 
 <!-- บัญชี: ผูก Google / ออกจากระบบ / ลบบัญชี (ข้อความจากบัญชีใส่ด้วย textContent เท่านั้น) -->
 <div id="profileOv" class="ov" hidden><div class="card profile">
   <button class="x" id="pClose" aria-label="ปิด">✕</button>
   <div class="pav" id="pAvatar" aria-hidden="true"></div>
   <h2 id="pName"></h2>
+  <button type="button" id="pRename" class="prename">เปลี่ยนชื่อ</button>
   <small class="ptype" id="pType"></small>
   <div class="pstats" id="pStats"></div>
   <button id="pLink" class="google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#ea4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.4 0 24 0 14.6 0 6.6 5.4 2.6 13.3l8 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285f4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.1z"/><path fill="#fbbc05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l7.9-6.2z"/><path fill="#34a853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.2 0-11.5-4.2-13.4-9.9l-8 6.2C6.6 42.6 14.6 48 24 48z"/></svg><span>ผูกบัญชี Google</span></button>

@@ -12,7 +12,7 @@ import { initAnalytics, track } from "./platform/analytics";
 import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, roomIsFree, clearedCount, dailyHearts } from "./core/hearts";
 import { Ads, isNative } from "./platform/ads";
 import { Billing, type GrantEvent } from "./platform/billing";
-import { Account } from "./platform/account";
+import { Account, cleanName, NAME_MIN } from "./platform/account";
 import type { ProductId } from "./platform/products";
 import { App } from "@capacitor/app";
 
@@ -336,38 +336,108 @@ const SPIRIT_SVG = `<svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#
 const errCode = (err: unknown) => (err as { code?: string })?.code ?? "";
 let gateOpen = false;
 
-// หน้าล็อกอิน: ปิดเองไม่ได้จนกว่าจะเลือก guest หรือ Google
-function requireLogin() {
-  gateOpen = true;
+// หน้าล็อกอิน + ตั้งชื่อ (แบบ LumiFlip openLogin/renderLogin/readName/submitLogin/signInGoogle)
+// signIn = เลือก Google หรือผู้เยี่ยมชม (+ตั้งชื่อ) · name = เข้าแล้วแต่ยังไม่มีชื่อ (เช่น เครื่องที่เข้าก่อนมีช่องชื่อ) · rename = เปลี่ยนชื่อจากหน้าบัญชี
+// signIn/name ปิดเองไม่ได้จนกว่าจะเสร็จ · ชื่อเก็บด้วย Account.setName (localStorage แยกจากเซฟ) · แสดงด้วย textContent เท่านั้น
+type LoginMode = "signIn" | "name" | "rename";
+let loginMode: LoginMode = "signIn";
+const nameInput = $<HTMLInputElement>("nameInput");
+
+function openLogin(mode: LoginMode) {
+  loginMode = mode;
+  gateOpen = mode !== "rename";
+  nameInput.value = mode === "rename" ? Account.name() ?? "" : mode === "name" ? cleanName(Account.user?.name) : "";
+  showNameError(null);
+  const signIn = mode === "signIn";
+  $("lgBrand").hidden = !signIn;
+  $("lgTitle").hidden = signIn;
+  $("lgTitle").textContent = mode === "rename" ? "เปลี่ยนชื่อเล่น" : "ตั้งชื่อเล่นก่อนเล่นต่อ";
+  $("loginText").hidden = $("loginGoogle").hidden = $("loginNote").hidden = !signIn;
+  $("guestBtn").textContent = signIn ? "เริ่มเล่นเลย" : "บันทึก";
+  $("loginClose").hidden = mode !== "rename";
   $("profileOv").hidden = true;
   $("login").hidden = false;
-  Account.preload();
+  if (signIn) Account.preload();
+}
+function requireLogin() { openLogin(Account.hint() && Account.user ? "name" : "signIn"); }
+function closeLogin() { gateOpen = false; $("login").hidden = true; }
+
+function showNameError(msg: string | null) {
+  $("nameError").textContent = msg ?? "";
+  $("nameError").hidden = !msg;
+  nameInput.setAttribute("aria-invalid", msg ? "true" : "false");
+}
+function readName(): string | null {
+  const name = cleanName(nameInput.value);
+  if (name.length >= NAME_MIN) return name;
+  showNameError(name ? `ชื่อต้องยาวอย่างน้อย ${NAME_MIN} ตัวอักษร` : "กรุณาตั้งชื่อก่อนเริ่มเล่น");
+  nameInput.focus();
+  return null;
 }
 
 function setLoginBusy(busy: boolean) {
-  for (const id of ["googleBtn", "guestBtn"]) $<HTMLButtonElement>(id).disabled = busy;
+  for (const id of ["googleBtn", "guestBtn", "loginClose"]) $<HTMLButtonElement>(id).disabled = busy;
 }
 
-async function loginWith(kind: "guest" | "google") {
+// ข้อความตอนเข้าด้วย Google ไม่สำเร็จ: แนบรหัสสั้น ๆ ช่วยหาสาเหตุบนเครื่องจริง (เช่น SHA-1 ไม่ตรง = DEVELOPER_ERROR / 10)
+function googleFailMsg(err: unknown) {
+  const e = err as { code?: string; message?: string };
+  const raw = `${e?.code ?? ""} ${e?.message ?? ""}`;
+  if (/cancel/i.test(raw)) return "ยกเลิกการเข้าด้วย Google";
+  const code = (e?.code || e?.message || "").replace(/\s+/g, " ").slice(0, 48);
+  return code ? `เข้าด้วย Google ไม่สำเร็จ (${code})` : "เข้าด้วย Google ไม่สำเร็จ ลองใหม่อีกครั้ง";
+}
+
+function finishLogin(name: string) {
+  Account.setName(name);
+  closeLogin();
+  renderAccount();
+}
+
+async function submitLogin() {
   if ($<HTMLButtonElement>("guestBtn").disabled) return;
+  const name = readName();
+  if (!name) return;
+  if (loginMode !== "signIn") {
+    finishLogin(name);
+    return toast(loginMode === "rename" ? "บันทึกชื่อแล้ว" : `ยินดีต้อนรับ ${name}`);
+  }
   unlockAudio();
   setLoginBusy(true);
   try {
-    const res = await Account.signIn(kind);
-    gateOpen = false;
-    $("login").hidden = true;
-    renderAccount();
-    if (res === "offline") toast("ยังไม่มีเน็ต เล่นไปก่อนได้เลย จะสร้างบัญชีให้เมื่อต่อเน็ต");
-    else toast(kind === "google" ? `เข้าสู่ระบบแล้ว · ${Account.user?.name || "Google"}` : "ยินดีต้อนรับ ภูติน้อย");
+    const res = await Account.signIn("guest");
+    finishLogin(name);
+    toast(res === "offline" ? "ยังไม่มีเน็ต เล่นไปก่อนได้เลย จะสร้างบัญชีให้เมื่อต่อเน็ต" : `ยินดีต้อนรับ ${name}`);
     if (Billing.pending.size) Billing.retryPending().catch(() => 0);
   } catch {
-    toast("เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง");   // รวมกรณีผู้เล่นกดยกเลิกเอง (แบบ LumiFlip)
+    toast("เข้าสู่ระบบไม่สำเร็จ ลองใหม่อีกครั้ง");
   } finally {
     setLoginBusy(false);
   }
 }
-$("googleBtn").onclick = () => loginWith("google");
-$("guestBtn").onclick = () => loginWith("guest");
+
+// Google: ใช้ชื่อที่พิมพ์ไว้ถ้าถูกกติกา ไม่งั้นใช้ชื่อจาก Google (เปลี่ยนทีหลังได้ในหน้าบัญชี)
+async function signInGoogle() {
+  if ($<HTMLButtonElement>("googleBtn").disabled) return;
+  unlockAudio();
+  setLoginBusy(true);
+  try {
+    await Account.signIn("google");
+    const typed = cleanName(nameInput.value), google = cleanName(Account.user?.name);
+    const name = typed.length >= NAME_MIN ? typed : google.length >= NAME_MIN ? google : "ภูติน้อย";
+    finishLogin(name);
+    toast(`ยินดีต้อนรับ ${name}`);
+    if (Billing.pending.size) Billing.retryPending().catch(() => 0);
+  } catch (err) {
+    toast(googleFailMsg(err));
+  } finally {
+    setLoginBusy(false);
+  }
+}
+$("loginForm").onsubmit = e => { e.preventDefault(); submitLogin(); };
+$("googleBtn").onclick = signInGoogle;
+$("loginClose").onclick = () => { if (loginMode === "rename") closeLogin(); };
+nameInput.oninput = () => { if (!$("nameError").hidden) showNameError(null); };
 
 // ถามยืนยัน · คืน true เมื่อกดปุ่มยืนยัน
 let askDone: ((ok: boolean) => void) | null = null;
@@ -392,7 +462,7 @@ async function linkGoogle() {
   } catch (err) {
     toast(errCode(err) === "auth/credential-already-in-use"
       ? "บัญชี Google นี้เคยใช้กับเกมนี้แล้ว · ออกจากระบบแล้วเข้าด้วย Google แทนได้"
-      : "ผูกบัญชีไม่สำเร็จ ลองใหม่อีกครั้ง");
+      : googleFailMsg(err).replace("เข้าด้วย", "ผูก"));
   } finally { b.disabled = false; }
 }
 
@@ -407,6 +477,7 @@ async function signOut() {
 
 // ออกจากบัญชีแล้วกลับไปหน้าล็อกอิน (เล่นต่อไม่ได้จนกว่าจะเข้าใหม่)
 function backToGate() {
+  Account.setName(null);   // แบบ LumiFlip: ชื่อเป็นของบัญชีเดิม · หน้าล็อกอินขอชื่อใหม่
   $("profileOv").hidden = true;
   renderAccount();
   requireLogin();
@@ -438,7 +509,7 @@ function renderAccount() {
     img.onerror = () => { av.innerHTML = SPIRIT_SVG; };
     av.replaceChildren(img);
   } else av.innerHTML = SPIRIT_SVG;
-  $("pName").textContent = u?.name || (u?.google ? "ผู้เล่น Google" : "ผู้เยี่ยมชม");
+  $("pName").textContent = Account.name() ?? (cleanName(u?.name) || (u?.google ? "ผู้เล่น Google" : "ผู้เยี่ยมชม"));
   $("pType").textContent = u ? (u.google ? `บัญชี Google${u.email ? " · " + u.email : ""}` : "บัญชีผู้เยี่ยมชม")
     : offline ? "ผู้เยี่ยมชม · ยังไม่ได้เชื่อมต่อ (รอเน็ต)" : "";
   const stars = earnedStars(save);
@@ -452,6 +523,7 @@ function renderAccount() {
 
 function openProfile() { renderAccount(); $("profileOv").hidden = false; }
 $("pClose").onclick = () => { $("profileOv").hidden = true; };
+$("pRename").onclick = () => openLogin("rename");
 $("pLink").onclick = linkGoogle;
 $("pSignOut").onclick = signOut;
 $("pDelete").onclick = deleteAccount;
@@ -613,6 +685,7 @@ let lastBack = 0;
 if (isNative) App.addListener("backButton", () => {
   if (Ads.busy) return;
   if (!$("askOv").hidden) return closeAsk(false);
+  if (!$("login").hidden && loginMode === "rename") return closeLogin();
   if (!$("profileOv").hidden) { $("profileOv").hidden = true; return; }
   if (!$("offerOv").hidden) return closeOffer();
   if (!$("heartsOv").hidden) return closeHearts();
@@ -632,8 +705,14 @@ document.addEventListener("visibilitychange", () => {
 
 setupSplash();
 // ครั้งแรก/หลังออกจากระบบ: หน้าล็อกอินขึ้นทันที (ใต้ splash) · เคยเข้าแล้ว: อ่านบัญชีตอนว่าง ถ้าบัญชีหายไปค่อยเปิดหน้าล็อกอิน
-if (Account.needsGate()) requireLogin();
-const startAccount = () => Account.init().then(ok => { renderAccount(); if (!ok) requireLogin(); }).catch(() => {});
+// เคยเข้าแล้วแต่ยังไม่มีชื่อ (เครื่องที่ติดตั้งก่อนมีช่องชื่อ) → ขอชื่ออย่างเดียว ไม่ต้องเข้าบัญชีใหม่
+if (Account.needsGate()) openLogin("signIn");
+else if (!Account.name()) openLogin("name");
+const startAccount = () => Account.init().then(ok => {
+  renderAccount();
+  if (!ok) openLogin("signIn");
+  else if (loginMode === "name" && !$("login").hidden && !nameInput.value) nameInput.value = cleanName(Account.user?.name);
+}).catch(() => {});
 if (gateOpen) startAccount();
 else "requestIdleCallback" in window ? requestIdleCallback(startAccount, { timeout: 3000 }) : setTimeout(startAccount, 1500);
 if (refreshDay(H)) writeSave(save);
