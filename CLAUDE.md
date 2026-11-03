@@ -31,7 +31,8 @@
 | `src/render/board.ts` | วาดกระดานด้วย Canvas 2D (สไปรต์ SVG ในโค้ด) · 3 ระดับกราฟิก |
 | `src/ui/tree.ts` | หน้าต้นไม้สกิล + วิดีโอตัวอย่างสกิล (ยกจากต้นแบบ ยังเป็น `@ts-nocheck`) |
 | `src/main.ts` | ตัวควบคุมเกม: หน้าจอ UX v2 (`show()`: หน้าแรก / แผนที่ทางโคมไฟ บท 1 ห้อง 1–5 บท 2 ห้อง 6–13 บท 3 เร็ว ๆ นี้ / หน้าเล่น / ต้นไม้) + เมนูล่าง + ชีตโปรไฟล์/ร้าน/ตั้งค่า/อันดับ/ผลห้อง · HUD เสียง ลูปหลัก · จดหลักฐานการชนะและส่ง `submitWin` |
-| `src/platform/boards.ts` | กระดานอันดับ: อ่าน `boards/{all,W…,M…}/scores` (Firestore lite, limit 50, อ่านเฉพาะตอนเปิดหน้าอันดับ) · คิวหลักฐานที่ยังส่งไม่ได้ (`wickling.proofs`) · `claimSeason` |
+| `src/platform/boards.ts` | กระดานอันดับ: อ่าน `boards/{all,W…,M…}/scores` (Firestore lite, limit 50, สัปดาห์/เดือนเฉพาะ `g`, อ่านเฉพาะตอนเปิดหน้าอันดับ) · คิวหลักฐานที่ยังส่งไม่ได้ (`wickling.proofs`, 60 ใบ, เกินเพดานรอวันถัดไป) · `claimSeason` |
+| `src/core/name.ts` | กติกาชื่อเล่น (2–16 code point, ตัดตัวมองไม่เห็น/ควบคุม/< >) ใช้ทั้งหน้าล็อกอินและ server |
 | `docs/ui-mockup/ux-v2/` | mockup UX v2 ที่เจ้าของเกมอนุมัติ (ไอคอน `i-*` ในเกมยกจากที่นี่) |
 | `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id จริงของ Wickling (`testing: true` จนกว่าจะปล่อย) · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
 | `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ (ผูกกับ uid ของ `Account`) · `IAP_SERVER_READY = true` (2026-11-03) · ราคาจาก Play · สินค้าที่ Play ไม่มีขึ้น "ยังไม่เปิดขาย" + ข้อความไทยเมื่อกด (`Billing.status`) · ร้านจำลองเฉพาะ `pnpm dev` |
@@ -39,7 +40,7 @@
 | `src/platform/cloud.ts` | เรียก callable Functions ผ่าน fetch + retry/backoff (ใช้ร่วม billing/account) |
 | หน้าล็อกอิน / บัญชี / splash | `index.html` (`#splash` CSS inline, `#login`, `#profileOv`, `#askOv`, `#app` หน้าจอ v2) + ส่วน "บัญชี" ใน `main.ts` · splash ~2 วิ transform/opacity, ภาพต่ำตัดแสงฟุ้ง/ควัน · หน้าล็อกอินขอชื่อเล่น (แบบ LumiFlip) ขึ้นครั้งแรกและหลังออกจากระบบ/ลบบัญชี · เครื่องที่เคยเข้าแต่ยังไม่มีชื่อเจอหน้าขอชื่ออย่างเดียว · เปลี่ยนชื่อในหน้าบัญชี · โปรไฟล์เปิดจากรูปที่แถบบน · ออกจากระบบ/ลบบัญชีไม่ลบเซฟในเครื่อง · `?nosplash`, `?splashat=ms` เฉพาะ dev |
 | `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
-| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) รวมลบบัญชี `deleteAccount` + `cleanupUser` (`account.js`) · ร้านในแอปเปิดแล้ว · **กระดาน `submitWin` (`wins.js`) + `claimSeason` (`seasons.js`) + rules/indexes ใหม่ ยังไม่ได้ deploy (ต้องได้รับอนุมัติจากเจ้าของเกม)** · เทสต์ 67 ตัวกับ emulator (ต้องมี Java: `PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH`) |
+| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) รวมลบบัญชี `deleteAccount` + `cleanupUser` (`account.js`) · ร้านในแอปเปิดแล้ว · **กระดาน `submitWin` (`wins.js`) + `claimSeason` (`seasons.js`) + rules/indexes ใหม่ ยังไม่ได้ deploy (ต้องได้รับอนุมัติจากเจ้าของเกม)** · เทสต์ 78 ตัวกับ emulator (ต้องมี Java: `PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH`) |
 | `android/` | Capacitor Android (`capacitor.config.json`) · `google-services.json` (ไม่ใช่ความลับ) · ไอคอน/หน้าเปิดสร้างด้วย `node scripts/android-art.mjs` จาก `docs/ui-mockup/store/art.html` (พื้น `#0c0911` ตรงกับ `#splash`) |
 | `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev และเว็บ localhost (แอป Android เปิดอยู่) · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
@@ -71,7 +72,7 @@
 - ของที่ซื้อให้หลัง `functions/` ตรวจใบเสร็จกับ Google เท่านั้น (กันซ้ำด้วย purchaseId) · ร้าน/โฆษณาจำลองเฉพาะ `pnpm dev` · เว็บจริงล้าง `noAds`/ไม่จำกัด ทิ้ง
 - **ช่องโหว่ที่รู้:** หัวใจและเวลาไม่จำกัดใช้นาฬิกาเครื่อง (แบบ LumiFlip มีตัวกันย้อนนาฬิกา) · key ลายเซ็นอยู่ใน bundle · Functions deploy แล้วและร้านเปิด (`IAP_SERVER_READY = true`) · ยังต้องสร้างสินค้าใน Play + ให้สิทธิ์ service account + ทดสอบ license tester (บันทึกใน `../.claude/skills/game-security/SKILL.md`)
 - Firestore ปิดเป็นค่าเริ่มต้น · client อ่าน `boards/*/scores` ได้อย่างเดียว (ล็อกอินแล้ว) · เขียนทุกอย่างด้วย Functions (Admin SDK)
-- **กระดานอันดับ (server ตัดสินแบบ meowchime, หน้าตาแบบ LumiFlip):** ชนะห้อง/ชั้นใหม่ → ส่งหลักฐานให้ `submitWin` เล่นซ้ำด้วย sim ตัวเดียวกับเกม → +1 แต้ม (ถาวร/สัปดาห์/เดือน) · ห้อง/ชั้นละ 1 ครั้งต่อบัญชี · 60 แต้ม/วัน · แต้มมาเร็วกว่าเวลาเล่นจริงไม่ได้ · 120 คำขอ/ชม. · รางวัลหัวใจต้องผูก Google · เซฟ `flagged`/`debug` ไม่ส่ง · ช่องโหว่ที่รู้: server ไม่รู้ว่ามีสกิลจริงไหม (ต้นไม้สกิลอยู่ในเครื่อง) และหอคอยแก้ด้วยโปรแกรมได้ → เพดานต่อวันคุม · รางวัลหัวใจเกิน 8 ถูกตัด (หัวใจเก็บได้สูงสุด 8)
+- **กระดานอันดับ (server ตัดสินแบบ meowchime, หน้าตาแบบ LumiFlip):** ชนะห้อง/ชั้นใหม่ → ส่งหลักฐาน (`proof.ts`, มี `sv` รุ่น sim) ให้ `submitWin` เล่นซ้ำด้วย sim ตัวเดียวกับเกม → +1 แต้ม (ถาวร/สัปดาห์/เดือน) · ห้อง/ชั้นละ 1 ครั้งต่อบัญชี · 60 แต้ม/วัน (เกินแล้วเกมเก็บไว้ส่งวันถัดไป) · 120 คำขอ/ชม. · แถวจด `g` = ผูก Google · **อันดับรางวัลและแท็บสัปดาห์/เดือนนับเฉพาะ `g`** (แท็บทั้งหมดแสดงทุกคน) · list ต้อง limit ≤ 50 · นับอันดับนอก 50 ไม่ได้ (แสดง 50+) · ลบบัญชีแล้วเขียน `deleted/{uid}` · dev ส่งแต้มได้เฉพาะ emulator · ชื่อใช้ `src/core/name.ts` ตัวเดียวกับ server · เวลาเล่นสะสมแค่คุมจังหวะต่อบัญชี กันบอทไม่ได้ · ช่องโหว่ที่ค้างอยู่ใน `../.claude/skills/game-security/SKILL.md` · รางวัลหัวใจเกิน 8 ถูกตัด (รอเจ้าของเกมตัดสิน)
 
 ## กฎของสตูดิโอ
 
