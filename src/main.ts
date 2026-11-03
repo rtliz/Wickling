@@ -272,8 +272,9 @@ function renderHeartsPanel() {
   const inf = unlimited(H), daily = dailyHearts(H);
   $("hTitle").textContent = hEmpty && !inf && H.n <= 0 ? "หัวใจหมดแล้ว" : "หัวใจและร้าน";
   $("hBig").innerHTML = inf ? `<span class="inf">${ic("heart", "l")}∞<small>เหลือ ${timeLeft(H.until - Date.now())} ชม.</small></span>`
-    : Array.from({ length: Math.max(daily, H.n) }, (_, k) => ic("heart", k < H.n ? "" : "off")).join("");
-  $("hBig").setAttribute("aria-label", inf ? "หัวใจไม่จำกัด" : `หัวใจ ${H.n} จาก ${daily} ดวงต่อวัน`);
+    : Array.from({ length: daily }, (_, k) => ic("heart", k < H.n ? "" : "off")).join("")
+      + (H.n > daily ? `<span class="extra">+${H.n - daily}</span>` : "");   // เกินวันละ 5/8 (รางวัลอันดับ) แสดงเป็น +N
+  $("hBig").setAttribute("aria-label", inf ? "หัวใจไม่จำกัด" : `หัวใจ ${H.n} ดวง (เติมวันละ ${daily})`);
   $("hText").textContent = "ห้อง/ชั้นใหม่ใช้ 1 ดวงต่อการเริ่ม · ห้องที่ผ่านแล้วและห้อง 1–2 ฟรี";
   const adLeft = HEARTS.adPerDay - H.ad;
   // ดูโฆษณาได้เฉพาะตอนหัวใจหมด (หัวใจจึงไม่เกินเพดาน 8) และวันละ 3 ครั้ง
@@ -313,7 +314,7 @@ $("hAd").onclick = async () => {
   watchingAd = true;
   const ok = await Ads.rewarded().finally(() => { watchingAd = false; });
   if (!ok) return toast("ต้องดูโฆษณาจนจบถึงจะได้หัวใจ");
-  H.n = Math.min(HEARTS.max, H.n + 1); H.ad++;
+  H.n = Math.min(HEARTS.max, H.n + 1); H.ad++;   // ดูโฆษณาได้เฉพาะตอนหมด จึงได้แค่ 1
   writeSave(save); toast("ได้หัวใจ +1"); afterHeartGained();
 };
 $("hearts").onclick = () => openHearts(false);
@@ -835,7 +836,7 @@ async function claimSeasons() {
   if (res.needGoogle) return toast(`ติดอันดับรอบที่แล้ว! ผูก Google เพื่อรับ ${res.hearts} หัวใจ`);
   save.lb.checked = round;
   if (res.hearts > 0) {
-    // หัวใจเก็บในเครื่องได้สูงสุด HEARTS.max (validate ตัดที่เกิน)
+    // รางวัลอันดับเก็บเกินวันละ 5/8 ได้ (สูงสุด HEARTS.max = 99) · เติมเที่ยงคืนไม่ลบส่วนเกิน
     H.n = Math.min(HEARTS.max, H.n + res.hearts);
     afterHeartGained();
     toast(`รางวัลอันดับ: ได้หัวใจ +${res.hearts}`);

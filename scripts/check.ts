@@ -179,8 +179,15 @@ console.log("เซฟ v1 → v2 → v3 และหัวใจ");
   expect(threw, "แก้เซฟที่มีลายเซ็นแล้วโหลดไม่ผ่าน");
   // validate ตัดค่าเกินเพดาน
   const big = parseSave(serializeSave({ ...a, hearts: { ...a.hearts, n: 500, ad: 99, from: now, until: now + 1e12, attempt: "<x>" } }), true, now);
-  expect(big.hearts.n === HEARTS.max && big.hearts.ad === 0 && big.hearts.until === 0 && big.hearts.attempt === null, "validate ตัดหัวใจ ≤ 8 และเวลาไม่จำกัดที่ผิดปกติ");
+  expect(big.hearts.n === HEARTS.max && big.hearts.ad === 0 && big.hearts.until === 0 && big.hearts.attempt === null, `validate ตัดหัวใจ ≤ ${HEARTS.max} และเวลาไม่จำกัดที่ผิดปกติ`);
   expect(big.lb.flagged, "เซฟที่ถูกแก้หัวใจเกินเพดาน = flagged (ไม่ขึ้นกระดาน)");
+  // รางวัลอันดับเก็บเกิน 8 ได้ (เซฟ v3 รูปแบบเดิม ไม่ต้องขึ้นเวอร์ชัน)
+  const v3 = sealSave({ ...a, v: 3, lb: { checked: null, flagged: false, debug: false }, hearts: { ...a.hearts, n: 12, day: dayKey(new Date(now)) } });
+  const rich = parseSave(v3, true, now);
+  expect(rich.hearts.n === 12 && !rich.lb.flagged, "เซฟ v3 หัวใจ 12 (รางวัลอันดับ) โหลดได้ครบ ไม่ถูกตัด ไม่ flagged");
+  expect(!refreshDay(rich.hearts, now) && refreshDay(rich.hearts, now + 86_400_000) && rich.hearts.n === 12, "เติมเที่ยงคืนไม่ลบหัวใจส่วนเกิน");
+  rich.hearts.n = 12; const pp = { best: {} as Record<string, number>, tower: { floor: 1, best: 0 } };
+  expect(payToPlay(rich.hearts, pp, 5, now + 86_400_000) === "paid" && rich.hearts.n === 11, "ใช้หัวใจส่วนเกินได้ตามปกติ (12 → 11)");
   // v2 → v3 (กระดาน): เซฟ v2 จริงแบบมีลายเซ็น (sealSave ตรงแบบที่เวอร์ชันก่อนเขียน)
   const v2 = sealSave({ v: 2, best: { 0: 3, 1: 2, 4: 1 }, tower: { floor: 7, best: 6 }, skills: { owned: ["root", "t1"], eq: [null, null], spent: 2 }, devBonus: 0,
     hearts: { ...freshHearts(now), n: 3, noAds: true, tx: ["gpa.1"] } });
