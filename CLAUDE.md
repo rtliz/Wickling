@@ -12,6 +12,8 @@
 | `pnpm dev` | เปิดเกมที่ http://localhost:5173 (มีปุ่ม "+20 ★ ทดสอบ" ในต้นไม้สกิล เฉพาะโหมดนี้) |
 | `pnpm check` | **คำสั่งตรวจหลัก**: typecheck + ให้โปรแกรมเล่นผ่านทุกห้องจริงตามกติกา + หอคอยชั้น 1–200 · ต้องผ่านก่อน commit |
 | `pnpm build` | build ไป `dist/` |
+| `pnpm android:sync` | build แล้วคัดลอกเข้า `android/` (Capacitor) · เปิด Android Studio ด้วย `pnpm android:open` |
+| เทสต์ `functions/` | ตรวจใบเสร็จกับ Firestore emulator + Google ปลอม (คำสั่งอยู่ใน `functions/README.md`) |
 
 ## โครงสร้าง
 
@@ -22,10 +24,16 @@
 | `src/core/tower.ts` | หอคอย ∞ สุ่มจาก seed ของเลขชั้น · เก็บเฉพาะห้องที่ `autoSolve` เล่นผ่าน |
 | `src/core/solve.ts` | ตัวแก้ปริศนาอัตโนมัติ (ใช้แค่เงา) ใช้ทั้งในตัวสุ่มและใน `pnpm check` |
 | `src/core/skills.ts` | ต้นไม้สกิล 11 สกิล + ไอคอน SVG |
-| `src/core/save.ts` | เซฟในเครื่อง + migrate + validate |
+| `src/core/save.ts` | เซฟในเครื่อง (ลงลายเซ็นด้วย `saveguard.ts`) + migrate + validate |
+| `src/core/hearts.ts` | กติกาหัวใจ (ไม่มี DOM): วันละ 5 / ลบโฆษณา 8, เติมเที่ยงคืน, เสีย 1 ดวงต่อการเริ่มห้องที่ยังไม่ผ่าน, ห้อง 1–2 ฟรี, หัวใจไม่จำกัด + กันย้อนนาฬิกา · ตัวเลขทั้งหมดอยู่ใน `HEARTS` |
 | `src/render/board.ts` | วาดกระดานด้วย Canvas 2D (สไปรต์ SVG ในโค้ด) · 3 ระดับกราฟิก |
 | `src/ui/tree.ts` | หน้าต้นไม้สกิล + วิดีโอตัวอย่างสกิล (ยกจากต้นแบบ ยังเป็น `@ts-nocheck`) |
 | `src/main.ts` | ตัวควบคุมเกม HUD ปุ่ม เสียง ลูปหลัก |
+| `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id ทดสอบของ Google · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
+| `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ · `IAP_SERVER_READY = false` ซ่อนปุ่มซื้อใน build จริง · ร้านจำลองเฉพาะ `pnpm dev` |
+| `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
+| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · **ยังไม่ deploy** |
+| `android/` | Capacitor Android (`capacitor.config.json`) |
 | `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev/localhost · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
 | `prototypes/echo-me/` | ต้นแบบ HTML ไฟล์เดียว + mock แนวภาพ/ต้นไม้สกิล (ห้าม import เข้าโค้ดจริง) |
@@ -37,22 +45,25 @@
 
 | ค่า | ใช้ | สถานะ |
 |---|---|---|
-| package id | `com.wickling.puzzle` | ล็อก: สร้างแอปใน Play Console แล้ว (2026-11-02, app id `4973122480503751933`) · ยังไม่ได้ลง Capacitor |
+| package id | `com.wickling.puzzle` | ล็อก: สร้างแอปใน Play Console แล้ว (2026-11-02, app id `4973122480503751933`) · ลง Capacitor แล้ว (2026-11-03) |
 | Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · แผน Spark พอ (ยังไม่ใช้ Firestore) · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
-| key เซฟ | `wickling.save.v1` · สำรองเซฟเสีย `wickling.save.bad` · `SAVE_VERSION = 1` | ล็อก |
+| key เซฟ | `wickling.save.v1` · สำรองเซฟเสีย `wickling.save.bad` · เครื่องที่เซฟแบบมีลายเซ็นแล้ว `wickling.save.signed` · `SAVE_VERSION = 2` (v2 = หัวใจ) | ล็อก · ห้ามเปลี่ยน `SECRET`/`PREFIX` ใน `saveguard.ts` |
 | ลำดับห้องใน `LEVELS` | ดาวในเซฟอ้างด้วยลำดับ → เพิ่มต่อท้ายเท่านั้น | ล็อกหลังปล่อย |
 | ตัวสุ่มหอคอย (`genTower`, seed) | ห้องของแต่ละชั้นต้องเหมือนเดิม | ล็อกหลังปล่อย |
 | id สกิล (`root t1 t2 t3 s1 s2 s3 l1 l2 l3 cap`) | เซฟอ้างด้วย id | ล็อก |
-| product id IAP | `wickling_starter_pack`, `wickling_hints_10`, `wickling_remove_ads` | เสนอ · ยังไม่สร้างใน Play Console |
+| product id IAP | `remove_ads` (ครั้งเดียว ฿35), `unlimited_hearts_2h` (ซื้อซ้ำได้ ฿19) · id ร่วมทั้งสตูดิโอ | เสนอ · ยังไม่สร้างใน Play Console (แพ็กแรก/คำใบ้ตัดไว้ก่อน ยังไม่มีระบบคำใบ้) |
+| AdMob | ตอนนี้ id ทดสอบของ Google (`AD_CONFIG` + `AndroidManifest.xml`) | ยังไม่ได้สร้างแอปใน AdMob |
 | ระดับกราฟิก | อัตโนมัติ / สูง / กลาง / ต่ำ (`wickling.settings`) | ทำแล้ว |
 | id ใน studio-cms | `wickling` | ยังไม่ได้เพิ่มใน `studio-cms/src/games.ts` |
 
 ## กันแฮก
 
 ทำตาม [../.claude/rules/anti-hack.md](../.claude/rules/anti-hack.md) · **โมเดลที่เลือก: เซฟลายเซ็น + Validator (แบบเกม Wuxia)** เมื่อมีของมีมูลค่า
-- ตอนนี้: เซฟมีแค่ดาว ชั้นหอคอย สกิล (ไม่มีเงิน/ของซื้อ) จึงยังไม่ลงลายเซ็น · `validate()` ใน `save.ts` ตัดค่าที่ผิดรูปแบบ · ดาวทดสอบมีเฉพาะ `import.meta.env.DEV`
-- Firestore ปิดทุกอย่าง (`firestore.rules` default-deny)
-- **ก่อนเพิ่ม IAP / สกุลเงินพรีเมียม / กระดานคะแนน:** ต้องลงลายเซ็นเซฟ + Validator + ตรวจใบเสร็จที่ server (ยก `Idle-Wuxia-RPG/functions/` `verifyPurchase`) และกระดานต้องมีเพดานตามอายุบัญชี · บันทึกสถานะใน `../.claude/skills/game-security/SKILL.md`
+- เซฟ v2 ลงลายเซ็น (`saveguard.ts` ยกจาก LumiFlip) · JSON ไม่มีลายเซ็น (เซฟ v1) รับได้ครั้งเดียวต่อเครื่องและได้หัวใจค่าเริ่มต้นเสมอ · `validate()` ตัดหัวใจ 0–8 และเวลาไม่จำกัดที่ผิดปกติ · ดาวทดสอบมีเฉพาะ `import.meta.env.DEV`
+- ของที่ซื้อให้หลัง `functions/` ตรวจใบเสร็จกับ Google เท่านั้น (กันซ้ำด้วย purchaseId) · ร้าน/โฆษณาจำลองเฉพาะ `pnpm dev` · เว็บจริงล้าง `noAds`/ไม่จำกัด ทิ้ง
+- **ช่องโหว่ที่รู้:** หัวใจและเวลาไม่จำกัดใช้นาฬิกาเครื่อง (แบบ LumiFlip มีตัวกันย้อนนาฬิกา) · key ลายเซ็นอยู่ใน bundle · Functions ยังไม่ deploy จึงเปิดร้านจริงไม่ได้ (บันทึกใน `../.claude/skills/game-security/SKILL.md`)
+- Firestore ปิดทุกอย่าง (`firestore.rules` default-deny · Functions เขียนด้วย Admin SDK)
+- **ก่อนเพิ่มกระดานคะแนน:** ต้องมีเพดานตามอายุบัญชี
 
 ## กฎของสตูดิโอ
 
@@ -64,5 +75,7 @@
 - หอคอยตั้งแต่ชั้น ~7 ใช้เงา 4 ตัวแทบทุกชั้น ความยากหยุดเพิ่ม · ต้องเพิ่มของใหม่ในหอคอย (เลเซอร์กะพริบ, ห้องมืด, "ห้องสกิล" ทุก 5 ชั้น)
 - ราคาสกิลตอนนี้ 2/4/6/10 ★ (ดาวทั้งเกม 39 + หอคอย) · ปรับเมื่อมีห้องครบ 30
 - `src/ui/tree.ts` ยังเป็น `@ts-nocheck`
-- Android (Capacitor), AdMob, IAP ยังไม่ได้ทำ · ไอคอน/ภาพหน้าร้านอยู่ `docs/store/` (ต้นฉบับ `docs/ui-mockup/store/art.html`)
+- เปิดร้านจริง: ทำตาม `functions/README.md` (Blaze + budget, เปิด Anonymous Auth, สร้างสินค้าใน Play, deploy) แล้วตั้ง `IAP_SERVER_READY = true`
+- AdMob: สร้างแอปใน AdMob → ใส่ id จริงใน `src/platform/ads.ts` + `AndroidManifest.xml` → `testing = false` · ใส่ UMP consent ที่ AdMob Console
+- Android: ยังใช้ไอคอน/หน้าเปิดของ Capacitor (ไอคอนจริงอยู่ `docs/store/`) · ยังไม่ได้สร้าง release keystore · Analytics ปิดอยู่บน Android เพราะแอปเปิดจาก `https://localhost` (เงื่อนไขใน `analytics.ts`)
 - Play Console (app id `4973122480503751933`) กรอกแล้ว ยกเว้นการจัดประเภทเนื้อหา (IARC) · **ประกาศว่าไม่มีโฆษณา ไม่ใช้รหัสโฆษณา ไม่มีบัญชี เก็บแค่ข้อมูลการใช้งาน/รหัสอุปกรณ์เพื่อวิเคราะห์** · เพิ่ม AdMob/IAP เมื่อไรต้องแก้ฟอร์มโฆษณา รหัสโฆษณา ความปลอดภัยของข้อมูล และ https://rtliz-studio.web.app/privacy/wickling/ ก่อนปล่อย
