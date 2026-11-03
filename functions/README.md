@@ -8,6 +8,7 @@
 |---|---|
 | `index.js` | `verifyPurchase` และ `restorePurchase` (region `asia-southeast1`, `maxInstances: 3`, App Check ปิดไว้ก่อน) |
 | `purchases.js` | ตรรกะตรวจใบเสร็จ (เหมือน LumiFlip ทุกบรรทัด) |
+| `account.js` | ลบบัญชี: `deleteAccount` (callable, ลบบัญชีของผู้เรียกเอง ใช้เมื่อแอปลบเองไม่ได้) + `cleanupUser` (Auth trigger v1 ตอนลบบัญชี) ลบ `entitlements/{uid}` และ `rate/{uid}` · **ยังไม่ได้ deploy** |
 | `products.js` | ตารางสินค้า → ของที่ได้ **ต้องตรงกับ `../src/platform/products.ts`** (เทสต์ตรวจให้) |
 | `play.js` | คุยกับ Google Play Developer API (`com.wickling.puzzle`) ด้วย service account ของ Functions (ไม่มีไฟล์ key) |
 | `test/` | เทสต์กับ Firestore emulator + Google ปลอม |
@@ -21,7 +22,10 @@
 
 กติกาส่งของซ้ำ/กู้คืน/จำกัดคำขอ เหมือน `LumiFlip/functions/README.md` · Firestore ที่ใช้: `purchases/{sha256(token)}`, `entitlements/{uid}`, `rate/{uid}` เขียนด้วย Admin SDK เท่านั้น (`firestore.rules` default-deny ไม่ต้องแก้)
 
-บัญชีผู้เล่น: เกมไม่มีหน้าล็อกอิน แอปใช้ Firebase **Anonymous Auth** แค่เพื่อให้ server รู้ว่าใบเสร็จเป็นของใคร · ลงแอปใหม่ได้ uid ใหม่ → กู้คืนลบโฆษณาผ่าน `restorePurchase` ได้ (uid อื่นรวมไม่เกิน 3 บัญชีต่อใบ)
+บัญชีผู้เล่น: หน้าล็อกอินให้เลือกผู้เยี่ยมชม (Anonymous) หรือ Google (`src/platform/account.ts`) · ใบเสร็จผูกกับ uid นั้น · ลงแอปใหม่แบบผู้เยี่ยมชมได้ uid ใหม่ → กู้คืนลบโฆษณาผ่าน `restorePurchase` ได้ (uid อื่นรวมไม่เกิน 3 บัญชีต่อใบ)
+
+ลบบัญชี (Play บังคับ): แอปลบบัญชี Firebase เอง → `cleanupUser` ลบ `entitlements/{uid}` + `rate/{uid}` · เก็บ `purchases/*` ไว้เป็นหลักฐานการซื้อและกันใบเสร็จซ้ำ (มีแค่ uid ที่ถูกลบแล้ว ไม่มีชื่อ/อีเมล) · บัญชีผู้เยี่ยมชมที่เข้าสู่ระบบนานจนลบจาก client ไม่ได้ แอปเรียก `deleteAccount` ให้ server ลบแทน
+Deploy (ให้ Claude ทำได้หลังเทสต์ผ่าน): `firebase deploy --only functions --project wickling-rtliz` (ครั้งแรกของ Auth trigger อาจต้องเปิด API ตามที่ CLI ถาม)
 
 ## ทดสอบ (ไม่ต่อ Google จริง)
 
@@ -33,6 +37,8 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/
 mkdir -p /tmp/wk-fn && cd /tmp/wk-fn && echo '{"emulators":{"firestore":{"port":8182}}}' > firebase.json
 firebase emulators:exec --only firestore --project demo-wickling 'cd "<โฟลเดอร์เกม>/Wickling/functions" && npm test'
 ```
+
+ไฟล์เทสต์รันทีละไฟล์ (`--test-concurrency=1`) เพราะใช้ emulator ตัวเดียวกันและ `purchases.test.mjs` ล้างคอลเลกชันตอนเริ่ม
 
 ## ขั้นตอนที่เจ้าของเกมต้องทำเอง ก่อนเปิดร้านจริง (ทีละขั้น)
 
