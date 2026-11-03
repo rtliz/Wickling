@@ -1,0 +1,52 @@
+# Cloud Functions ของ Wickling: ตรวจใบเสร็จ Google Play
+
+ยกจาก `LumiFlip/functions/` (ตรรกะใน `purchases.js` ไม่ได้แก้) · ทุกการซื้อในแอป Android ต้องผ่าน `verifyPurchase` ก่อนเกมให้ของ: server ถาม Google ว่าจ่ายจริงไหม กันใบเสร็จซ้ำ ผูกใบเสร็จกับบัญชี แล้วส่งรายการของกลับไป (ตารางของอยู่ที่ server)
+
+> **สถานะ: ยังไม่ได้ deploy** · โปรเจกต์ `wickling-rtliz` ยังเป็นแผน Spark (Functions ใช้ไม่ได้) · ในแอป `IAP_SERVER_READY = false` (`src/platform/billing.ts`) จึงซ่อนปุ่มซื้อทั้งหมด จนกว่าจะทำครบขั้นตอนข้างล่าง
+
+| ไฟล์ | คืออะไร |
+|---|---|
+| `index.js` | `verifyPurchase` และ `restorePurchase` (region `asia-southeast1`, `maxInstances: 3`, App Check ปิดไว้ก่อน) |
+| `purchases.js` | ตรรกะตรวจใบเสร็จ (เหมือน LumiFlip ทุกบรรทัด) |
+| `products.js` | ตารางสินค้า → ของที่ได้ **ต้องตรงกับ `../src/platform/products.ts`** (เทสต์ตรวจให้) |
+| `play.js` | คุยกับ Google Play Developer API (`com.wickling.puzzle`) ด้วย service account ของ Functions (ไม่มีไฟล์ key) |
+| `test/` | เทสต์กับ Firestore emulator + Google ปลอม |
+
+## สินค้า (product id ใช้ร่วมทุกเกมของสตูดิโอ)
+
+| product id | ชนิดใน Play Console | ราคา | ได้ |
+|---|---|---|---|
+| `remove_ads` | ซื้อครั้งเดียว | ฿35 | ลบโฆษณาคั่น/แบนเนอร์ + หัวใจวันละ 8 |
+| `unlimited_hearts_2h` | ใช้แล้วหมด (ซื้อซ้ำได้) | ฿19 | หัวใจไม่จำกัด 2 ชม. |
+
+กติกาส่งของซ้ำ/กู้คืน/จำกัดคำขอ เหมือน `LumiFlip/functions/README.md` · Firestore ที่ใช้: `purchases/{sha256(token)}`, `entitlements/{uid}`, `rate/{uid}` เขียนด้วย Admin SDK เท่านั้น (`firestore.rules` default-deny ไม่ต้องแก้)
+
+บัญชีผู้เล่น: เกมไม่มีหน้าล็อกอิน แอปใช้ Firebase **Anonymous Auth** แค่เพื่อให้ server รู้ว่าใบเสร็จเป็นของใคร · ลงแอปใหม่ได้ uid ใหม่ → กู้คืนลบโฆษณาผ่าน `restorePurchase` ได้ (uid อื่นรวมไม่เกิน 3 บัญชีต่อใบ)
+
+## ทดสอบ (ไม่ต่อ Google จริง)
+
+ต้องมี Java (`brew install openjdk@21`) และ Node ≥ 23.6 (เทสต์ import `src/platform/products.ts` ตรง ๆ):
+
+```bash
+cd functions && npm install
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH
+mkdir -p /tmp/wk-fn && cd /tmp/wk-fn && echo '{"emulators":{"firestore":{"port":8182}}}' > firebase.json
+firebase emulators:exec --only firestore --project demo-wickling 'cd "<โฟลเดอร์เกม>/Wickling/functions" && npm test'
+```
+
+## ขั้นตอนที่เจ้าของเกมต้องทำเอง ก่อนเปิดร้านจริง (ทีละขั้น)
+
+1. **อัป Blaze:** https://console.firebase.google.com → โปรเจกต์ **wickling-rtliz** → Upgrade → Blaze
+2. **ตั้งงบเตือนทันที:** https://console.cloud.google.com/billing → Budgets & alerts → Create budget → ชื่อ `wickling`, โปรเจกต์ `wickling-rtliz`, 100 บาท, เตือน 50% / 100%
+3. **เปิด Anonymous sign-in:** Firebase Console → Authentication → Sign-in method → Anonymous → Enable
+4. **สร้างสินค้าใน Play Console:** แอป Wickling → Monetize with Play → Products → One-time products → สร้าง `remove_ads` (35 บาท) และ `unlimited_hearts_2h` (19 บาท) พิมพ์ id ให้ตรง (เปลี่ยนไม่ได้หลังสร้าง) → Activate · อย่าเปิด multi-quantity
+5. **เปิด API:** https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=wickling-rtliz → Enable
+6. **ให้สิทธิ์ service account:** หาอีเมล Default compute service account (`812461468465-compute@developer.gserviceaccount.com`) ที่ IAM → Play Console → Users and permissions → Invite → App permissions เลือก Wickling → ติ๊ก View financial data และ Manage orders → Invite (มีผลภายในไม่กี่ชั่วโมงถึง 24 ชม.)
+7. **Deploy (ให้ Claude ทำได้หลังข้อ 1–6):** `firebase deploy --only functions --project wickling-rtliz`
+8. **เปิดร้านในแอป:** แก้ `IAP_SERVER_READY = true` ใน `src/platform/billing.ts` → `pnpm check` → build Android ใหม่
+9. **ทดสอบด้วย License tester:** ซื้อแต่ละตัว / ปิดแอปทันทีหลังซื้อ (เปิดใหม่ต้องได้ของครั้งเดียว) / ลบแอปแล้วลงใหม่ + กดกู้คืน / คืนเงินแล้วกดกู้คืน → ลบโฆษณาถูกถอน
+
+## ข้อจำกัดที่รู้อยู่
+
+- หัวใจ/ลบโฆษณา/เวลาไม่จำกัดเก็บในเซฟในเครื่อง (ลงลายเซ็นแต่ key อยู่ใน bundle) และนับเวลาด้วยนาฬิกาเครื่อง (มีตัวกันย้อนนาฬิกาแบบ LumiFlip) · server กันได้ว่า "ไม่มีของจากการซื้อปลอม" และ "ใบเสร็จหนึ่งใบไม่ถูกใช้หลายบัญชี"
+- คืนเงินหลังได้ของ: ถอนสิทธิ์ได้เมื่อแอปเห็นว่า Google ไม่ส่งใบเสร็จลบโฆษณามาแล้ว หรือมีคำขอ verify/restore แล้ว Google ตอบยกเลิก
