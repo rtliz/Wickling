@@ -5,12 +5,13 @@ import { sealSave, openSealed } from "./saveguard";
 
 // เซฟในเครื่อง · ⚠️ ห้ามเปลี่ยน SAVE_KEY หลังปล่อยเกม · เปลี่ยนรูปแบบเซฟ = ขึ้น SAVE_VERSION + เพิ่ม case ใน migrate()
 // v1 = ดาว ชั้นหอคอย สกิล (JSON ไม่มีลายเซ็น) · v2 = + หัวใจ/ลบโฆษณา/หัวใจไม่จำกัด → ลงลายเซ็น (saveguard.ts) + validate()
+// v3 = + lb (กระดานคะแนน: รอบที่ถามรางวัลแล้ว + ธงไม่ขึ้นกระดาน แบบ S.seasonChecked/S.flagged/S.debugUsed ของ LumiFlip)
 // เซฟ v1 แบบไม่มีลายเซ็นรับได้ครั้งเดียวต่อเครื่อง (ก่อนมี SAVE_SIGNED_KEY) แล้วเซฟใหม่แบบมีลายเซ็นทันที
 
 export const SAVE_KEY = "wickling.save.v1";
 export const SAVE_BAD_KEY = "wickling.save.bad";   // เซฟที่อ่านไม่ได้ เก็บสำรองไว้ ห้ามลบทิ้ง
 export const SAVE_SIGNED_KEY = "wickling.save.signed"; // มีแล้ว = เครื่องนี้เคยเซฟแบบมีลายเซ็น เซฟไม่มีลายเซ็นที่โผล่มาทีหลังคือของปลอม
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface SaveData {
   v: number;
@@ -19,15 +20,23 @@ export interface SaveData {
   skills: { owned: SkillId[]; eq: (SkillId | null)[]; spent: number };
   devBonus: number;                           // ดาวทดสอบ (ใช้ได้เฉพาะ pnpm dev)
   hearts: HeartState;                         // v2
+  lb: BoardState;                             // v3
 }
 
-const fresh = (now = Date.now()): SaveData => ({ v: SAVE_VERSION, best: {}, tower: { floor: 1, best: 0 }, skills: { owned: ["root"], eq: [null, null], spent: 0 }, devBonus: 0, hearts: freshHearts(now) });
+// กระดานคะแนน (v3) · แต้มอยู่ที่ server เท่านั้น (functions/wins.js เล่นซ้ำหลักฐานการชนะ) ในเซฟจึงไม่มีแต้ม
+// checked = รอบที่ถามรางวัลแล้ว (uid:W:M) · flagged = validate พบค่าที่เกมไม่มีทางเขียนเอง · debug = เคยใช้ดาวทดสอบ (dev)
+// flagged/debug → ไม่ส่งหลักฐานขึ้นกระดาน (กฎกันแฮกข้อ 5)
+export interface BoardState { checked: string | null; flagged: boolean; debug: boolean }
+const freshLb = (): BoardState => ({ checked: null, flagged: false, debug: false });
+
+const fresh = (now = Date.now()): SaveData => ({ v: SAVE_VERSION, best: {}, tower: { floor: 1, best: 0 }, skills: { owned: ["root"], eq: [null, null], spent: 0 }, devBonus: 0, hearts: freshHearts(now), lb: freshLb() });
 
 function migrate(raw: Record<string, unknown>, now: number): SaveData {
   const v = typeof raw.v === "number" ? raw.v : 0;
   if (v < 1 || v > SAVE_VERSION || !Number.isInteger(v)) throw new Error(`ไม่รู้จักเซฟเวอร์ชัน ${v}`);
   if (v < 2) raw = { ...raw, v: 2, hearts: freshHearts(now) };   // v1 → v2: เพิ่มหัวใจเต็มวัน
-  // เพิ่มเวอร์ชันถัดไป: if (raw.v < 3) raw = { ...raw, v: 3, ... }
+  if ((raw.v as number) < 3) raw = { ...raw, v: 3, lb: freshLb() };   // v2 → v3: เพิ่มสถานะกระดาน (แต้มเริ่มที่ server จากศูนย์)
+  // เพิ่มเวอร์ชันถัดไป: if (raw.v < 4) raw = { ...raw, v: 4, ... }
   return raw as unknown as SaveData;
 }
 
@@ -50,17 +59,29 @@ function validHearts(h: Partial<HeartState> | undefined, now: number): HeartStat
   return out;
 }
 
+function validLb(x: Partial<BoardState> | undefined, bad: boolean): BoardState {
+  const l = x && typeof x === "object" ? x : {};
+  return { checked: typeof l.checked === "string" && l.checked.length <= 200 ? l.checked : null, flagged: l.flagged === true || bad, debug: l.debug === true };
+}
+
 function validate(d: SaveData, now: number): SaveData {
   const out = fresh(now);
-  for (const [k, s] of Object.entries(d.best ?? {})) if (/^\d+$/.test(k) && Number.isInteger(s) && s >= 1 && s <= 3) out.best[k] = s;
+  let bad = false;   // ค่าที่เกม (ฝั่งเรา) ไม่มีทางเขียนเอง = เซฟถูกแก้ → ไม่ขึ้นกระดาน
+  for (const [k, s] of Object.entries(d.best ?? {})) {
+    if (/^\d+$/.test(k) && Number.isInteger(s) && s >= 1 && s <= 3) out.best[k] = s; else bad = true;
+  }
   if (d.tower && Number.isInteger(d.tower.floor) && d.tower.floor >= 1) out.tower.floor = Math.min(d.tower.floor, 100000);
   if (d.tower && Number.isInteger(d.tower.best) && d.tower.best >= 0) out.tower.best = Math.min(d.tower.best, out.tower.floor);
+  if (d.tower?.best > out.tower.floor) bad = true;
   const owned = (d.skills?.owned ?? []).filter(id => VALID_IDS.has(id));
   out.skills.owned = [...new Set<SkillId>(["root", ...owned])];
   out.skills.eq = [0, 1].map(i => { const id = d.skills?.eq?.[i] ?? null; return id && id !== "root" && out.skills.owned.includes(id) ? id : null; });
   if (Number.isInteger(d.skills?.spent) && d.skills.spent >= 0) out.skills.spent = d.skills.spent;
   if (import.meta.env?.DEV && Number.isInteger(d.devBonus)) out.devBonus = d.devBonus;
   out.hearts = validHearts(d.hearts, now);
+  if (isInt(d.hearts?.n, 0, Number.MAX_SAFE_INTEGER) && d.hearts.n > HEARTS.max) bad = true;
+  out.lb = validLb(d.lb, bad);
+  if (d.devBonus) out.lb.debug = true;
   return out;
 }
 

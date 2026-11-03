@@ -1,11 +1,14 @@
 // pnpm check: ให้โปรแกรมเล่นผ่านห้องจริงตามกติกาเกม (src/core/sim.ts)
 // 1) ห้องที่ออกแบบเอง: โครงสร้างถูกต้อง + เล่นตามคำตอบที่เขียนไว้แล้วต้องผ่าน (รวมสกิลทุกตัวที่มีห้องสอน)
 // 2) หอคอย ∞: สุ่มชั้น 1–200 แล้วให้โปรแกรมเล่นผ่านทุกชั้นด้วยเงาไม่เกิน par
-// 3) เซฟ: เซฟ v1 ของผู้เล่นเดิม migrate เป็น v2 ได้ · ลายเซ็นกันแก้ · validate ตัดค่าหัวใจ · กติกาหัวใจ
+// 1b) หลักฐานการชนะ: เล่นซ้ำแบบ server ผ่าน · ปลอมไม่ผ่าน
+// 3) เซฟ: เซฟ v1 ของผู้เล่นเดิม migrate เป็น v2 → v3 ได้ · ลายเซ็นกันแก้ · validate ตัดค่าหัวใจ · กติกาหัวใจ
 import { LEVELS } from "../src/core/levels";
 import { genTower } from "../src/core/tower";
 import { autoSolve } from "../src/core/solve";
 import { parseSave, serializeSave, SAVE_VERSION } from "../src/core/save";
+import { sealSave } from "../src/core/saveguard";
+import { replayProof, type Proof, type ProofRound, type Input, type Op } from "../src/core/proof";
 import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, freshHearts, dayKey } from "../src/core/hearts";
 import {
   parseRoom, newRound, step, tapCell, toGhost, useSkill, findPath, key, MAX_GHOSTS, TICKS,
@@ -93,6 +96,42 @@ LEVELS.forEach((def, i) => {
   sol.also?.(room);
 });
 
+// ---------- 1b) หลักฐานการชนะ (src/core/proof.ts = ตัวเดียวกับที่ server ใช้ใน functions/wins.js) ----------
+console.log("หลักฐานการชนะ (เล่นซ้ำแบบ server)");
+// แปลงคำตอบด้านบนเป็นหลักฐานแบบที่เกมจด: input ที่จังหวะ t ใส่ก่อน step · twin/delay = การปรับเงาก่อนเริ่มรอบ
+function toProof(n: number, script: Script): Proof {
+  const eq = new Set<SkillId>();
+  const rounds: ProofRound[] = script.map(sc => {
+    const ops: Op[] = [], inp: Input[] = [];
+    for (const [t, acts] of Object.entries(sc).sort((x, y) => Number(x[0]) - Number(y[0]))) for (const a of acts) {
+      if ("tap" in a) inp.push([Number(t), "tap", a.tap[0], a.tap[1]]);
+      else if ("skill" in a) { inp.push([Number(t), "sk", a.skill]); eq.add(a.skill); }
+      else if ("end" in a) inp.push([Number(t), "end"]);
+      else if ("twin" in a) { ops.push(["twin", a.twin]); eq.add("s3"); }
+      else if ("delay" in a) { for (let k = 0; k < a.delay[1] / 4; k++) ops.push(["delay", a.delay[0]]); eq.add("s2"); }
+    }
+    return { ops, inp };
+  });
+  return { v: 1, kind: "r", n, eq: [...eq, null, null].slice(0, 2) as (SkillId | null)[], rounds };
+}
+LEVELS.forEach((def, i) => {
+  const sol = SOLUTIONS[def.name];
+  if (!sol) return;
+  const proof = toProof(i, sol.script), res = replayProof(proof);
+  if (!res.ok || res.ghosts !== sol.ghosts) { fail(`ห้อง ${i + 1}: หลักฐานจากคำตอบเล่นซ้ำไม่ผ่าน (${res.why ?? res.ghosts})`); return; }
+  // ปลอม: ตัดรอบแรก / เอาสกิลออกจากช่องติดตัว → ต้องไม่ผ่าน
+  if (proof.rounds.length > 1 && replayProof({ ...proof, rounds: proof.rounds.slice(1) }).ok) fail(`ห้อง ${i + 1}: ตัดรอบเงาออกแล้วยังผ่าน`);
+  if (proof.eq.some(Boolean) && replayProof({ ...proof, eq: [null, null] }).ok) fail(`ห้อง ${i + 1}: ไม่มีสกิลในช่องแต่ยังผ่าน`);
+});
+console.log(`  ✓ หลักฐานจากคำตอบ ${Object.keys(SOLUTIONS).length} ห้องเล่นซ้ำผ่าน · ตัดเงา/ถอดสกิลแล้วไม่ผ่าน`);
+{
+  const r1 = toProof(0, SOLUTIONS["สวิตช์แรก"].script);
+  const bads: unknown[] = [null, {}, { ...r1, v: 2 }, { ...r1, n: 99 }, { ...r1, kind: "t", n: 0 },
+    { ...r1, rounds: [{ ops: [], inp: [[0, "tap", 0, 0]] }] }, { ...r1, rounds: [{ ops: [["undo"]], inp: [[0, "tap", 1, 3]] }] },
+    { ...r1, rounds: Array.from({ length: 61 }, () => r1.rounds[0]) }];
+  if (bads.some(b => replayProof(b).ok)) fail("หลักฐานผิดรูปแบบผ่านได้"); else console.log("  ✓ หลักฐานผิดรูปแบบ/ห้องไม่มีจริง/เกินขนาด ไม่ผ่าน");
+}
+
 // ---------- 2) หอคอย ∞ ----------
 const FLOORS = 200;
 console.log(`หอคอย ∞ ชั้น 1–${FLOORS}`);
@@ -110,7 +149,7 @@ const dist = [0, 1, 2, 3, 4].map(n => used.filter(x => x === n).length);
 console.log(`  ${towerOk}/${FLOORS} ชั้นเล่นผ่านอัตโนมัติ · จำนวนเงาที่ใช้ 0–4 ตัว: ${dist.join(" / ")}`);
 
 // ---------- 3) เซฟและหัวใจ ----------
-console.log("เซฟ v1 → v2 และหัวใจ");
+console.log("เซฟ v1 → v2 → v3 และหัวใจ");
 {
   const now = new Date(2026, 10, 3, 15, 0).getTime();
   const expect = (ok: boolean, msg: string) => { if (ok) console.log("  ✓ " + msg); else fail(msg); };
@@ -135,6 +174,18 @@ console.log("เซฟ v1 → v2 และหัวใจ");
   // validate ตัดค่าเกินเพดาน
   const big = parseSave(serializeSave({ ...a, hearts: { ...a.hearts, n: 500, ad: 99, from: now, until: now + 1e12, attempt: "<x>" } }), true, now);
   expect(big.hearts.n === HEARTS.max && big.hearts.ad === 0 && big.hearts.until === 0 && big.hearts.attempt === null, "validate ตัดหัวใจ ≤ 8 และเวลาไม่จำกัดที่ผิดปกติ");
+  expect(big.lb.flagged, "เซฟที่ถูกแก้หัวใจเกินเพดาน = flagged (ไม่ขึ้นกระดาน)");
+  // v2 → v3 (กระดาน): เซฟ v2 จริงแบบมีลายเซ็น (sealSave ตรงแบบที่เวอร์ชันก่อนเขียน)
+  const v2 = sealSave({ v: 2, best: { 0: 3, 1: 2, 4: 1 }, tower: { floor: 7, best: 6 }, skills: { owned: ["root", "t1"], eq: [null, null], spent: 2 }, devBonus: 0,
+    hearts: { ...freshHearts(now), n: 3, noAds: true, tx: ["gpa.1"] } });
+  const c = parseSave(v2, true, now);
+  expect(c.v === SAVE_VERSION && !c.lb.flagged && !c.lb.debug && c.lb.checked === null && c.hearts.n === 3 && c.hearts.noAds && c.hearts.tx[0] === "gpa.1"
+    && c.best[4] === 1 && c.tower.best === 6 && c.skills.owned.includes("t1"), "เซฟ v2 → v3: หัวใจ/สิทธิ์ซื้อ/ดาว/หอคอย/สกิลเดิมครบ + สถานะกระดานเริ่มต้น");
+  c.lb.checked = "u:W:M";
+  const d = parseSave(serializeSave(c), true, now);
+  expect(d.lb.checked === "u:W:M" && !d.lb.flagged, "เซฟ v3 วนเซฟ/โหลดสถานะกระดานครบ");
+  const dbg = parseSave(serializeSave({ ...c, devBonus: 20 }), true, now);
+  expect(dbg.lb.debug || !import.meta.env?.DEV, "ดาวทดสอบ (dev) = debug ไม่ขึ้นกระดาน");
   // กติกาหัวใจ
   const p = { best: { 0: 1 } as Record<string, number>, tower: { floor: 3, best: 2 } };
   const h = freshHearts(now);

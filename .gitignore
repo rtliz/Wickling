@@ -19,3 +19,5 @@ android/app/src/main/assets/public/
 *.apk
 *.aab
 keystore.properties
+# สร้างจาก src/core (functions: npm run sync · รันเองตอน npm test และ predeploy)
+functions/game.js

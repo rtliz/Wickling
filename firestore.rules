@@ -1,8 +1,20 @@
 rules_version = '2';
-// Wickling ยังไม่ใช้ Firestore (เล่นออฟไลน์ทั้งหมด) · ปิดทุกอย่างเป็นค่าเริ่มต้นตาม .claude/rules/anti-hack.md
-// เพิ่ม collection เมื่อไร: match แยก ตรวจ uid เจ้าของ, keys().hasOnly, ชนิด/ขนาด, updatedAt == request.time
+
+// กฎ Firestore ของ Wickling · ปิดเป็นค่าเริ่มต้น (match /{document=**} ท้ายไฟล์) ตาม .claude/rules/anti-hack.md
+// กระดานคะแนน: แต้มเขียนจาก Cloud Functions เท่านั้น (submitWin เล่นซ้ำหลักฐานการชนะด้วย sim ของเกม · Admin SDK ข้าม rules)
+// แบบ meowchime · client ปลอมแต้มไม่ได้ · ทดสอบ: functions/test/rules.test.mjs กับ Firestore emulator
+// ⚠️ deploy ต้องได้รับอนุมัติจากเจ้าของเกม (git-deploy.md) · deploy rules + functions + indexes พร้อมกันก่อนปล่อยแอปที่มีหน้าอันดับ
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // กระดานถาวร (all) / รายสัปดาห์ (W…) / รายเดือน (M…): คนที่ล็อกอินอ่านได้ (client query ด้วย limit(50)) · เขียนไม่ได้
+    // boards-dev = แต้มจาก pnpm dev (ไม่มีรางวัล)
+    match /{boards}/{board}/scores/{uid} {
+      allow read: if boards in ['boards', 'boards-dev'] && request.auth != null;
+      allow write: if false;
+    }
+
+    // ที่เหลือปิดหมด: players (สถานะแต้มฝั่ง server), seasons, seasonClaims, purchases, entitlements, rate
     match /{document=**} {
       allow read, write: if false;
     }

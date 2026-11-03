@@ -76,6 +76,8 @@ export const Account = {
   needsGate() { return !this.hint(); },
 
   preload() { load().catch(() => {}); },
+  // Firebase Auth พร้อมแล้ว (Firestore ใน boards.ts ต้องใช้ token ของบัญชีนี้)
+  ready(): Promise<void> { return load().then(() => {}); },
 
   // อ่านบัญชีที่ค้างไว้ในเครื่อง (ไม่ใช้เน็ต) · คืน false ถ้าเคยผ่านหน้าล็อกอินแต่บัญชีหายไป (เช่น ล้างข้อมูลเว็บ) → ต้องเข้าใหม่
   async init(): Promise<boolean> {

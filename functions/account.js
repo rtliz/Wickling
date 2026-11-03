@@ -4,6 +4,9 @@
 // ลบเมื่อบัญชี Firebase Auth ถูกลบ (ผู้เล่นกด "ลบบัญชีถาวร" ในแอป):
 //   entitlements/{uid}  สิทธิ์ที่ผูกกับบัญชี
 //   rate/{uid}          ตัวนับคำขอตรวจใบเสร็จ
+//   rate/season-{uid}   ตัวนับคำขอรับรางวัลกระดาน · seasonClaims/{uid} รอบที่รับรางวัลแล้ว
+//   players(-dev)/{uid} (+ won/*) สถานะกระดานฝั่ง server · boards(-dev)/*/scores/{uid} แถวกระดานทุกรอบรวมถาวร (collectionGroup scores where uid) · rate/win-{uid}
+//   ผลที่ล็อกแล้ว seasons/{id} เก็บ sha256(uid) ระบุตัวไม่ได้ จึงไม่ลบ
 // เก็บไว้: purchases/{sha256(token)} เป็นหลักฐานการซื้อ/กันใบเสร็จซ้ำ (anti-hack.md ข้อ 2) อ้างได้แค่ uid ที่ถูกลบแล้ว
 // ไม่มีชื่อ/อีเมลของผู้เล่น · Play ยอมให้เก็บข้อมูลที่จำเป็นด้านความปลอดภัย/การเงินหลังลบบัญชี
 import { HttpsError } from 'firebase-functions/v2/https';
@@ -16,7 +19,13 @@ export function createAccounts({ db, auth }) {
     const writer = db.bulkWriter();
     writer.delete(db.doc(`entitlements/${uid}`));
     writer.delete(db.doc(`rate/${uid}`));
+    writer.delete(db.doc(`rate/season-${uid}`));
+    writer.delete(db.doc(`seasonClaims/${uid}`));
+    writer.delete(db.doc(`rate/win-${uid}`));
+    (await db.collectionGroup('scores').where('uid', '==', uid).get()).forEach(d => writer.delete(d.ref));
     await writer.close();
+    // สถานะกระดานฝั่ง server + ห้อง/ชั้นที่นับแต้มแล้ว (subcollection won)
+    for (const c of ['players', 'players-dev']) await db.recursiveDelete(db.doc(`${c}/${uid}`));
   }
 
   // ลบบัญชีที่ server: ใช้เมื่อแอปลบเองไม่ได้ (บัญชีผู้เยี่ยมชมเข้าสู่ระบบนานเกิน Firebase ให้ลบจาก client และยืนยันตัวตนใหม่ไม่ได้)

@@ -8,7 +8,11 @@
 |---|---|
 | `index.js` | `verifyPurchase` และ `restorePurchase` (region `asia-southeast1`, `maxInstances: 3`, App Check ปิดไว้ก่อน) |
 | `purchases.js` | ตรรกะตรวจใบเสร็จ (เหมือน LumiFlip ทุกบรรทัด) |
-| `account.js` | ลบบัญชี: `deleteAccount` (callable, ลบบัญชีของผู้เรียกเอง ใช้เมื่อแอปลบเองไม่ได้) + `cleanupUser` (Auth trigger v1 ตอนลบบัญชี) ลบ `entitlements/{uid}` และ `rate/{uid}` · **ยังไม่ได้ deploy** |
+| `account.js` | ลบบัญชี: `deleteAccount` + `cleanupUser` ลบ `entitlements/{uid}`, `rate/*`, `seasonClaims/{uid}`, `players(-dev)/{uid}` (+`won`), แถวกระดานทุกรอบ (`scores` where uid) · deploy แล้ว 2026-11-03 (ส่วนกระดานยังไม่ deploy) |
+| `wins.js` | **`submitWin`** แต้มกระดาน: รับหลักฐานการชนะ → เล่นซ้ำด้วย `game.js` → +1 ให้กระดาน `all` / สัปดาห์ / เดือน · ห้อง/ชั้นละ 1 แต้มต่อบัญชี (`players/{uid}/won/{key}`) · เพดาน 60 แต้ม/วัน (เวลาไทย) · เวลาเล่นสะสม (แต้มมาเร็วกว่าเวลาเล่นจริงไม่ได้) · 120 คำขอ/ชม. · **ยังไม่ได้ deploy** |
+| `seasons.js` | `claimSeason` รางวัลหัวใจรอบล่าสุดที่จบ (ยก LumiFlip: Google เท่านั้น ครั้งเดียวต่อรอบ ล็อก 50 อันดับเป็น hash) + `writePoints` · **ยังไม่ได้ deploy** |
+| `season-rules.js` | รหัสรอบ (เวลาไทย) + ตารางรางวัล · สำเนาของ `../src/core/season-rules.ts` (เทสต์ตรวจว่าตรงกัน) |
+| `game.js` | **ไฟล์สร้าง (ไม่อยู่ใน git)**: `npm run sync` รวม `../src/core/proof.ts` + `sim.ts` + `levels.ts` + `tower.ts` ด้วย rolldown · รันเองก่อน `npm test` และใน predeploy (`firebase.json`) จึงเป็นกติกาเดียวกับเกมเสมอ |
 | `products.js` | ตารางสินค้า → ของที่ได้ **ต้องตรงกับ `../src/platform/products.ts`** (เทสต์ตรวจให้) |
 | `play.js` | คุยกับ Google Play Developer API (`com.wickling.puzzle`) ด้วย service account ของ Functions (ไม่มีไฟล์ key) |
 | `test/` | เทสต์กับ Firestore emulator + Google ปลอม |
@@ -26,6 +30,11 @@
 
 ลบบัญชี (Play บังคับ): แอปลบบัญชี Firebase เอง → `cleanupUser` ลบ `entitlements/{uid}` + `rate/{uid}` · เก็บ `purchases/*` ไว้เป็นหลักฐานการซื้อและกันใบเสร็จซ้ำ (มีแค่ uid ที่ถูกลบแล้ว ไม่มีชื่อ/อีเมล) · บัญชีผู้เยี่ยมชมที่เข้าสู่ระบบนานจนลบจาก client ไม่ได้ แอปเรียก `deleteAccount` ให้ server ลบแทน
 Deploy (ให้ Claude ทำได้หลังเทสต์ผ่าน): `firebase deploy --only functions --project wickling-rtliz` (ครั้งแรกของ Auth trigger อาจต้องเปิด API ตามที่ CLI ถาม)
+
+## กระดานคะแนน (ยังไม่ได้ deploy · ต้องได้รับอนุมัติจากเจ้าของเกม)
+
+ต้อง deploy 3 อย่างพร้อมกันก่อนปล่อยแอปที่มีหน้าอันดับ: `firebase deploy --only firestore:rules,firestore:indexes,functions --project wickling-rtliz`
+(rules: client อ่านกระดานได้อย่างเดียว · indexes: `scores` เรียง pts desc, at asc + uid สำหรับ cleanup)
 
 ## ทดสอบ (ไม่ต่อ Google จริง)
 

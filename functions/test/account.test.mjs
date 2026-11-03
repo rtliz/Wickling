@@ -78,3 +78,25 @@ test('deleteMe: บัญชีถูกลบไปแล้ว (user-not-found
   assert.equal(await exists('entitlements/u4'), true);
   authFails = null;
 });
+
+test('cleanup ลบข้อมูลกระดาน: players(+won), players-dev, กระดานถาวร, rate/win-, แถวรายรอบทุกรอบ, seasonClaims, rate/season- · ไม่แตะคนอื่นและผลที่ล็อกแล้ว', async () => {
+  for (const c of ['players', 'players-dev']) {
+    await db.doc(`${c}/b1`).set({ name: 'ภูติ', day: { d: '2026-11-03', n: 1 } });
+    await db.doc(`${c}/b1/won/r0`).set({ at: new Date() });
+  }
+  await db.doc('boards/all/scores/b1').set({ uid: 'b1', name: 'ภูติ', pts: 5 });
+  await db.doc('rate/win-b1').set({ start: Date.now(), n: 1 });
+  for (const b of ['W2026-11-02', 'M2026-11']) {
+    await db.doc(`boards/${b}/scores/b1`).set({ uid: 'b1', name: 'ภูติ', pts: 2 });
+    await db.doc(`boards/${b}/scores/b2`).set({ uid: 'b2', name: 'อื่น', pts: 2 });
+  }
+  await db.doc('boards-dev/W2026-11-02/scores/b1').set({ uid: 'b1', name: 'ภูติ', pts: 1 });
+  await db.doc('seasonClaims/b1').set({ ids: ['W2026-10-26'] });
+  await db.doc('rate/season-b1').set({ start: Date.now(), n: 1 });
+  await db.doc('seasons/W2026-10-26').set({ ranks: { abc: 1 } });
+  await cleanup('b1');
+  for (const p of ['players/b1', 'players-dev/b1', 'players/b1/won/r0', 'players-dev/b1/won/r0', 'boards/all/scores/b1', 'rate/win-b1', 'boards/W2026-11-02/scores/b1', 'boards/M2026-11/scores/b1',
+    'boards-dev/W2026-11-02/scores/b1', 'seasonClaims/b1', 'rate/season-b1']) assert.equal(await exists(p), false, p);
+  assert.equal(await exists('boards/W2026-11-02/scores/b2'), true);
+  assert.equal(await exists('seasons/W2026-10-26'), true);
+});
