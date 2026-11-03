@@ -18,5 +18,5 @@ export const PRODUCTS = {
 export type ProductId = keyof typeof PRODUCTS;
 export interface Grant { noAds?: boolean; unlimitedHours?: number }
 
-// ราคาสำรองตอนยังโหลดราคาจาก Play ไม่ได้ · ต้องตรงกับทุกเกม (สกิล game-monetization: ฿35 / ฿19)
-export const FALLBACK_PRICES: Record<ProductId, string> = { remove_ads: "฿35", unlimited_hearts_2h: "฿19" };
+// ราคาสำรองตอนยังโหลดราคาจาก Play ไม่ได้ · ต้องตรงกับทุกเกม (สกิล game-monetization: ฿99 / ฿19)
+export const FALLBACK_PRICES: Record<ProductId, string> = { remove_ads: "฿99", unlimited_hearts_2h: "฿19" };
