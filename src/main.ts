@@ -16,7 +16,7 @@ import { Account, cleanName, NAME_MIN } from "./platform/account";
 import type { ProductId } from "./platform/products";
 import { Boards, type Row } from "./platform/boards";
 import { weekId, monthId, weekEndsAt, monthEndsAt, REWARD_TIERS, BOARD_SIZE } from "./core/season-rules";
-import type { Proof, ProofRound, Op } from "./core/proof";
+import { SIM_VERSION, type Proof, type ProofRound, type Op } from "./core/proof";
 import { version as APP_VERSION } from "../package.json";
 import { App } from "@capacitor/app";
 
@@ -64,14 +64,14 @@ function loadLevel(i: number) {
   ghosts = [];
   $("win").hidden = true;
   $("helpPop").hidden = true;
-  proof = { v: 1, kind: i < 0 ? "t" : "r", n: i < 0 ? save.tower.floor : i, eq: [...save.skills.eq], rounds: [] };
+  proof = { v: 1, sv: SIM_VERSION, kind: i < 0 ? "t" : "r", n: i < 0 ? save.tower.floor : i, eq: [...save.skills.eq], rounds: [] };
   renderSkillBar();
   startRound();
 }
 
 // ---------- หลักฐานการชนะ (src/core/proof.ts) ----------
 // จดทุกการแตะ/สกิล/การปรับเงาของห้องนี้ · ชนะห้อง/ชั้นใหม่ → ส่งให้ server เล่นซ้ำแล้วให้แต้มอันดับ (functions/wins.js)
-let proof: Proof = { v: 1, kind: "r", n: 0, eq: [null, null], rounds: [] };
+let proof: Proof = { v: 1, sv: SIM_VERSION, kind: "r", n: 0, eq: [null, null], rounds: [] };
 const proofRound = (): ProofRound => {
   const last = proof.rounds[proof.rounds.length - 1];
   if (last && !last.inp.length) return last;

@@ -2,7 +2,7 @@
 // server เล่นซ้ำด้วย sim.ts ตัวเดียวกัน (functions/game.js สร้างจากไฟล์นี้ด้วย rolldown ตอนเทสต์/deploy) ถ้าชนะจริงจึงให้แต้มกระดาน
 // sim เดินเป็นจังหวะคงที่ จึงเล่นซ้ำได้ตรงทุกครั้ง: input ใส่ก่อน step ของจังหวะ r.t ที่จดไว้
 //
-// Proof = { v, kind: "r" ห้อง | "t" หอคอย, n: ลำดับห้อง (0..) หรือเลขชั้น (1..), eq: สกิลที่ติดตัว 2 ช่อง, rounds }
+// Proof = { v, sv: รุ่นกติกา sim, kind: "r" ห้อง | "t" หอคอย, n: ลำดับห้อง (0..) หรือเลขชั้น (1..), eq: สกิลที่ติดตัว 2 ช่อง, rounds }
 // แต่ละรอบ = { ops: การปรับเงาก่อนเริ่มรอบ, inp: [จังหวะ, "tap", แถว, คอลัมน์] | [จังหวะ, "sk", สกิล] | [จังหวะ, "end"] }
 // รอบที่ไม่ชนะ (หมดเวลา/โดนเลเซอร์/กดจบเอง) กลายเป็นเงา · เงาครบ 4 แล้วยังไม่ชนะ = ล้างเงาทั้งหมด (เหมือน endRound ใน main.ts)
 import {
@@ -15,7 +15,13 @@ import { genTower } from "./tower";
 export type Input = [number, "tap", number, number] | [number, "sk", SkillId] | [number, "end"];
 export type Op = ["undo"] | ["del", number] | ["delay", number] | ["twin", number];
 export interface ProofRound { ops: Op[]; inp: Input[] }
-export interface Proof { v: 1; kind: "r" | "t"; n: number; eq: (SkillId | null)[]; rounds: ProofRound[] }
+export interface Proof { v: 1; sv: number; kind: "r" | "t"; n: number; eq: (SkillId | null)[]; rounds: ProofRound[] }
+
+// รุ่นกติกาของ sim ที่หลักฐานนี้เล่นด้วย · ⚠️ หลังปล่อยเกม ถ้าแก้ sim.ts / levels.ts / tower.ts จนผลการเล่นเปลี่ยน
+// ให้ขึ้น SIM_VERSION แล้วเก็บกติกาเดิมไว้ให้ server เล่นซ้ำหลักฐานรุ่นเก่า (ไม่งั้นแอปรุ่นเก่าส่งแต้มไม่ได้)
+// server รับเฉพาะรุ่นที่อยู่ใน SIM_VERSIONS · รุ่นอื่นตอบ "sim-version"
+export const SIM_VERSION = 1;
+export const SIM_VERSIONS: readonly number[] = [1];
 export interface ReplayResult { ok: boolean; why?: string; ghosts: number; stars: number; ticks: number }
 
 // เพดานขนาดหลักฐาน (กันส่งข้อมูลใหญ่ให้ server เล่นนาน)
@@ -37,10 +43,22 @@ export function proofLevel(kind: unknown, n: unknown): LevelDef | null {
 const bad = (why: string): ReplayResult => ({ ok: false, why, ghosts: 0, stars: 0, ticks: 0 });
 const isInt = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
 
-/** ตรวจรูปแบบ + เล่นซ้ำ · ใช้ทั้งในเกม (scripts/check.ts) และที่ server · ไม่ throw */
+/** ตรวจรูปแบบ + เล่นซ้ำ · ใช้ทั้งในเกม (scripts/check.ts) และที่ server · ไม่ throw (ข้อมูลแปลกทุกแบบ = bad) */
 export function replayProof(raw: unknown): ReplayResult {
+  try { return replay(raw); } catch { return bad("format"); }
+}
+
+const OPS: Record<string, number> = { undo: 1, del: 2, delay: 2, twin: 2 };
+const isOp = (op: unknown): op is Op => Array.isArray(op) && typeof op[0] === "string" && OPS[op[0]] === op.length && (op.length === 1 || Number.isInteger(op[1]));
+const isInput = (ev: unknown): ev is Input => Array.isArray(ev) && Number.isInteger(ev[0]) && (
+  (ev[1] === "tap" && ev.length === 4 && Number.isInteger(ev[2]) && Number.isInteger(ev[3]))
+  || (ev[1] === "sk" && ev.length === 3 && typeof ev[2] === "string")
+  || (ev[1] === "end" && ev.length === 2));
+
+function replay(raw: unknown): ReplayResult {
   const p = raw as Proof;
-  if (!p || typeof p !== "object" || p.v !== 1) return bad("format");
+  if (!p || typeof p !== "object" || Array.isArray(p) || p.v !== 1) return bad("format");
+  if (!SIM_VERSIONS.includes(p.sv)) return bad("sim-version");
   const def = proofLevel(p.kind, p.n);
   if (!def) return bad("level");
   if (!Array.isArray(p.eq) || p.eq.length > 2 || !p.eq.every(id => id === null || SKILL_IDS.has(id as string))) return bad("skills");
@@ -48,7 +66,8 @@ export function replayProof(raw: unknown): ReplayResult {
   if (!Array.isArray(p.rounds) || !p.rounds.length || p.rounds.length > PROOF_MAX_ROUNDS) return bad("rounds");
   let inputs = 0;
   for (const rd of p.rounds) {
-    if (!rd || !Array.isArray(rd.ops) || !Array.isArray(rd.inp) || rd.ops.length > 8) return bad("rounds");
+    if (!rd || typeof rd !== "object" || !Array.isArray(rd.ops) || !Array.isArray(rd.inp) || rd.ops.length > 8) return bad("rounds");
+    if (!rd.ops.every(isOp) || !rd.inp.every(isInput)) return bad("format");
     inputs += rd.inp.length;
   }
   if (inputs > PROOF_MAX_INPUTS) return bad("rounds");
@@ -69,7 +88,7 @@ export function replayProof(raw: unknown): ReplayResult {
     const r = newRound(room, ghosts);
     let lastT = 0;
     for (const ev of inp) {
-      if (!Array.isArray(ev) || !isInt(ev[0], 0, TICKS - 1) || ev[0] < lastT) return bad("input");
+      if (!isInt(ev[0], 0, TICKS - 1) || ev[0] < lastT) return bad("input");
       lastT = ev[0];
       while (r.t < ev[0] && !r.outcome) step(room, ghosts, r);
       if (r.outcome) return bad("input-after-end");

@@ -8,7 +8,7 @@ import { genTower } from "../src/core/tower";
 import { autoSolve } from "../src/core/solve";
 import { parseSave, serializeSave, SAVE_VERSION } from "../src/core/save";
 import { sealSave } from "../src/core/saveguard";
-import { replayProof, type Proof, type ProofRound, type Input, type Op } from "../src/core/proof";
+import { replayProof, SIM_VERSION, type Proof, type ProofRound, type Input, type Op } from "../src/core/proof";
 import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, freshHearts, dayKey } from "../src/core/hearts";
 import {
   parseRoom, newRound, step, tapCell, toGhost, useSkill, findPath, key, MAX_GHOSTS, TICKS,
@@ -112,7 +112,7 @@ function toProof(n: number, script: Script): Proof {
     }
     return { ops, inp };
   });
-  return { v: 1, kind: "r", n, eq: [...eq, null, null].slice(0, 2) as (SkillId | null)[], rounds };
+  return { v: 1, sv: SIM_VERSION, kind: "r", n, eq: [...eq, null, null].slice(0, 2) as (SkillId | null)[], rounds };
 }
 LEVELS.forEach((def, i) => {
   const sol = SOLUTIONS[def.name];
@@ -128,8 +128,14 @@ console.log(`  ✓ หลักฐานจากคำตอบ ${Object.keys(S
   const r1 = toProof(0, SOLUTIONS["สวิตช์แรก"].script);
   const bads: unknown[] = [null, {}, { ...r1, v: 2 }, { ...r1, n: 99 }, { ...r1, kind: "t", n: 0 },
     { ...r1, rounds: [{ ops: [], inp: [[0, "tap", 0, 0]] }] }, { ...r1, rounds: [{ ops: [["undo"]], inp: [[0, "tap", 1, 3]] }] },
-    { ...r1, rounds: Array.from({ length: 61 }, () => r1.rounds[0]) }];
-  if (bads.some(b => replayProof(b).ok)) fail("หลักฐานผิดรูปแบบผ่านได้"); else console.log("  ✓ หลักฐานผิดรูปแบบ/ห้องไม่มีจริง/เกินขนาด ไม่ผ่าน");
+    { ...r1, rounds: Array.from({ length: 61 }, () => r1.rounds[0]) }, { ...r1, sv: 99 }, { ...r1, sv: undefined },
+    // รูปแบบแปลก ๆ ต้องไม่ throw
+    { ...r1, rounds: [{ ops: [null], inp: [] }] }, { ...r1, rounds: [{ ops: [["del"]], inp: [[0, "tap", 7, 1]] }] }, { ...r1, rounds: [{ ops: [], inp: [5] }] },
+    { ...r1, rounds: [{ ops: [], inp: [[0, "tap", "7", 1]] }] }, { ...r1, eq: "t2" }, { ...r1, rounds: [null] }, [], 42];
+  let threw = false;
+  const passed = bads.filter(b => { try { return replayProof(b).ok; } catch { threw = true; return false; } });
+  if (passed.length || threw) fail("หลักฐานผิดรูปแบบผ่านได้หรือทำให้ throw"); else console.log("  ✓ หลักฐานผิดรูปแบบ/ห้องไม่มีจริง/เกินขนาด/รุ่น sim ไม่รู้จัก ไม่ผ่าน และไม่ throw");
+  if (replayProof({ ...r1, sv: 99 }).why !== "sim-version") fail("รุ่น sim ที่ไม่รู้จักต้องตอบ sim-version");
 }
 
 // ---------- 2) หอคอย ∞ ----------

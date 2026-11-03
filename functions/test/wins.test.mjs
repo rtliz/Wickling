@@ -19,11 +19,11 @@ const pts = async (board, uid, col = 'boards') => (await db.doc(`${col}/${board}
 const err = p => p.then(() => null, e => e);
 
 // ห้อง 1 "สวิตช์แรก": รอบแรกเงาไปยืนสวิตช์ รอบสองเดินออกประตู (เหมือนคำตอบใน scripts/check.ts)
-const ROOM1 = { v: 1, kind: 'r', n: 0, eq: [null, null], rounds: [{ ops: [], inp: [[0, 'tap', 7, 1]] }, { ops: [], inp: [[0, 'tap', 1, 3]] }] };
+const ROOM1 = { v: 1, sv: 1, kind: 'r', n: 0, eq: [null, null], rounds: [{ ops: [], inp: [[0, 'tap', 7, 1]] }, { ops: [], inp: [[0, 'tap', 1, 3]] }] };
 // ห้อง 8 "เลเซอร์กะพริบ": ใช้สกิลหยุดเปลว
-const ROOM8 = { v: 1, kind: 'r', n: 7, eq: ['t2', null], rounds: [{ ops: [], inp: [[0, 'tap', 5, 3], [2, 'sk', 't2'], [2, 'tap', 1, 3]] }] };
+const ROOM8 = { v: 1, sv: 1, kind: 'r', n: 7, eq: ['t2', null], rounds: [{ ops: [], inp: [[0, 'tap', 5, 3], [2, 'sk', 't2'], [2, 'tap', 1, 3]] }] };
 // ห้อง 11 "สวิตช์คู่": เงากระจก (สกิล s3 ปรับเงาก่อนรอบสอง)
-const ROOM11 = { v: 1, kind: 'r', n: 10, eq: ['s3', null], rounds: [{ ops: [], inp: [[0, 'tap', 6, 1]] }, { ops: [['twin', 0]], inp: [[0, 'tap', 1, 3]] }] };
+const ROOM11 = { v: 1, sv: 1, kind: 'r', n: 10, eq: ['s3', null], rounds: [{ ops: [], inp: [[0, 'tap', 6, 1]] }, { ops: [['twin', 0]], inp: [[0, 'tap', 1, 3]] }] };
 
 before(async () => {
   for (const c of ['boards', 'boards-dev', 'players', 'players-dev', 'rate', 'seasons', 'seasonClaims']) await db.recursiveDelete(db.collection(c));
@@ -56,6 +56,7 @@ test('หลักฐานปลอม/ไม่ชนะ/ผิดรูปแ
     { ...ROOM1, rounds: [ROOM1.rounds[1]] },                                     // ไม่มีเงายืนสวิตช์ ประตูไม่เปิด
     { ...ROOM1, rounds: [{ ops: [], inp: [[0, 'tap', 1, 3]] }, ROOM1.rounds[0]] }, // ชนะไม่ได้ในรอบสุดท้าย
     { ...ROOM1, rounds: [...ROOM1.rounds, { ops: [], inp: [[0, 'tap', 1, 3]] }] }, // มีรอบหลังชนะ
+    { ...ROOM1, sv: 2 }, { ...ROOM1, rounds: [{ ops: [7], inp: 'x' }] }, { ...ROOM1, rounds: [{ ops: [], inp: [[0, 'tap']] }] },
     { ...ROOM1, rounds: [{ ops: [], inp: [[0, 'tap', 0, 0]] }, ROOM1.rounds[1]] },  // แตะกำแพง
     { ...ROOM1, n: 99 }, { ...ROOM1, kind: 't', n: 0 }, { ...ROOM1, v: 2 }, null, 'x',
     { ...ROOM1, rounds: [{ ops: [['undo']], inp: [[0, 'tap', 1, 3]] }] },          // ลบเงาที่ไม่มี
@@ -108,4 +109,10 @@ test('แต้มจาก submitWin เข้ารางวัลรอบไ
   const google = uid => ({ uid, token: { firebase: { identities: { 'google.com': ['1'] } } } });
   const r = await seasons.claim(google('a'), {}, NOW + 7 * 86400e3);
   assert.ok(r.rewards.some(w => w.id === weekId(NOW) && w.hearts > 0));
+});
+
+test('รุ่น sim ที่ server ไม่รู้จัก → บอกเหตุผลชัด (sim-version)', async () => {
+  const e = await err(wins.submit(user('sv'), { proof: { ...ROOM1, sv: 2 }, name: 'ภูติ' }, NOW));
+  assert.equal(e?.code, 'invalid-argument');
+  assert.match(e.message, /sim-version/);
 });
