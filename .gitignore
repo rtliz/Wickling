@@ -10,3 +10,12 @@ android/app/release/
 *.keystore
 *.jks
 service-account*.json
+# Android (Capacitor) · build outputs, local SDK path, keystores (keystore อยู่นอก repo)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
+*.apk
+*.aab
+keystore.properties

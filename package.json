@@ -8,9 +8,12 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && rolldown scripts/check.ts -o node_modules/.cache/check/check.mjs -p node -f esm --log-level warn && node node_modules/.cache/check/check.mjs"
+    "check": "tsc --noEmit && rolldown scripts/check.ts -o node_modules/.cache/check/check.mjs -p node -f esm --log-level warn && node node_modules/.cache/check/check.mjs",
+    "android:sync": "pnpm build && cap sync android",
+    "android:open": "cap open android"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@types/node": "^24.0.0",
     "rolldown": "~1.2.13",
     "typescript": "^7.0.2",
@@ -19,6 +22,7 @@
   "packageManager": "pnpm@10.18.2",
   "dependencies": {
     "@capacitor-community/admob": "^8.3.0",
+    "@capacitor/android": "^8.6.0",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.0",
     "cordova-plugin-purchase": "^13.20.0",

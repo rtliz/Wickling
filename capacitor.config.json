@@ -1,0 +1,8 @@
+{
+  "appId": "com.wickling.puzzle",
+  "appName": "Wickling",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0c0911"
+  }
+}
