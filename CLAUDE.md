@@ -30,10 +30,13 @@
 | `src/ui/tree.ts` | หน้าต้นไม้สกิล + วิดีโอตัวอย่างสกิล (ยกจากต้นแบบ ยังเป็น `@ts-nocheck`) |
 | `src/main.ts` | ตัวควบคุมเกม HUD ปุ่ม เสียง ลูปหลัก |
 | `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id จริงของ Wickling (`testing: true` จนกว่าจะปล่อย) · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
-| `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ · `IAP_SERVER_READY = false` ซ่อนปุ่มซื้อใน build จริง · ร้านจำลองเฉพาะ `pnpm dev` |
+| `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ (ผูกกับ uid ของ `Account`) · `IAP_SERVER_READY = false` ซ่อนปุ่มซื้อใน build จริง · ร้านจำลองเฉพาะ `pnpm dev` |
+| `src/platform/account.ts` | บัญชี (ยกจาก LumiFlip `Account`): guest = Anonymous, Google = `@capacitor-firebase/authentication` (skipNativeAuth) → `signInWithCredential` ใน JS SDK / popup บนเว็บ · ผูก guest→Google (uid เดิม) · ออกจากระบบ · ลบบัญชี (Google ยืนยันตัวตนใหม่ · guest ที่ค้างนานใช้ Function `deleteAccount`) · `wickling.login` ใน localStorage = เคยผ่านหน้าล็อกอิน (ไม่อยู่ในเซฟ) · lazy load |
+| `src/platform/cloud.ts` | เรียก callable Functions ผ่าน fetch + retry/backoff (ใช้ร่วม billing/account) |
+| หน้าล็อกอิน / บัญชี / splash | `index.html` (`#splash` CSS inline, `#login`, `#profileOv`, `#askOv`) + ส่วน "บัญชี" ใน `main.ts` · splash ~2 วิ transform/opacity, ภาพต่ำตัดแสงฟุ้ง/ควัน · หน้าล็อกอินขึ้นครั้งแรกและหลังออกจากระบบ/ลบบัญชี · ปุ่ม "บัญชี" อยู่หน้าแถวเลือกห้อง · ออกจากระบบ/ลบบัญชีไม่ลบเซฟในเครื่อง · `?nosplash`, `?splashat=ms` เฉพาะ dev |
 | `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
-| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) · ร้านในแอปยังปิด (`IAP_SERVER_READY=false`) |
-| `android/` | Capacitor Android (`capacitor.config.json`) |
+| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) · ร้านในแอปยังปิด (`IAP_SERVER_READY=false`) · ลบบัญชี `deleteAccount` + `cleanupUser` (`account.js`) **ยังไม่ได้ deploy** |
+| `android/` | Capacitor Android (`capacitor.config.json`) · `google-services.json` (ไม่ใช่ความลับ) · ไอคอน/หน้าเปิดสร้างด้วย `node scripts/android-art.mjs` จาก `docs/ui-mockup/store/art.html` (พื้น `#0c0911` ตรงกับ `#splash`) |
 | `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev และเว็บ localhost (แอป Android เปิดอยู่) · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
 | `prototypes/echo-me/` | ต้นแบบ HTML ไฟล์เดียว + mock แนวภาพ/ต้นไม้สกิล (ห้าม import เข้าโค้ดจริง) |
@@ -46,7 +49,7 @@
 | ค่า | ใช้ | สถานะ |
 |---|---|---|
 | package id | `com.wickling.puzzle` | ล็อก: สร้างแอปใน Play Console แล้ว (2026-11-02, app id `4973122480503751933`) · ลง Capacitor แล้ว (2026-11-03) |
-| Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · Blaze + budget alert (2026-11-03) · Firestore `(default)` asia-southeast1 (ใช้เฉพาะ Functions, rules deny-all) · Anonymous Auth เปิดแล้ว · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
+| Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · Blaze + budget alert (2026-11-03) · Firestore `(default)` asia-southeast1 (ใช้เฉพาะ Functions, rules deny-all) · Anonymous + Google Auth เปิดแล้ว · แอป Android ลงทะเบียนแล้ว (SHA-1 upload key + debug key) · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
 | key เซฟ | `wickling.save.v1` · สำรองเซฟเสีย `wickling.save.bad` · เครื่องที่เซฟแบบมีลายเซ็นแล้ว `wickling.save.signed` · `SAVE_VERSION = 2` (v2 = หัวใจ) | ล็อก · ห้ามเปลี่ยน `SECRET`/`PREFIX` ใน `saveguard.ts` |
 | ลำดับห้องใน `LEVELS` | ดาวในเซฟอ้างด้วยลำดับ → เพิ่มต่อท้ายเท่านั้น | ล็อกหลังปล่อย |
 | ตัวสุ่มหอคอย (`genTower`, seed) | ห้องของแต่ละชั้นต้องเหมือนเดิม | ล็อกหลังปล่อย |
@@ -77,5 +80,5 @@
 - `src/ui/tree.ts` ยังเป็น `@ts-nocheck`
 - เปิดร้านจริง: ทำตาม `functions/README.md` (Blaze + budget, เปิด Anonymous Auth, สร้างสินค้าใน Play, deploy) แล้วตั้ง `IAP_SERVER_READY = true`
 - AdMob: สร้างแอปใน AdMob → ใส่ id จริงใน `src/platform/ads.ts` + `AndroidManifest.xml` → `testing = false` · ใส่ UMP consent ที่ AdMob Console
-- Android: ยังใช้ไอคอน/หน้าเปิดของ Capacitor (ไอคอนจริงอยู่ `docs/store/`) · ยังไม่ได้สร้าง release keystore · Analytics บน Android ส่งผ่าน Firebase JS ใน WebView (เช็ก `Capacitor.isNativePlatform()`) ยังไม่ได้ยืนยันบนเครื่องจริงว่าข้อมูลเข้า
-- Play Console (app id `4973122480503751933`) กรอกแล้ว ยกเว้นการจัดประเภทเนื้อหา (IARC) · **ประกาศว่าไม่มีโฆษณา ไม่ใช้รหัสโฆษณา ไม่มีบัญชี เก็บแค่ข้อมูลการใช้งาน/รหัสอุปกรณ์เพื่อวิเคราะห์** · เพิ่ม AdMob/IAP เมื่อไรต้องแก้ฟอร์มโฆษณา รหัสโฆษณา ความปลอดภัยของข้อมูล และ https://rtliz-studio.web.app/privacy/wickling/ ก่อนปล่อย
+- Android: ไอคอน/หน้าเปิดจริงแล้ว (2026-11-03) · เข้าด้วย Google บนเครื่องจริงยังไม่ได้ทดสอบ (ต้องใช้ build ที่เซ็นด้วย key ที่ลง SHA-1 ไว้) · Analytics บน Android ส่งผ่าน Firebase JS ใน WebView (เช็ก `Capacitor.isNativePlatform()`) ยังไม่ได้ยืนยันบนเครื่องจริงว่าข้อมูลเข้า
+- Play Console (app id `4973122480503751933`) กรอกแล้ว ยกเว้นการจัดประเภทเนื้อหา (IARC) · **ประกาศว่าไม่มีโฆษณา ไม่ใช้รหัสโฆษณา ไม่มีบัญชี เก็บแค่ข้อมูลการใช้งาน/รหัสอุปกรณ์เพื่อวิเคราะห์** · ⚠️ ตอนนี้มีหน้าล็อกอินแล้ว: ต้องแก้ App access / Data safety เป็น "มีบัญชี (Google หรือผู้เยี่ยมชม) เก็บ user ID, ชื่อ/อีเมล/รูปจาก Google" และใส่ช่องทางลบบัญชี (ในแอป: ปุ่ม "บัญชี" → ลบบัญชีถาวร) และ Play ยังขอลิงก์เว็บสำหรับขอลบบัญชีด้วย (เพิ่มในหน้า privacy) · เพิ่ม AdMob/IAP เมื่อไรต้องแก้ฟอร์มโฆษณา รหัสโฆษณา ความปลอดภัยของข้อมูล และ https://rtliz-studio.web.app/privacy/wickling/ ก่อนปล่อย
