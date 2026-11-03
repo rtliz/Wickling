@@ -6,7 +6,9 @@ type Params = Record<string, string | number>;
 let send: ((name: string, p: Params) => void) | null = null;
 const queue: [string, Params][] = [];
 
-const enabled = !import.meta.env.DEV && !/^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname);
+// แอป Android (Capacitor) เสิร์ฟจาก https://localhost จึงต้องเช็กว่าเป็นแอปก่อนตัด localhost ทิ้ง
+const native = !!(window as any).Capacitor?.isNativePlatform?.();
+const enabled = !import.meta.env.DEV && (native || !/^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname));
 
 export function initAnalytics() {
   if (!enabled) return;

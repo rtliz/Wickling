@@ -34,7 +34,7 @@
 | `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
 | `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · **ยังไม่ deploy** |
 | `android/` | Capacitor Android (`capacitor.config.json`) |
-| `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev/localhost · event: `level_complete` ตอนผ่านห้องเท่านั้น |
+| `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev และเว็บ localhost (แอป Android เปิดอยู่) · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
 | `prototypes/echo-me/` | ต้นแบบ HTML ไฟล์เดียว + mock แนวภาพ/ต้นไม้สกิล (ห้าม import เข้าโค้ดจริง) |
 
@@ -77,5 +77,5 @@
 - `src/ui/tree.ts` ยังเป็น `@ts-nocheck`
 - เปิดร้านจริง: ทำตาม `functions/README.md` (Blaze + budget, เปิด Anonymous Auth, สร้างสินค้าใน Play, deploy) แล้วตั้ง `IAP_SERVER_READY = true`
 - AdMob: สร้างแอปใน AdMob → ใส่ id จริงใน `src/platform/ads.ts` + `AndroidManifest.xml` → `testing = false` · ใส่ UMP consent ที่ AdMob Console
-- Android: ยังใช้ไอคอน/หน้าเปิดของ Capacitor (ไอคอนจริงอยู่ `docs/store/`) · ยังไม่ได้สร้าง release keystore · Analytics ปิดอยู่บน Android เพราะแอปเปิดจาก `https://localhost` (เงื่อนไขใน `analytics.ts`)
+- Android: ยังใช้ไอคอน/หน้าเปิดของ Capacitor (ไอคอนจริงอยู่ `docs/store/`) · ยังไม่ได้สร้าง release keystore · Analytics บน Android ส่งผ่าน Firebase JS ใน WebView (เช็ก `Capacitor.isNativePlatform()`) ยังไม่ได้ยืนยันบนเครื่องจริงว่าข้อมูลเข้า
 - Play Console (app id `4973122480503751933`) กรอกแล้ว ยกเว้นการจัดประเภทเนื้อหา (IARC) · **ประกาศว่าไม่มีโฆษณา ไม่ใช้รหัสโฆษณา ไม่มีบัญชี เก็บแค่ข้อมูลการใช้งาน/รหัสอุปกรณ์เพื่อวิเคราะห์** · เพิ่ม AdMob/IAP เมื่อไรต้องแก้ฟอร์มโฆษณา รหัสโฆษณา ความปลอดภัยของข้อมูล และ https://rtliz-studio.web.app/privacy/wickling/ ก่อนปล่อย
