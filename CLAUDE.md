@@ -30,12 +30,12 @@
 | `src/ui/tree.ts` | หน้าต้นไม้สกิล + วิดีโอตัวอย่างสกิล (ยกจากต้นแบบ ยังเป็น `@ts-nocheck`) |
 | `src/main.ts` | ตัวควบคุมเกม HUD ปุ่ม เสียง ลูปหลัก |
 | `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id จริงของ Wickling (`testing: true` จนกว่าจะปล่อย) · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
-| `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ (ผูกกับ uid ของ `Account`) · `IAP_SERVER_READY = false` ซ่อนปุ่มซื้อใน build จริง · ร้านจำลองเฉพาะ `pnpm dev` |
-| `src/platform/account.ts` | บัญชี (ยกจาก LumiFlip `Account`): guest = Anonymous, Google = `@capacitor-firebase/authentication` (skipNativeAuth) → `signInWithCredential` ใน JS SDK / popup บนเว็บ · ผูก guest→Google (uid เดิม) · ออกจากระบบ · ลบบัญชี (Google ยืนยันตัวตนใหม่ · guest ที่ค้างนานใช้ Function `deleteAccount`) · `wickling.login` ใน localStorage = เคยผ่านหน้าล็อกอิน (ไม่อยู่ในเซฟ) · lazy load |
+| `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ (ผูกกับ uid ของ `Account`) · `IAP_SERVER_READY = true` (2026-11-03) · ราคาจาก Play · สินค้าที่ Play ไม่มีขึ้น "ยังไม่เปิดขาย" + ข้อความไทยเมื่อกด (`Billing.status`) · ร้านจำลองเฉพาะ `pnpm dev` |
+| `src/platform/account.ts` | บัญชี (ยกจาก LumiFlip `Account`): guest = Anonymous, Google = `@capacitor-firebase/authentication` (skipNativeAuth) → `signInWithCredential` ใน JS SDK / popup บนเว็บ · ผูก guest→Google (uid เดิม) · ออกจากระบบ · ลบบัญชี (Google ยืนยันตัวตนใหม่ · guest ที่ค้างนานใช้ Function `deleteAccount`) · `wickling.login` ใน localStorage = เคยผ่านหน้าล็อกอิน · ชื่อเล่น `wickling.name` (2–16 ตัว, `cleanName` แบบ LumiFlip, ไม่อยู่ในเซฟ ไม่ตั้งเป็น displayName ของ Firebase) · lazy load |
 | `src/platform/cloud.ts` | เรียก callable Functions ผ่าน fetch + retry/backoff (ใช้ร่วม billing/account) |
-| หน้าล็อกอิน / บัญชี / splash | `index.html` (`#splash` CSS inline, `#login`, `#profileOv`, `#askOv`) + ส่วน "บัญชี" ใน `main.ts` · splash ~2 วิ transform/opacity, ภาพต่ำตัดแสงฟุ้ง/ควัน · หน้าล็อกอินขึ้นครั้งแรกและหลังออกจากระบบ/ลบบัญชี · ปุ่ม "บัญชี" อยู่หน้าแถวเลือกห้อง · ออกจากระบบ/ลบบัญชีไม่ลบเซฟในเครื่อง · `?nosplash`, `?splashat=ms` เฉพาะ dev |
+| หน้าล็อกอิน / บัญชี / splash | `index.html` (`#splash` CSS inline, `#login`, `#profileOv`, `#askOv`) + ส่วน "บัญชี" ใน `main.ts` · splash ~2 วิ transform/opacity, ภาพต่ำตัดแสงฟุ้ง/ควัน · หน้าล็อกอินขอชื่อเล่น (แบบ LumiFlip) ขึ้นครั้งแรกและหลังออกจากระบบ/ลบบัญชี · เครื่องที่เคยเข้าแต่ยังไม่มีชื่อเจอหน้าขอชื่ออย่างเดียว · เปลี่ยนชื่อในหน้าบัญชี · ปุ่ม "บัญชี" อยู่หน้าแถวเลือกห้อง · ออกจากระบบ/ลบบัญชีไม่ลบเซฟในเครื่อง · `?nosplash`, `?splashat=ms` เฉพาะ dev |
 | `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
-| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) · ร้านในแอปยังปิด (`IAP_SERVER_READY=false`) · ลบบัญชี `deleteAccount` + `cleanupUser` (`account.js`) **ยังไม่ได้ deploy** |
+| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) รวมลบบัญชี `deleteAccount` + `cleanupUser` (`account.js`) · ร้านในแอปเปิดแล้ว |
 | `android/` | Capacitor Android (`capacitor.config.json`) · `google-services.json` (ไม่ใช่ความลับ) · ไอคอน/หน้าเปิดสร้างด้วย `node scripts/android-art.mjs` จาก `docs/ui-mockup/store/art.html` (พื้น `#0c0911` ตรงกับ `#splash`) |
 | `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev และเว็บ localhost (แอป Android เปิดอยู่) · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
@@ -64,7 +64,7 @@
 ทำตาม [../.claude/rules/anti-hack.md](../.claude/rules/anti-hack.md) · **โมเดลที่เลือก: เซฟลายเซ็น + Validator (แบบเกม Wuxia)** เมื่อมีของมีมูลค่า
 - เซฟ v2 ลงลายเซ็น (`saveguard.ts` ยกจาก LumiFlip) · JSON ไม่มีลายเซ็น (เซฟ v1) รับได้ครั้งเดียวต่อเครื่องและได้หัวใจค่าเริ่มต้นเสมอ · `validate()` ตัดหัวใจ 0–8 และเวลาไม่จำกัดที่ผิดปกติ · ดาวทดสอบมีเฉพาะ `import.meta.env.DEV`
 - ของที่ซื้อให้หลัง `functions/` ตรวจใบเสร็จกับ Google เท่านั้น (กันซ้ำด้วย purchaseId) · ร้าน/โฆษณาจำลองเฉพาะ `pnpm dev` · เว็บจริงล้าง `noAds`/ไม่จำกัด ทิ้ง
-- **ช่องโหว่ที่รู้:** หัวใจและเวลาไม่จำกัดใช้นาฬิกาเครื่อง (แบบ LumiFlip มีตัวกันย้อนนาฬิกา) · key ลายเซ็นอยู่ใน bundle · Functions deploy แล้ว แต่ร้านยังปิดจนกว่าจะสร้างสินค้าใน Play + ให้สิทธิ์ service account + ทดสอบ license tester (บันทึกใน `../.claude/skills/game-security/SKILL.md`)
+- **ช่องโหว่ที่รู้:** หัวใจและเวลาไม่จำกัดใช้นาฬิกาเครื่อง (แบบ LumiFlip มีตัวกันย้อนนาฬิกา) · key ลายเซ็นอยู่ใน bundle · Functions deploy แล้วและร้านเปิด (`IAP_SERVER_READY = true`) · ยังต้องสร้างสินค้าใน Play + ให้สิทธิ์ service account + ทดสอบ license tester (บันทึกใน `../.claude/skills/game-security/SKILL.md`)
 - Firestore ปิดทุกอย่าง (`firestore.rules` default-deny · Functions เขียนด้วย Admin SDK)
 - **ก่อนเพิ่มกระดานคะแนน:** ต้องมีเพดานตามอายุบัญชี
 
@@ -78,7 +78,7 @@
 - หอคอยตั้งแต่ชั้น ~7 ใช้เงา 4 ตัวแทบทุกชั้น ความยากหยุดเพิ่ม · ต้องเพิ่มของใหม่ในหอคอย (เลเซอร์กะพริบ, ห้องมืด, "ห้องสกิล" ทุก 5 ชั้น)
 - ราคาสกิลตอนนี้ 2/4/6/10 ★ (ดาวทั้งเกม 39 + หอคอย) · ปรับเมื่อมีห้องครบ 30
 - `src/ui/tree.ts` ยังเป็น `@ts-nocheck`
-- เปิดร้านจริง: ทำตาม `functions/README.md` (Blaze + budget, เปิด Anonymous Auth, สร้างสินค้าใน Play, deploy) แล้วตั้ง `IAP_SERVER_READY = true`
+- ร้าน: `IAP_SERVER_READY = true` แล้ว · ยังต้องสร้าง `remove_ads` / `unlimited_hearts_2h` ใน Play Console (active) + ให้สิทธิ์ service account แล้วทดสอบด้วย license tester
 - AdMob: สร้างแอปใน AdMob → ใส่ id จริงใน `src/platform/ads.ts` + `AndroidManifest.xml` → `testing = false` · ใส่ UMP consent ที่ AdMob Console
 - Android: ไอคอน/หน้าเปิดจริงแล้ว (2026-11-03) · เข้าด้วย Google บนเครื่องจริงยังไม่ได้ทดสอบ (ต้องใช้ build ที่เซ็นด้วย key ที่ลง SHA-1 ไว้) · Analytics บน Android ส่งผ่าน Firebase JS ใน WebView (เช็ก `Capacitor.isNativePlatform()`) ยังไม่ได้ยืนยันบนเครื่องจริงว่าข้อมูลเข้า
 - Play Console (app id `4973122480503751933`) กรอกแล้ว ยกเว้นการจัดประเภทเนื้อหา (IARC) · **ประกาศว่าไม่มีโฆษณา ไม่ใช้รหัสโฆษณา ไม่มีบัญชี เก็บแค่ข้อมูลการใช้งาน/รหัสอุปกรณ์เพื่อวิเคราะห์** · ⚠️ ตอนนี้มีหน้าล็อกอินแล้ว: ต้องแก้ App access / Data safety เป็น "มีบัญชี (Google หรือผู้เยี่ยมชม) เก็บ user ID, ชื่อ/อีเมล/รูปจาก Google" และใส่ช่องทางลบบัญชี (ในแอป: ปุ่ม "บัญชี" → ลบบัญชีถาวร) และ Play ยังขอลิงก์เว็บสำหรับขอลบบัญชีด้วย (เพิ่มในหน้า privacy) · เพิ่ม AdMob/IAP เมื่อไรต้องแก้ฟอร์มโฆษณา รหัสโฆษณา ความปลอดภัยของข้อมูล และ https://rtliz-studio.web.app/privacy/wickling/ ก่อนปล่อย
