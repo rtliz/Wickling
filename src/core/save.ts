@@ -1,13 +1,16 @@
 import type { SkillId } from "./sim";
 import { NODES } from "./skills";
+import { HEARTS, freshHearts, type HeartState } from "./hearts";
+import { sealSave, openSealed } from "./saveguard";
 
 // เซฟในเครื่อง · ⚠️ ห้ามเปลี่ยน SAVE_KEY หลังปล่อยเกม · เปลี่ยนรูปแบบเซฟ = ขึ้น SAVE_VERSION + เพิ่ม case ใน migrate()
-// ตอนนี้เซฟมีแค่ดาว ชั้นหอคอย และสกิล (ไม่มีของมีมูลค่า) จึงยังไม่ลงลายเซ็น · ก่อนเพิ่ม IAP/สกุลเงินพรีเมียม
-// ต้องเพิ่มลายเซ็น + Validator แบบ core/security/ ของเกม Wuxia (ดู .claude/rules/anti-hack.md ข้อ 5)
+// v1 = ดาว ชั้นหอคอย สกิล (JSON ไม่มีลายเซ็น) · v2 = + หัวใจ/ลบโฆษณา/หัวใจไม่จำกัด → ลงลายเซ็น (saveguard.ts) + validate()
+// เซฟ v1 แบบไม่มีลายเซ็นรับได้ครั้งเดียวต่อเครื่อง (ก่อนมี SAVE_SIGNED_KEY) แล้วเซฟใหม่แบบมีลายเซ็นทันที
 
 export const SAVE_KEY = "wickling.save.v1";
 export const SAVE_BAD_KEY = "wickling.save.bad";   // เซฟที่อ่านไม่ได้ เก็บสำรองไว้ ห้ามลบทิ้ง
-export const SAVE_VERSION = 1;
+export const SAVE_SIGNED_KEY = "wickling.save.signed"; // มีแล้ว = เครื่องนี้เคยเซฟแบบมีลายเซ็น เซฟไม่มีลายเซ็นที่โผล่มาทีหลังคือของปลอม
+export const SAVE_VERSION = 2;
 
 export interface SaveData {
   v: number;
@@ -15,22 +18,40 @@ export interface SaveData {
   tower: { floor: number; best: number };
   skills: { owned: SkillId[]; eq: (SkillId | null)[]; spent: number };
   devBonus: number;                           // ดาวทดสอบ (ใช้ได้เฉพาะ pnpm dev)
+  hearts: HeartState;                         // v2
 }
 
-const fresh = (): SaveData => ({ v: SAVE_VERSION, best: {}, tower: { floor: 1, best: 0 }, skills: { owned: ["root"], eq: [null, null], spent: 0 }, devBonus: 0 });
+const fresh = (now = Date.now()): SaveData => ({ v: SAVE_VERSION, best: {}, tower: { floor: 1, best: 0 }, skills: { owned: ["root"], eq: [null, null], spent: 0 }, devBonus: 0, hearts: freshHearts(now) });
 
-function migrate(raw: Record<string, unknown>): SaveData {
+function migrate(raw: Record<string, unknown>, now: number): SaveData {
   const v = typeof raw.v === "number" ? raw.v : 0;
-  switch (v) {
-    case SAVE_VERSION: break;
-    default: throw new Error(`ไม่รู้จักเซฟเวอร์ชัน ${v}`);
-  }
+  if (v < 1 || v > SAVE_VERSION || !Number.isInteger(v)) throw new Error(`ไม่รู้จักเซฟเวอร์ชัน ${v}`);
+  if (v < 2) raw = { ...raw, v: 2, hearts: freshHearts(now) };   // v1 → v2: เพิ่มหัวใจเต็มวัน
+  // เพิ่มเวอร์ชันถัดไป: if (raw.v < 3) raw = { ...raw, v: 3, ... }
   return raw as unknown as SaveData;
 }
 
 const VALID_IDS = new Set(NODES.map(n => n.id));
-function validate(d: SaveData): SaveData {
-  const out = fresh();
+const isInt = (v: unknown, lo: number, hi: number): v is number => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
+
+// ตัดค่าหัวใจที่ผิดรูปแบบ/เกินเพดาน · ไม่แตะ from ที่อยู่ในอนาคต (นั่นคือตัวกันย้อนนาฬิกา: unlimited() จะเป็น false เอง)
+function validHearts(h: Partial<HeartState> | undefined, now: number): HeartState {
+  const out = freshHearts(now);
+  if (!h || typeof h !== "object") return out;
+  if (isInt(h.n, 0, Number.MAX_SAFE_INTEGER)) out.n = Math.min(h.n, HEARTS.max);
+  if (typeof h.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.day)) out.day = h.day;
+  if (isInt(h.ad, 0, HEARTS.adPerDay)) out.ad = h.ad;
+  out.noAds = h.noAds === true;
+  if (isInt(h.from, 0, 8.64e15) && isInt(h.until, 0, 8.64e15) && h.until >= h.from && h.until - h.from <= HEARTS.unlimitedMaxSpanMs) {
+    out.from = h.from; out.until = h.until;
+  }
+  if (Array.isArray(h.tx)) out.tx = h.tx.filter(t => typeof t === "string" && t.length > 0 && t.length <= 128).slice(-HEARTS.txKeep);
+  if (typeof h.attempt === "string" && /^[rt]\d{1,6}$/.test(h.attempt)) out.attempt = h.attempt;
+  return out;
+}
+
+function validate(d: SaveData, now: number): SaveData {
+  const out = fresh(now);
   for (const [k, s] of Object.entries(d.best ?? {})) if (/^\d+$/.test(k) && Number.isInteger(s) && s >= 1 && s <= 3) out.best[k] = s;
   if (d.tower && Number.isInteger(d.tower.floor) && d.tower.floor >= 1) out.tower.floor = Math.min(d.tower.floor, 100000);
   if (d.tower && Number.isInteger(d.tower.best) && d.tower.best >= 0) out.tower.best = Math.min(d.tower.best, out.tower.floor);
@@ -39,15 +60,38 @@ function validate(d: SaveData): SaveData {
   out.skills.eq = [0, 1].map(i => { const id = d.skills?.eq?.[i] ?? null; return id && id !== "root" && out.skills.owned.includes(id) ? id : null; });
   if (Number.isInteger(d.skills?.spent) && d.skills.spent >= 0) out.skills.spent = d.skills.spent;
   if (import.meta.env?.DEV && Number.isInteger(d.devBonus)) out.devBonus = d.devBonus;
+  out.hearts = validHearts(d.hearts, now);
   return out;
 }
 
+/**
+ * แปลงข้อความเซฟเป็นข้อมูล (ไม่มี DOM · scripts/check.ts ใช้ทดสอบเซฟเก่า) · throw = เซฟใช้ไม่ได้ (ผู้เรียกเก็บสำรอง)
+ * signedBefore = เครื่องนี้เคยเซฟแบบมีลายเซ็นแล้ว → JSON ไม่มีลายเซ็นถือว่าถูกแก้
+ * เซฟไม่มีลายเซ็น (v1 ของผู้เล่นเดิม) ไม่มีทางมีหัวใจ/สิทธิ์ที่ซื้อโดยชอบ → ใช้หัวใจค่าเริ่มต้นเสมอ
+ */
+export function parseSave(text: string, signedBefore: boolean, now = Date.now()): SaveData {
+  const sealed = openSealed(text);
+  if (sealed && typeof sealed === "object") return validate(migrate(sealed as Record<string, unknown>, now), now);
+  if (text.startsWith("{") && !signedBefore) {
+    const raw = JSON.parse(text) as Record<string, unknown>;
+    const d = validate(migrate(raw, now), now);
+    d.hearts = freshHearts(now);
+    return d;
+  }
+  throw new Error("ลายเซ็นเซฟไม่ถูกต้อง");
+}
+
+export const serializeSave = (d: SaveData) => sealSave({ ...d, v: SAVE_VERSION });
+
 export function loadSave(): SaveData {
-  let text: string | null = null;
-  try { text = localStorage.getItem(SAVE_KEY); } catch { return fresh(); }
+  let text: string | null = null, signed = false;
+  try { text = localStorage.getItem(SAVE_KEY); signed = !!localStorage.getItem(SAVE_SIGNED_KEY); } catch { return fresh(); }
   if (!text) return fresh();
-  try { return validate(migrate(JSON.parse(text))); }
-  catch (e) {
+  try {
+    const d = parseSave(text, signed);
+    if (!signed) writeSave(d);   // เซฟเก่า → เซฟใหม่แบบมีลายเซ็นทันที
+    return d;
+  } catch (e) {
     try { localStorage.setItem(SAVE_BAD_KEY, text); } catch { /* เก็บสำรองไม่ได้ก็ปล่อย */ }
     console.warn("[save] อ่านเซฟไม่ได้ เก็บสำรองไว้ที่", SAVE_BAD_KEY, e);
     return fresh();
@@ -55,7 +99,10 @@ export function loadSave(): SaveData {
 }
 
 export function writeSave(d: SaveData) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...d, v: SAVE_VERSION })); } catch { /* โหมดส่วนตัว/พื้นที่เต็ม */ }
+  try {
+    localStorage.setItem(SAVE_KEY, serializeSave(d));
+    localStorage.setItem(SAVE_SIGNED_KEY, "1");
+  } catch { /* โหมดส่วนตัว/พื้นที่เต็ม */ }
 }
 
 export const earnedStars = (d: SaveData) => Object.values(d.best).reduce((a, b) => a + b, 0) + d.tower.best;

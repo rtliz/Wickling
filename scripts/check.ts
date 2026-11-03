@@ -1,9 +1,12 @@
 // pnpm check: ให้โปรแกรมเล่นผ่านห้องจริงตามกติกาเกม (src/core/sim.ts)
 // 1) ห้องที่ออกแบบเอง: โครงสร้างถูกต้อง + เล่นตามคำตอบที่เขียนไว้แล้วต้องผ่าน (รวมสกิลทุกตัวที่มีห้องสอน)
 // 2) หอคอย ∞: สุ่มชั้น 1–200 แล้วให้โปรแกรมเล่นผ่านทุกชั้นด้วยเงาไม่เกิน par
+// 3) เซฟ: เซฟ v1 ของผู้เล่นเดิม migrate เป็น v2 ได้ · ลายเซ็นกันแก้ · validate ตัดค่าหัวใจ · กติกาหัวใจ
 import { LEVELS } from "../src/core/levels";
 import { genTower } from "../src/core/tower";
 import { autoSolve } from "../src/core/solve";
+import { parseSave, serializeSave, SAVE_VERSION } from "../src/core/save";
+import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, freshHearts, dayKey } from "../src/core/hearts";
 import {
   parseRoom, newRound, step, tapCell, toGhost, useSkill, findPath, key, MAX_GHOSTS, TICKS,
   type Ghost, type Pos, type Room, type Round, type SkillId, type LevelDef,
@@ -105,6 +108,53 @@ for (let f = 1; f <= FLOORS; f++) {
 }
 const dist = [0, 1, 2, 3, 4].map(n => used.filter(x => x === n).length);
 console.log(`  ${towerOk}/${FLOORS} ชั้นเล่นผ่านอัตโนมัติ · จำนวนเงาที่ใช้ 0–4 ตัว: ${dist.join(" / ")}`);
+
+// ---------- 3) เซฟและหัวใจ ----------
+console.log("เซฟ v1 → v2 และหัวใจ");
+{
+  const now = new Date(2026, 10, 3, 15, 0).getTime();
+  const expect = (ok: boolean, msg: string) => { if (ok) console.log("  ✓ " + msg); else fail(msg); };
+  // เซฟจริงแบบที่ v1 เขียน (JSON ไม่มีลายเซ็น)
+  const v1 = JSON.stringify({ v: 1, best: { 0: 3, 1: 2, 4: 1 }, tower: { floor: 7, best: 6 }, skills: { owned: ["root", "t1", "t2"], eq: ["t2", null], spent: 6 }, devBonus: 0 });
+  const a = parseSave(v1, false, now);
+  expect(a.v === SAVE_VERSION && a.best[0] === 3 && a.best[4] === 1 && a.tower.floor === 7 && a.tower.best === 6
+    && a.skills.owned.includes("t2") && a.skills.eq[0] === "t2" && a.skills.spent === 6, "เซฟ v1 ย้ายเป็น v2 ดาว/หอคอย/สกิลครบ");
+  expect(a.hearts.n === HEARTS.perDay && !a.hearts.noAds && a.hearts.until === 0 && a.hearts.day === dayKey(new Date(now)), "เซฟ v1 ได้หัวใจเริ่มต้น 5 ดวง ไม่มีสิทธิ์ซื้อ");
+  // JSON ไม่มีลายเซ็นปลอมหัวใจ/ลบโฆษณามา → ไม่ได้
+  const forged = JSON.stringify({ ...JSON.parse(v1), v: 2, hearts: { ...freshHearts(now), n: 99, noAds: true, from: now, until: now + 9e6 } });
+  const f = parseSave(forged, false, now);
+  expect(f.hearts.n === HEARTS.perDay && !f.hearts.noAds && f.hearts.until === 0, "JSON ไม่มีลายเซ็นตั้งหัวใจ/ลบโฆษณาเองไม่ได้");
+  let threw = false; try { parseSave(v1, true, now); } catch { threw = true; }
+  expect(threw, "เครื่องที่เคยเซฟแบบมีลายเซ็นแล้ว ไม่รับ JSON ไม่มีลายเซ็น");
+  // วนเซฟ/โหลด v2
+  a.hearts.n = 2; a.hearts.noAds = true; a.hearts.tx = ["p1"];
+  const sealed = serializeSave(a), b = parseSave(sealed, true, now);
+  expect(b.hearts.n === 2 && b.hearts.noAds && b.hearts.tx[0] === "p1" && b.best[1] === 2, "เซฟ v2 มีลายเซ็นโหลดกลับได้ครบ");
+  threw = false; try { parseSave(sealed.slice(0, -3) + "zzz", true, now); } catch { threw = true; }
+  expect(threw, "แก้เซฟที่มีลายเซ็นแล้วโหลดไม่ผ่าน");
+  // validate ตัดค่าเกินเพดาน
+  const big = parseSave(serializeSave({ ...a, hearts: { ...a.hearts, n: 500, ad: 99, from: now, until: now + 1e12, attempt: "<x>" } }), true, now);
+  expect(big.hearts.n === HEARTS.max && big.hearts.ad === 0 && big.hearts.until === 0 && big.hearts.attempt === null, "validate ตัดหัวใจ ≤ 8 และเวลาไม่จำกัดที่ผิดปกติ");
+  // กติกาหัวใจ
+  const p = { best: { 0: 1 } as Record<string, number>, tower: { floor: 3, best: 2 } };
+  const h = freshHearts(now);
+  expect(payToPlay(h, p, 0, now) === "ok" && payToPlay(h, p, 1, now) === "ok" && h.n === 5, "ห้องที่ผ่านแล้ว/ห้อง 1–2 ไม่ใช้หัวใจ");
+  expect(payToPlay(h, p, 5, now) === "paid" && h.n === 4 && payToPlay(h, p, 5, now) === "ok" && h.n === 4, "ห้องใหม่ใช้ 1 ดวง เล่นรอบต่อไปในห้องเดิมไม่เสียเพิ่ม");
+  h.attempt = null;
+  expect(payToPlay(h, p, 5, now) === "paid" && h.n === 3, "เริ่มห้องใหม่ (ล้างเงา) ใช้อีก 1 ดวง");
+  expect(payToPlay(h, p, -1, now) === "paid" && h.attempt === "t3", "หอคอยชั้นที่ยังไม่ผ่านใช้หัวใจ");
+  h.n = 0; h.attempt = null;
+  expect(payToPlay(h, p, 6, now) === "empty", "หัวใจหมด → เล่นห้องใหม่ไม่ได้");
+  addUnlimited(h, HEARTS.unlimitedMs, now);
+  expect(unlimited(h, now) && payToPlay(h, p, 6, now) === "ok" && h.n === 0, "หัวใจไม่จำกัดเล่นได้ไม่หัก");
+  expect(!unlimited(h, now - 60_000), "ย้อนนาฬิกาไปก่อนเวลาซื้อ = หมดสิทธิ์ไม่จำกัด");
+  expect(!unlimited(h, now + HEARTS.unlimitedMs), "ครบ 2 ชม. แล้วหมด");
+  expect(!refreshDay(h, now) && h.n === 0, "วันเดิมไม่เติม");
+  expect(!refreshDay(h, now - 86_400_000) && h.n === 0, "ย้อนนาฬิกาไปเมื่อวานไม่เติม");
+  expect(refreshDay(h, now + 86_400_000) && h.n === HEARTS.perDay, "ขึ้นวันใหม่เติมเป็น 5");
+  h.noAds = true; h.n = 6;
+  expect(refreshDay(h, now + 2 * 86_400_000) && h.n === HEARTS.perDayNoAds, "ลบโฆษณาแล้ววันใหม่เติมเป็น 8");
+}
 
 if (fails) { console.log(`\nไม่ผ่าน ${fails} ข้อ`); process.exit(1); }
 console.log("\nผ่านทั้งหมด");
