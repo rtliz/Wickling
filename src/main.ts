@@ -9,6 +9,11 @@ import { BR, ICON, nodeById } from "./core/skills";
 import { createBoard, COL, type Quality } from "./render/board";
 import { initTree, openTree } from "./ui/tree";
 import { initAnalytics, track } from "./platform/analytics";
+import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, roomIsFree, clearedCount, dailyHearts } from "./core/hearts";
+import { Ads, isNative } from "./platform/ads";
+import { Billing, type GrantEvent } from "./platform/billing";
+import type { ProductId } from "./platform/products";
+import { App } from "@capacitor/app";
 
 // ---------- สถานะ ----------
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -18,6 +23,11 @@ let levelIdx = 0;                 // -1 = หอคอย ∞
 let room: Room, ghosts: Ghost[] = [], r: Round, phase: Phase = "ready";
 let last = 0, flash: { color: string; at: number } | null = null, scrub: number | null = null, zapTimer = 0, barPct = -1;
 const has = (id: SkillId) => save.skills.eq.includes(id);
+const H = save.hearts;
+// เว็บ build จริงซื้อไม่ได้ (Billing.available = false) จึงไม่มีทางมีสิทธิ์ที่ซื้อโดยชอบ (แบบ LumiFlip)
+if (!Billing.available) { H.noAds = false; H.from = 0; H.until = 0; }
+let paused = false;               // โฆษณาเต็มจอกำลังขึ้น: หยุดลูปเกม (sim ไม่เดินระหว่างโฆษณา)
+let lastWinFirst = false, replayWins = 0;
 const board = createBoard($<HTMLCanvasElement>("cv"), $("stage"));
 
 // ระดับกราฟิก · อัตโนมัติ = เริ่มสูง แล้วลดเองถ้าเฟรมช้า (กฎ performance.md)
@@ -42,6 +52,7 @@ const NOTES = [523.25, 659.25, 783.99, 987.77];
 // ---------- ห้องและรอบ ----------
 function loadLevel(i: number) {
   levelIdx = i;
+  H.attempt = null;               // ล้างเงา = จบความพยายามเดิม (เริ่มเดินครั้งหน้าในห้องที่ยังไม่ผ่านใช้หัวใจ)
   room = parseRoom(i < 0 ? genTower(save.tower.floor) : LEVELS[i]);
   ghosts = [];
   $("win").hidden = true;
@@ -63,8 +74,8 @@ function startRound() {
 
 function endRound(why: string) {
   if (ghosts.length >= MAX_GHOSTS) {
-    ghosts = []; startRound();
-    banner(`${why} · เงาครบ ${MAX_GHOSTS} ตัวแล้ว เริ่มห้องใหม่ทั้งหมด ลองวางแผนอีกแบบ`);
+    ghosts = []; H.attempt = null; writeSave(save); startRound();
+    banner(`${why} · เงาครบ ${MAX_GHOSTS} ตัวแล้ว เริ่มห้องใหม่ทั้งหมด ลองวางแผนอีกแบบ` + (needsHeartNow() ? "<br><small>เริ่มเดินอีกครั้งใช้หัวใจ 1 ดวง</small>" : ""));
     return;
   }
   ghosts.push(toGhost(r));
@@ -83,9 +94,14 @@ function onWin() {
   phase = "win"; flash = { color: COL.exit, at: performance.now() };
   [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => note(f, .25), i * 110));
   const n = ghosts.length, par = room.def.par, stars = starsFor(n, par);
+  const before = clearedCount(save);
+  H.attempt = null;
   if (levelIdx >= 0) save.best[levelIdx] = Math.max(save.best[levelIdx] || 0, stars);
   else save.tower.best = Math.max(save.tower.best, save.tower.floor);
+  lastWinFirst = clearedCount(save) > before;
+  if (!lastWinFirst) replayWins++;
   writeSave(save);
+  if (adsOn() && before < HEARTS.adsAfterCleared) Ads.showBanner();
   track("level_complete", { level: levelIdx < 0 ? "tower" : String(levelIdx + 1), floor: levelIdx < 0 ? save.tower.floor : 0, ghosts: n, par, stars, skills: save.skills.eq.filter(Boolean).join("+") || "none" });
   $("winTitle").textContent = n < par ? "เหนือชั้น!" : "ผ่านแล้ว!";
   $("winStars").innerHTML = "★".repeat(stars) + "<s>" + "★".repeat(3 - stars) + "</s>";
@@ -112,16 +128,190 @@ $("cv").addEventListener("pointerdown", ev => {
   if (phase !== "ready" && phase !== "run") return;
   const p = board.cellAt(ev.clientX, ev.clientY);
   if (!p || !tapCell(room, r, p)) return;
+  if (phase === "ready" && !payHeart()) return;
   if (phase === "ready") { phase = "run"; last = performance.now(); banner(""); updateHud(); }
 });
 $("btnEnd").onclick = () => { if (phase === "run") { r.outcome = "timeout"; endRound("จบรอบเอง"); } };
 $("btnUndo").onclick = () => { if (phase === "ready" && ghosts.length) { ghosts.pop(); startRound(); } };
 $("btnReset").onclick = () => loadLevel(levelIdx);
-$("btnRetry").onclick = () => loadLevel(levelIdx);
-$("btnNext").onclick = () => {
+$("btnRetry").onclick = async () => { await afterWin(); loadLevel(levelIdx); };
+$("btnNext").onclick = async () => {
+  await afterWin();
   if (levelIdx < 0) { save.tower.floor++; writeSave(save); loadLevel(-1); }
   else loadLevel(levelIdx < LEVELS.length - 1 ? levelIdx + 1 : -1);
 };
+
+// ---------- หัวใจ (กติกาใน core/hearts.ts) ----------
+const HEART_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5S3.5 15.2 3.5 9.1A4.6 4.6 0 0 1 12 6.6a4.6 4.6 0 0 1 8.5 2.5c0 6.1-8.5 11.4-8.5 11.4z" fill="var(--heart)" stroke="#1b1430" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.6 8.6a2.2 2.2 0 0 1 2.4-1.2" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+const needsHeartNow = () => !roomIsFree(save, levelIdx) && !unlimited(H);
+// โฆษณาที่ผู้เล่นไม่ได้กดเอง (แบนเนอร์ + คั่นห้อง) เริ่มหลังผ่านห้องพื้นฐานครบ
+const adsOn = () => Ads.available && !H.noAds && clearedCount(save) >= HEARTS.adsAfterCleared;
+const timeLeft = (ms: number) => { const m = Math.ceil(ms / 60_000); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`; };
+
+let toastTimer = 0;
+function toast(msg: string) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = window.setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+// แตะเดินครั้งแรกของรอบ · คืน false = เล่นไม่ได้ (หัวใจหมด)
+function payHeart() {
+  refreshDay(H);
+  const res = payToPlay(H, save, levelIdx);
+  if (res === "empty") { openHearts(true); return false; }
+  if (res === "paid") { writeSave(save); toast(`ใช้หัวใจ 1 ดวง · เหลือ ${H.n}`); }
+  renderHearts();
+  return true;
+}
+
+let heartsHtml = "";
+function renderHearts() {
+  const inf = unlimited(H);
+  const html = HEART_SVG + (inf ? `∞<small>${timeLeft(H.until - Date.now())}</small>` : `${H.n}`);
+  if (html !== heartsHtml) { heartsHtml = html; $("hearts").innerHTML = html; }
+  $("hearts").classList.toggle("empty", !inf && H.n <= 0);
+  $("hearts").classList.toggle("unl", inf);
+  $("hearts").setAttribute("aria-label", inf ? `หัวใจไม่จำกัด เหลือเวลา ${timeLeft(H.until - Date.now())} ชั่วโมง` : `หัวใจ ${H.n} ดวง`);
+  const rb = $("btnReset");
+  const label = needsHeartNow() && H.attempt ? "เริ่มห้องใหม่ (ใช้หัวใจ 1)" : "เริ่มห้องใหม่";
+  if (rb.textContent !== label) rb.textContent = label;
+}
+
+// นับถอยหลังหัวใจไม่จำกัดบนป้ายทุกวินาที จนหมดเวลา (timer เดียว ไม่สร้างใหม่ทุกเฟรม)
+let unlTimer = 0;
+function watchUnlimited() {
+  clearInterval(unlTimer);
+  if (!unlimited(H)) return;
+  unlTimer = window.setInterval(() => {
+    renderHearts();
+    if (unlimited(H)) return;
+    clearInterval(unlTimer); toast("หัวใจไม่จำกัดหมดเวลาแล้ว");
+  }, 1000);
+}
+
+// หน้าหัวใจ: empty = หัวใจหมดตอนจะเล่น · ไม่งั้นเป็นหน้าข้อมูล/ร้าน (แตะป้ายหัวใจ)
+let countTimer = 0, hEmpty = false;
+function openHearts(empty: boolean) {
+  hEmpty = empty;
+  if (empty) track("hearts_empty", { level: levelIdx < 0 ? "tower" : String(levelIdx + 1) });
+  renderHeartsPanel();
+  $("heartsOv").hidden = false;
+  clearInterval(countTimer);
+  const tick = () => {
+    if (refreshDay(H)) { writeSave(save); afterHeartGained(); return; }
+    const now = new Date(), midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+    const sec = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
+    $("hCount").textContent = [sec / 3600, (sec % 3600) / 60, sec % 60].map(v => String(Math.floor(v)).padStart(2, "0")).join(":");
+  };
+  tick(); countTimer = window.setInterval(tick, 1000);
+}
+function closeHearts() { clearInterval(countTimer); $("heartsOv").hidden = true; }
+
+function renderHeartsPanel() {
+  const inf = unlimited(H);
+  $("hTitle").textContent = hEmpty && !inf && H.n <= 0 ? "หัวใจหมดแล้ว" : "หัวใจ";
+  $("hBig").innerHTML = HEART_SVG + (inf ? `∞<small>เหลือ ${timeLeft(H.until - Date.now())} ชม.</small>` : `${H.n}<small>/ ${dailyHearts(H)} ต่อวัน</small>`);
+  $("hText").textContent = "ห้องหรือชั้นที่ยังไม่เคยผ่านใช้หัวใจ 1 ดวงต่อการเริ่ม (เล่นกี่รอบในห้องก็ได้) · ห้องที่ผ่านแล้วและห้อง 1–2 เล่นฟรี";
+  const adLeft = HEARTS.adPerDay - H.ad;
+  // ดูโฆษณาได้เฉพาะตอนหัวใจหมด (หัวใจจึงไม่เกินเพดาน 8) และวันละ 3 ครั้ง
+  $("hAd").hidden = !Ads.available || inf || H.n > 0;
+  $<HTMLButtonElement>("hAd").disabled = adLeft <= 0;
+  $("hAdLeft").textContent = adLeft > 0 ? `วันนี้ดูได้อีก ${adLeft} ครั้ง` : "วันนี้ดูครบ 3 ครั้งแล้ว";
+  $("hUnl").hidden = !Billing.available;
+  $("hUnlPrice").textContent = Billing.priceOf("unlimited_hearts_2h");
+  $("hNoAds").hidden = !Billing.available || H.noAds || hEmpty;
+  $("hNoAdsPrice").textContent = Billing.priceOf("remove_ads");
+  $("hRestore").hidden = !Billing.available;
+  $("hWait").hidden = inf;
+}
+
+// ได้หัวใจเพิ่มระหว่างหน้า "หัวใจหมด" เปิดอยู่ → ปิดแล้วเล่นต่อ
+function afterHeartGained() {
+  renderHearts();
+  if (!$("heartsOv").hidden) { if (hEmpty) closeHearts(); else renderHeartsPanel(); }
+  updateHud();
+}
+
+let watchingAd = false;
+$("hAd").onclick = async () => {
+  if (watchingAd || H.ad >= HEARTS.adPerDay || H.n > 0) return;
+  watchingAd = true;
+  const ok = await Ads.rewarded().finally(() => { watchingAd = false; });
+  if (!ok) return toast("ต้องดูโฆษณาจนจบถึงจะได้หัวใจ");
+  H.n = Math.min(HEARTS.max, H.n + 1); H.ad++;
+  writeSave(save); toast("ได้หัวใจ +1"); afterHeartGained();
+};
+$("hearts").onclick = () => openHearts(false);
+$("hClose").onclick = closeHearts;
+$("hUnl").onclick = () => buy("unlimited_hearts_2h", "hUnl");
+$("hNoAds").onclick = () => buy("remove_ads", "hNoAds");
+$("hRestore").onclick = async () => {
+  const b = $<HTMLButtonElement>("hRestore");
+  if (b.disabled) return;
+  b.disabled = true; b.textContent = "กำลังตรวจ…";
+  const ok = await Billing.restore().catch(() => false);
+  b.disabled = false; b.textContent = "กู้คืนการซื้อ";
+  toast(ok ? "กู้คืนการซื้อแล้ว" : Billing.pending.size ? "ยังตรวจใบเสร็จไม่ได้ จะลองใหม่อัตโนมัติ" : "ไม่พบการซื้อที่กู้คืนได้");
+};
+
+// ---------- หลังผ่านห้อง: เสนอแพ็ก / โฆษณาคั่น (แบบ goNext ของ LumiFlip) ----------
+async function afterWin() {
+  const n = clearedCount(save);
+  if (lastWinFirst && Billing.available && !unlimited(H) && n % HEARTS.offerEvery === 0) await openOffer(n);
+  else if (adsOn() && (lastWinFirst ? n > HEARTS.adsAfterCleared && n % HEARTS.interstitialEvery === 0
+    : replayWins % HEARTS.interstitialEvery === 0)) await Ads.interstitial();
+  lastWinFirst = false;
+}
+
+let offerDone: (() => void) | null = null;
+function openOffer(n: number) {
+  track("offer", { product: "unlimited_hearts_2h", action: "view", cleared: n });
+  $("oTitle").textContent = `ผ่านมาแล้ว ${n} ห้อง!`;
+  $("oBig").innerHTML = HEART_SVG + "∞<small>2 ชั่วโมง</small>";
+  $("oBuy").textContent = `ซื้อ ${Billing.priceOf("unlimited_hearts_2h")}`;
+  $("offerOv").hidden = false;
+  return new Promise<void>(res => { offerDone = res; });
+}
+function closeOffer() { $("offerOv").hidden = true; offerDone?.(); offerDone = null; }
+$("oLater").onclick = () => { track("offer", { product: "unlimited_hearts_2h", action: "later" }); closeOffer(); };
+$("oBuy").onclick = async () => { await buy("unlimited_hearts_2h", "oBuy"); if (unlimited(H)) closeOffer(); };
+
+// ---------- การซื้อ: ของทุกชิ้นมาจาก server หลังตรวจใบเสร็จ (platform/billing.ts) ----------
+async function buy(id: ProductId, btnId: string) {
+  const b = $<HTMLButtonElement>(btnId);
+  b.disabled = true;
+  track("offer", { product: id, action: "buy_tap" });
+  const ok = await Billing.buy(id).catch(() => false);
+  b.disabled = false;
+  if (!ok) toast("ซื้อไม่สำเร็จ ลองใหม่อีกครั้ง");
+}
+
+// onGrant ต้องเซฟเสร็จก่อน return · กันให้ของซ้ำด้วย purchaseId
+function onGrant({ productId, purchaseId, grant, restored }: GrantEvent) {
+  if (purchaseId && H.tx.includes(purchaseId)) return;
+  if (purchaseId) H.tx = [...H.tx, purchaseId].slice(-HEARTS.txKeep);
+  if (grant.noAds) unlockNoAds();
+  if ((grant.unlimitedHours ?? 0) > 0) addUnlimited(H, Math.min(grant.unlimitedHours!, 24) * 3_600_000);
+  writeSave(save);
+  track("purchase_granted", { product: productId, restored: restored ? 1 : 0 });
+  afterHeartGained(); watchUnlimited();
+  const until = new Date(H.until).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  toast(grant.noAds ? "ลบโฆษณาแล้ว · หัวใจวันละ 8 ดวง" : `หัวใจไม่จำกัดถึง ${until} น.`);
+  if (!$("offerOv").hidden && unlimited(H)) closeOffer();
+}
+function unlockNoAds() {
+  if (H.noAds) return;
+  H.noAds = true;
+  H.n = Math.max(H.n, HEARTS.perDayNoAds);
+  Ads.hideBanner();
+}
+function onRevoked(productId: ProductId) {   // Google ไม่พบการซื้อแล้ว (เช่น คืนเงิน) → ถอนสิทธิ์
+  if (productId !== "remove_ads" || !H.noAds) return;
+  H.noAds = false; writeSave(save);
+  if (adsOn()) Ads.showBanner();
+  renderHearts();
+}
+const shouldRestore = (productId: ProductId) => productId === "remove_ads" && !H.noAds;
 
 function pressSkill(id: SkillId) {
   if (phase !== "run") return;
@@ -159,6 +349,7 @@ function updateHud() {
   $<HTMLButtonElement>("btnEnd").disabled = phase !== "run";
   $("btnEnd").className = phase === "run" ? "primary" : "";
   $<HTMLButtonElement>("btnUndo").disabled = !(phase === "ready" && ghosts.length);
+  renderHearts();
   save.skills.eq.forEach((id, i) => {
     const b = document.getElementById("sk" + i) as HTMLButtonElement | null;
     if (!b || !id || !ACTIVE_SKILLS.has(id)) return;
@@ -213,8 +404,10 @@ function renderLevelChips() {
     if (label) b.setAttribute("aria-label", label); box.appendChild(b);
   };
   add("ต้นไม้สกิล ✦", "tree", () => openTree());
-  LEVELS.forEach((_, i) => add(`${i + 1}<small>${"★".repeat(save.best[i] || 0) || "&nbsp;"}</small>`, i === levelIdx ? "on" : "", () => loadLevel(i), `ห้อง ${i + 1}`));
-  add(`หอคอย ∞<small>${save.tower.best ? "ชั้น " + save.tower.best : "&nbsp;"}</small>`, levelIdx < 0 ? "on" : "", () => loadLevel(-1), "โหมดหอคอยไม่รู้จบ");
+    // แตะห้องที่กำลังเล่นอยู่ = ไม่ทำอะไร (เริ่มใหม่ต้องกดปุ่ม "เริ่มห้องใหม่" ซึ่งบอกว่าใช้หัวใจ)
+  const go = (i: number) => () => { if (i !== levelIdx || phase === "win") loadLevel(i); };
+  LEVELS.forEach((_, i) => add(`${i + 1}<small>${"★".repeat(save.best[i] || 0) || "&nbsp;"}</small>`, i === levelIdx ? "on" : "", go(i), `ห้อง ${i + 1}`));
+  add(`หอคอย ∞<small>${save.tower.best ? "ชั้น " + save.tower.best : "&nbsp;"}</small>`, levelIdx < 0 ? "on" : "", go(-1), "โหมดหอคอยไม่รู้จบ");
   const names: Record<string, string> = { auto: "อัตโนมัติ", high: "สูง", mid: "กลาง", low: "ต่ำ" };
   add(`ภาพ<small>${names[qSetting]}${qSetting === "auto" ? "·" + names[qAuto] : ""}</small>`, "q", () => {
     const order = ["auto", "high", "mid", "low"] as const;
@@ -229,6 +422,7 @@ initTree(save, () => { renderSkillBar(); updateHud(); renderLevelChips(); if (ph
 // ---------- ลูปหลัก ----------
 function frame(now: number) {
   requestAnimationFrame(frame);
+  if (paused) { last = now; lastFrame = 0; return; }   // โฆษณาเต็มจอ: ไม่เดิน sim ไม่วาด ไม่นับเฟรมช้า
   if (lastFrame && qSetting === "auto" && qAuto !== "low" && !document.hidden) {
     slowFrames = now - lastFrame > 24 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
     if (slowFrames > 90) { qAuto = qAuto === "high" ? "mid" : "low"; slowFrames = 0; renderLevelChips(); }
@@ -242,7 +436,58 @@ function frame(now: number) {
   if (pct !== barPct) { barPct = pct; $("bar").style.width = `calc(${pct}% - 20px)`; }
 }
 
+// ---------- โฆษณาจำลอง (pnpm dev บนเบราว์เซอร์เท่านั้น · build จริงโค้ดนี้ถูกตัดทิ้ง) ----------
+if (import.meta.env.DEV && !isNative) {
+  document.body.insertAdjacentHTML("beforeend", `<div id="mockAd" class="ov" hidden><div class="card">
+    <small class="adtag">โฆษณาทดสอบ (จำลอง)</small><h2 id="mockKind">โฆษณา</h2>
+    <p>ใน build จริงตรงนี้คือโฆษณาจาก AdMob</p><button id="mockClose" disabled>3</button></div></div>
+    <div id="mockBanner" hidden>แบนเนอร์โฆษณาทดสอบ (จำลอง) · สูง 50px</div>`);
+  Ads.mock = {
+    setBanner(on) { $("mockBanner").hidden = !on; document.documentElement.style.setProperty("--banner-h", on ? "50px" : "0px"); },
+    play(rewarded) {
+      return new Promise(resolve => {
+        let left = 3;
+        const btn = $<HTMLButtonElement>("mockClose");
+        $("mockKind").textContent = rewarded ? "โฆษณาแบบเลือกดู (รับหัวใจ)" : "โฆษณาคั่น";
+        btn.disabled = true; btn.textContent = String(left); $("mockAd").hidden = false;
+        const timer = setInterval(() => {
+          left--;
+          btn.textContent = left > 0 ? String(left) : "ปิด";
+          if (left <= 0) { clearInterval(timer); btn.disabled = false; }
+        }, 1000);
+        btn.onclick = () => { $("mockAd").hidden = true; resolve(true); };
+      });
+    },
+  };
+}
+Ads.onShowing = on => { paused = on; };
+
+// ---------- ปุ่ม back ของ Android: ปิดหน้าต่างบนสุดก่อน · กดสองครั้งออกจากเกม ----------
+let lastBack = 0;
+if (isNative) App.addListener("backButton", () => {
+  if (Ads.busy) return;
+  if (!$("offerOv").hidden) return closeOffer();
+  if (!$("heartsOv").hidden) return closeHearts();
+  if (!$("treeOv").hidden) { $("treeClose").click(); return; }
+  if (!$("gmenu").hidden) { $("gmenu").hidden = true; return; }
+  if (Date.now() - lastBack < 2000) { App.exitApp(); return; }
+  lastBack = Date.now(); toast("กดย้อนกลับอีกครั้งเพื่อออกจากเกม");
+});
+
+// กลับเข้าแอป/แท็บ: เติมหัวใจถ้าข้ามเที่ยงคืน + ลองส่งใบเสร็จที่ค้าง
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  if (refreshDay(H)) { writeSave(save); afterHeartGained(); }
+  if (Billing.pending.size) Billing.retryPending().catch(() => 0);
+});
+
+if (refreshDay(H)) writeSave(save);
 renderSkillBar();
 loadLevel(0);
+watchUnlimited();
 requestAnimationFrame(frame);
 initAnalytics();
+Ads.init().then(() => { if (adsOn()) Ads.showBanner(); });
+// ให้สคริปต์ทดสอบ/แคปภาพอ่านและตั้งสถานะได้ (pnpm dev เท่านั้น)
+if (import.meta.env.DEV) (window as unknown as { __wk: unknown }).__wk = { save, H, openHearts, openOffer, renderHearts, loadLevel, adsOn, Ads, writeSave };
+Billing.init({ onGrant, onRevoked, shouldRestore }).catch(() => {});

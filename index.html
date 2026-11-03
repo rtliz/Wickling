@@ -15,6 +15,7 @@
     <div class="sub" id="lvlNo">ห้อง 1/5</div>
     <h1 id="lvlName">สวิตช์แรก</h1>
   </div>
+  <button id="hearts" class="hearts" aria-label="หัวใจ แตะเพื่อดูรายละเอียด"></button>
   <div class="ghosts">
     <div id="ghostTxt">เงา 0/4</div>
     <div class="dots" id="dots"></div>
@@ -44,6 +45,29 @@
 </div>
 <div class="levels" id="levels"></div>
 <div id="gmenu" hidden></div>
+<div id="toast" class="gtoast" role="status" aria-live="polite"></div>
+
+<!-- หัวใจ: หน้าหัวใจหมด + ร้าน (ปุ่มซื้อ/ดูโฆษณาโชว์เฉพาะเมื่อมีให้ใช้) -->
+<div id="heartsOv" class="ov" hidden><div class="card">
+  <h2 id="hTitle">หัวใจ</h2>
+  <div class="hbig" id="hBig"></div>
+  <p id="hText"></p>
+  <div class="opts">
+    <button id="hAd" class="opt"><span>ดูโฆษณา รับหัวใจ +1<small id="hAdLeft"></small></span></button>
+    <button id="hUnl" class="opt primary"><span>หัวใจไม่จำกัด 2 ชั่วโมง<small>เล่นห้องใหม่ได้ไม่ต้องใช้หัวใจ</small></span><b id="hUnlPrice"></b></button>
+    <button id="hNoAds" class="opt"><span>ลบโฆษณา<small>ไม่มีโฆษณาคั่นและแบนเนอร์ + หัวใจวันละ 8 ดวง</small></span><b id="hNoAdsPrice"></b></button>
+  </div>
+  <p class="wait" id="hWait">หัวใจเติมเต็มตอนเที่ยงคืน · อีก <b id="hCount">--:--:--</b></p>
+  <div class="row"><button id="hRestore">กู้คืนการซื้อ</button><button id="hClose">ปิด</button></div>
+</div></div>
+
+<!-- เสนอหัวใจไม่จำกัด ทุก 10 ห้องที่ผ่าน (แทนโฆษณาคั่นรอบนั้น) -->
+<div id="offerOv" class="ov" hidden><div class="card">
+  <h2 id="oTitle">ผ่านมาแล้ว 10 ห้อง!</h2>
+  <div class="hbig" id="oBig"></div>
+  <p>หัวใจไม่จำกัด 2 ชั่วโมง ลองห้องใหม่ได้เรื่อย ๆ ไม่ต้องห่วงหัวใจ</p>
+  <div class="row"><button id="oLater">ไว้ก่อน</button><button id="oBuy" class="primary"></button></div>
+</div></div>
 <div id="treeOv" hidden>
 <div class="phone" id="phone">
     <div class="panel top">
