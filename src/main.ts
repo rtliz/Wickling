@@ -12,7 +12,7 @@ import { initAnalytics, track } from "./platform/analytics";
 import { HEARTS, payToPlay, refreshDay, unlimited, addUnlimited, roomIsFree, clearedCount, dailyHearts } from "./core/hearts";
 import { Ads, isNative } from "./platform/ads";
 import { Billing, type GrantEvent } from "./platform/billing";
-import { Account, cleanName, NAME_MIN } from "./platform/account";
+import { Account, cleanName, nameLength, NAME_MIN } from "./platform/account";
 import type { ProductId } from "./platform/products";
 import { Boards, type Row } from "./platform/boards";
 import { weekId, monthId, weekEndsAt, monthEndsAt, REWARD_TIERS, BOARD_SIZE } from "./core/season-rules";
@@ -457,7 +457,7 @@ function showNameError(msg: string | null) {
 }
 function readName(): string | null {
   const name = cleanName(nameInput.value);
-  if (name.length >= NAME_MIN) return name;
+  if (nameLength(name) >= NAME_MIN) return name;
   showNameError(name ? `ชื่อต้องยาวอย่างน้อย ${NAME_MIN} ตัวอักษร` : "กรุณาตั้งชื่อก่อนเริ่มเล่น");
   nameInput.focus();
   return null;
@@ -512,7 +512,7 @@ async function signInGoogle() {
   try {
     await Account.signIn("google");
     const typed = cleanName(nameInput.value), google = cleanName(Account.user?.name);
-    const name = typed.length >= NAME_MIN ? typed : google.length >= NAME_MIN ? google : "ภูติน้อย";
+    const name = nameLength(typed) >= NAME_MIN ? typed : nameLength(google) >= NAME_MIN ? google : "ภูติน้อย";
     finishLogin(name);
     toast(`ยินดีต้อนรับ ${name}`);
     if (Billing.pending.size) Billing.retryPending().catch(() => 0);
@@ -775,19 +775,20 @@ async function loadRank() {
   if (!Account.user) return note("เชื่อมต่อเน็ตเพื่อดูอันดับ");
   note("กำลังโหลด…");
   try {
-    const id = sc.id();
-    const [rows, mine] = await Promise.all([Boards.top(id), Boards.mine(id)]);
+    const id = sc.id(), googleOnly = !!sc.tier;   // สัปดาห์/เดือนมีรางวัล = นับเฉพาะบัญชี Google (เหมือน server)
+    const [rows, mine] = await Promise.all([Boards.top(id, googleOnly), Boards.mine(id)]);
     const meIn = rows.findIndex(x => x.uid === Account.user?.uid);
-    const myRank = mine > 0 ? (meIn >= 0 ? meIn + 1 : await Boards.rank(id, mine)) : 0;
+    // อันดับนอก 50 คนแรกนับไม่ได้ (rules) → "50+" · guest บนกระดานรางวัล = ไม่มีอันดับ
+    const myRank = mine.pts <= 0 ? "" : meIn >= 0 ? String(meIn + 1) : googleOnly && !mine.g ? "–" : `${BOARD_SIZE}+`;
     if (load !== rankLoad) return;
-    if (rankScope === "week") { weekRank = myRank; renderHome(); }
-    renderRankRows(rows, mine, myRank);
+    if (rankScope === "week") { weekRank = meIn >= 0 ? meIn + 1 : 0; renderHome(); }
+    renderRankRows(rows, mine.pts, myRank, googleOnly && !mine.g);
   } catch {
     if (load === rankLoad) note("โหลดอันดับไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่");
   }
 }
 // ชื่อผู้เล่นคนอื่นมาจาก server → textContent เท่านั้น (กฎกันแฮกข้อ 7)
-function renderRankRows(rows: Row[], mine: number, myRank: number) {
+function renderRankRows(rows: Row[], mine: number, myRank: string, guest = false) {
   const list = $("rankList"), me = Account.user?.uid;
   if (!rows.length) { const li = document.createElement("li"); li.className = "note"; li.textContent = "ยังไม่มีใครขึ้นกระดานนี้ ชนะห้องใหม่เพื่อเป็นคนแรก!"; list.replaceChildren(li); }
   else list.replaceChildren(...rows.slice(0, BOARD_SIZE).map((row, k) => {
@@ -801,16 +802,16 @@ function renderRankRows(rows: Row[], mine: number, myRank: number) {
   }));
   // แถบของเรา ค้างใต้รายการเสมอ
   $("rankMine").hidden = mine <= 0;
-  $("rankMineN").textContent = myRank ? String(myRank) : "–";
-  $("rankMineName").textContent = `${Account.name() ?? "คุณ"} (คุณ)`;
+  $("rankMineN").textContent = myRank || "–";
+  $("rankMineName").textContent = guest ? "ผูก Google เพื่อติดอันดับรางวัล" : `${Account.name() ?? "คุณ"} (คุณ)`;
   $("rankMinePts").textContent = String(mine);
 }
 
 // ส่งหลักฐานการชนะ: ห้อง/ชั้นใหม่เท่านั้น · เซฟที่ถูกแก้/เคยใช้ดาวทดสอบไม่ส่ง (กฎกันแฮกข้อ 5) · ส่งห่างกัน ≥ 30 วิ
 let lastFlush = 0, flushTimer = 0;
 function submitWin() {
-  if (save.lb.flagged || save.lb.debug || !Account.name()) return;
-  Boards.enqueue(JSON.parse(JSON.stringify(proof)) as Proof, Account.name()!);
+  if (save.lb.flagged || save.lb.debug) return;
+  Boards.enqueue(JSON.parse(JSON.stringify(proof)) as Proof);
   flushWins(true);
 }
 function flushWins(fromWin = false) {
@@ -819,7 +820,7 @@ function flushWins(fromWin = false) {
   const wait = Math.max(0, lastFlush + 30_000 - Date.now());
   flushTimer = window.setTimeout(async () => {
     lastFlush = Date.now();
-    const got = await Boards.flush().catch(() => 0);
+    const got = await Boards.flush(Account.name()).catch(() => 0);
     if (got > 0 && fromWin && !$("win").hidden) $("winPts").hidden = false;
     else if (got > 0) toast(`ได้แต้มอันดับ +${got}`);
   }, wait);
@@ -964,7 +965,8 @@ function applyQuality() {
   if (!$("settingsOv").hidden) renderSettings();
 }
 
-initTree(save, () => { proof.eq = [...save.skills.eq]; renderSkillBar(); updateHud(); renderTop(); if (phase === "ready") startRound(); });
+// ช่องสกิลของหลักฐานถูกตรึงตอนเริ่มห้อง (loadLevel) · เปลี่ยนสกิลกลางห้องแล้วกลับมาเล่นต่อ = เริ่มห้องใหม่ (หลักฐานเดิมใช้สกิลชุดเก่า)
+initTree(save, () => { if (proof.eq.join() !== save.skills.eq.join() && proof.rounds.some(r => r.inp.length)) loadLevel(levelIdx); renderSkillBar(); updateHud(); renderTop(); if (phase === "ready") startRound(); });
 
 // ---------- ลูปหลัก ----------
 function frame(now: number) {
