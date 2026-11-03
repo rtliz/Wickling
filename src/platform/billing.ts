@@ -4,14 +4,16 @@
 // ล้มเหลวกลางทาง (เน็ตหลุด, แอปปิด) = ไม่ finish ใบเสร็จยังค้างที่ Google → เปิดแอปครั้งหน้า/retryPending() ส่งของต่อ
 // server ส่งใบเสร็จเดิมซ้ำด้วย purchaseId เดิม → ฝั่งเกมกันให้ของซ้ำด้วย purchaseId (hearts.tx)
 //
-// ⚠️ IAP_SERVER_READY = false: ยังไม่ได้สร้างสินค้า/ให้สิทธิ์ service account ใน Play → ซ่อนปุ่มซื้อทั้งหมดใน build จริง
-//    เปิดเป็น true ได้ก็ต่อเมื่อทำครบตาม functions/README.md
+// IAP_SERVER_READY = true (2026-11-03): verifyPurchase / restorePurchase / deleteAccount / cleanupUser deploy แล้ว (asia-southeast1)
+//    ร้านในแอปเปิด · ราคาอ่านจาก Play (productUpdated) · สินค้าที่ Play ไม่ส่งกลับมา (ยังไม่สร้าง/ไม่ active/แอปไม่ได้ลงจาก Play)
+//    = status "missing" → ปุ่มขึ้น "ยังไม่เปิดขาย" และกดแล้วบอกเหตุผลเป็นภาษาไทย (ไม่ใช่ปุ่มที่กดแล้วเงียบ)
+//    ถ้าต้องปิดร้านฉุกเฉิน ตั้ง false แล้ว build ใหม่ (ปุ่มซื้อจะหายจาก build จริง ร้านจำลองยังอยู่ใน pnpm dev)
 import { isNative } from "./ads";
 import { Account } from "./account";
 import { callFunction as call } from "./cloud";
 import { PRODUCTS, FALLBACK_PRICES, type ProductId, type Grant } from "./products";
 
-export const IAP_SERVER_READY = false;
+export const IAP_SERVER_READY = true;
 
 // ใบเสร็จผูกกับบัญชีที่เข้าสู่ระบบอยู่ (Account: guest หรือ Google จากหน้าล็อกอิน) · ไม่มีบัญชี = ซื้อไม่ได้
 const callFunction = (name: string, data: unknown) => call(name, data, () => Account.token());
@@ -30,6 +32,10 @@ const waitForCordova = () => new Promise<void>(resolve => {
 });
 
 type Tx = any; // CdvPurchase.Transaction
+// ready = ซื้อได้ (มีราคาจาก Play) · loading = ยังต่อ Play ไม่เสร็จ · missing = Play ไม่มีสินค้านี้ · offline = ต่อ Play ไม่ได้
+export type ProductStatus = "ready" | "loading" | "missing" | "offline";
+// เหตุผลที่ buy() คืน false (ให้ main.ts แสดงข้อความ)
+export type BuyError = ProductStatus | "signin" | "cancelled" | "failed" | null;
 type Pending = [Tx, ProductId, "verifyPurchase" | "restorePurchase"];
 
 export const Billing = {
@@ -40,6 +46,15 @@ export const Billing = {
   owned: new Map<ProductId, Tx>(),   // ของซื้อครั้งเดียวที่ส่งของไปแล้ว (Google จำไว้) ใช้ตอนกู้คืน
   pending: new Map<string, Pending>(),
   inFlight: new Set<string>(),
+  storeState: "loading" as "loading" | "ready" | "offline",
+  lastError: null as BuyError,
+  onChange: (() => {}) as () => void,   // ราคา/สถานะสินค้าเปลี่ยน → วาดปุ่มร้านใหม่
+
+  status(id: ProductId): ProductStatus {
+    if (!isNative) return import.meta.env.DEV ? "ready" : "missing";
+    if (this.store?.get(id)?.getOffer()) return "ready";
+    return this.storeState === "ready" ? "missing" : this.storeState;
+  },
 
   priceOf(id: ProductId) { return this.prices[id] ?? ""; },
   get store(): any { return isNative ? (window as any).CdvPurchase?.store : null; },
@@ -49,7 +64,7 @@ export const Billing = {
     if (!isNative || !IAP_SERVER_READY) return;
     await waitForCordova();
     const C = (window as any).CdvPurchase;
-    if (!C) return;
+    if (!C) { this.storeState = "offline"; this.onChange(); return; }
     const { store, ProductType, Platform } = C;
     // แนบ md5(uid) ไปกับการซื้อ (obfuscatedAccountId) server จึงรู้ว่าใบเสร็จเป็นของบัญชีไหน · อ่านตอนสั่งซื้อ (เปลี่ยนบัญชีได้)
     store.applicationUsername = () => Account.user?.uid;
@@ -58,13 +73,17 @@ export const Billing = {
       id, type: p.once ? ProductType.NON_CONSUMABLE : ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY,
     })));
     store.when()
-      .productUpdated((p: any) => { if (p.pricing && p.id in PRODUCTS) this.prices[p.id as ProductId] = p.pricing.price; })
+      .productUpdated((p: any) => {
+        if (p.pricing && p.id in PRODUCTS) { this.prices[p.id as ProductId] = p.pricing.price; this.onChange(); }
+      })
       .approved((t: Tx) => this.onApproved(t));
     let receiptsReady!: () => void;
     const ready = new Promise<void>(r => { receiptsReady = r; });
     store.when().receiptsReady(receiptsReady);
-    const errors = await store.initialize([Platform.GOOGLE_PLAY]);
-    if (errors?.length) return;   // ต่อ Play ไม่ครบ: ห้ามถอนสิทธิ์ (ออฟไลน์จะโดนถอนผิด ๆ)
+    const errors = await store.initialize([Platform.GOOGLE_PLAY]).catch(() => [{}]);
+    this.storeState = errors?.length ? "offline" : "ready";
+    this.onChange();
+    if (errors?.length) { console.warn("[iap] init", errors); return; }   // ต่อ Play ไม่ครบ: ห้ามถอนสิทธิ์ (ออฟไลน์จะโดนถอนผิด ๆ)
     await ready;
     if (!store.localReceipts.some((r: any) => r.transactions.some((t: any) => t.products.some((p: any) => p.id === "remove_ads")))) {
       this.handlers.onRevoked("remove_ads");
@@ -116,17 +135,23 @@ export const Billing = {
 
   // คืน true ถ้าเริ่มสั่งซื้อสำเร็จ — การให้ของจริงเกิดหลัง server ตรวจใบเสร็จแล้ว → handlers.onGrant
   async buy(productId: ProductId): Promise<boolean> {
-    if (!this.available || !(productId in PRODUCTS)) return false;
+    this.lastError = null;
+    if (!this.available || !(productId in PRODUCTS)) { this.lastError = "missing"; return false; }
     if (!isNative) {
       // ร้านจำลอง: เฉพาะ pnpm dev (build จริงโค้ดนี้ถูกตัดทิ้ง)
       if (!import.meta.env.DEV) return false;
       await this.handlers.onGrant({ productId, purchaseId: `mock-${productId}-${Date.now()}`, grant: structuredClone(PRODUCTS[productId].grant), restored: false });
       return true;
     }
-    if (!(await Account.ensure())) return false;
-    const offer = this.store?.get(productId)?.getOffer();
-    if (!offer) return false;
-    return !(await offer.order());
+    const st = this.status(productId);
+    if (st !== "ready") { this.lastError = st; return false; }
+    if (!(await Account.ensure())) { this.lastError = "signin"; return false; }
+    const err = await this.store.get(productId).getOffer().order();
+    if (!err) return true;
+    // ErrorCode.PAYMENT_CANCELLED = 6777006 (cordova-plugin-purchase v13)
+    this.lastError = err.code === 6777006 ? "cancelled" : "failed";
+    console.warn("[iap] order", productId, err.code, err.message);
+    return false;
   },
 
   // ปุ่ม "กู้คืนการซื้อ": ขอรายการจาก Google แล้วให้ server ยืนยันของซื้อครั้งเดียวทุกตัว · คืน true ถ้ากู้ได้อย่างน้อย 1

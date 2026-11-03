@@ -228,3 +228,6 @@ button.danger{background:none;box-shadow:none;border-color:rgba(232,90,58,.55);c
 .levels button.acct{width:auto;padding:4px 10px 6px;display:flex;flex-direction:column;align-items:center;gap:1px}
 .levels button.acct svg{width:18px;height:22px;overflow:visible}
 .levels button.acct small{color:var(--muted)}
+/* ปุ่มซื้อที่ Play ยังไม่พร้อม: จางลงแต่ยังกดได้ (กดแล้วบอกเหตุผล) */
+.opt.off b,#oBuy.off{opacity:.6}
+.opt.off b{font-size:.78rem;font-weight:600}

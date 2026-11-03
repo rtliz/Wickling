@@ -219,12 +219,24 @@ function renderHeartsPanel() {
   $<HTMLButtonElement>("hAd").disabled = adLeft <= 0;
   $("hAdLeft").textContent = adLeft > 0 ? `วันนี้ดูได้อีก ${adLeft} ครั้ง` : "วันนี้ดูครบ 3 ครั้งแล้ว";
   $("hUnl").hidden = !Billing.available;
-  $("hUnlPrice").textContent = Billing.priceOf("unlimited_hearts_2h");
+  priceTag("hUnl", "hUnlPrice", "unlimited_hearts_2h");
   $("hNoAds").hidden = !Billing.available || H.noAds || hEmpty;
-  $("hNoAdsPrice").textContent = Billing.priceOf("remove_ads");
+  priceTag("hNoAds", "hNoAdsPrice", "remove_ads");
   $("hRestore").hidden = !Billing.available;
   $("hWait").hidden = inf;
 }
+
+// ราคาจาก Play (Billing.prices อัปเดตเมื่อ Play ส่งราคามา) · สินค้าที่ Play ไม่มี/ต่อไม่ได้ขึ้นป้ายบอก ปุ่มยังกดได้เพื่อบอกเหตุผล
+const STATUS_TAG: Record<string, string> = { loading: "กำลังโหลด…", missing: "ยังไม่เปิดขาย", offline: "ต่อ Play ไม่ได้" };
+function priceTag(btnId: string, tagId: string, id: ProductId) {
+  const st = Billing.status(id);
+  $(tagId).textContent = st === "ready" ? Billing.priceOf(id) : STATUS_TAG[st];
+  $(btnId).classList.toggle("off", st !== "ready");
+}
+Billing.onChange = () => {
+  if (!$("heartsOv").hidden) renderHeartsPanel();
+  if (!$("offerOv").hidden) offerLabel();
+};
 
 // ได้หัวใจเพิ่มระหว่างหน้า "หัวใจหมด" เปิดอยู่ → ปิดแล้วเล่นต่อ
 function afterHeartGained() {
@@ -252,7 +264,7 @@ $("hRestore").onclick = async () => {
   b.disabled = true; b.textContent = "กำลังตรวจ…";
   const ok = await Billing.restore().catch(() => false);
   b.disabled = false; b.textContent = "กู้คืนการซื้อ";
-  toast(ok ? "กู้คืนการซื้อแล้ว" : Billing.pending.size ? "ยังตรวจใบเสร็จไม่ได้ จะลองใหม่อัตโนมัติ" : "ไม่พบการซื้อที่กู้คืนได้");
+  toast(ok ? "กู้คืนการซื้อแล้ว" : isNative && Billing.storeState !== "ready" ? BUY_FAIL[Billing.storeState] : Billing.pending.size ? "ยังตรวจใบเสร็จไม่ได้ จะลองใหม่อัตโนมัติ" : "ไม่พบการซื้อที่กู้คืนได้");
 };
 
 // ---------- หลังผ่านห้อง: เสนอแพ็ก / โฆษณาคั่น (แบบ goNext ของ LumiFlip) ----------
@@ -269,22 +281,35 @@ function openOffer(n: number) {
   track("offer", { product: "unlimited_hearts_2h", action: "view", cleared: n });
   $("oTitle").textContent = `ผ่านมาแล้ว ${n} ห้อง!`;
   $("oBig").innerHTML = HEART_SVG + "∞<small>2 ชั่วโมง</small>";
-  $("oBuy").textContent = `ซื้อ ${Billing.priceOf("unlimited_hearts_2h")}`;
+  offerLabel();
   $("offerOv").hidden = false;
   return new Promise<void>(res => { offerDone = res; });
+}
+function offerLabel() {
+  const st = Billing.status("unlimited_hearts_2h");
+  $("oBuy").textContent = st === "ready" ? `ซื้อ ${Billing.priceOf("unlimited_hearts_2h")}` : STATUS_TAG[st];
+  $("oBuy").classList.toggle("off", st !== "ready");
 }
 function closeOffer() { $("offerOv").hidden = true; offerDone?.(); offerDone = null; }
 $("oLater").onclick = () => { track("offer", { product: "unlimited_hearts_2h", action: "later" }); closeOffer(); };
 $("oBuy").onclick = async () => { await buy("unlimited_hearts_2h", "oBuy"); if (unlimited(H)) closeOffer(); };
 
 // ---------- การซื้อ: ของทุกชิ้นมาจาก server หลังตรวจใบเสร็จ (platform/billing.ts) ----------
+const BUY_FAIL: Record<string, string> = {
+  missing: "สินค้านี้ยังไม่เปิดขายใน Google Play ลองใหม่ภายหลัง",
+  loading: "กำลังโหลดร้านจาก Google Play รอสักครู่แล้วลองใหม่",
+  offline: "เชื่อมต่อ Google Play ไม่ได้ ตรวจเน็ตและบัญชี Play Store แล้วลองใหม่",
+  signin: "ต้องต่อเน็ตเพื่อสร้างบัญชีก่อนซื้อ ลองใหม่อีกครั้ง",
+  cancelled: "",
+  failed: "ซื้อไม่สำเร็จ ลองใหม่อีกครั้ง",
+};
 async function buy(id: ProductId, btnId: string) {
   const b = $<HTMLButtonElement>(btnId);
   b.disabled = true;
   track("offer", { product: id, action: "buy_tap" });
-  const ok = await Billing.buy(id).catch(() => false);
+  const ok = await Billing.buy(id).catch(() => { Billing.lastError = "failed"; return false; });
   b.disabled = false;
-  if (!ok) toast("ซื้อไม่สำเร็จ ลองใหม่อีกครั้ง");
+  if (!ok) { const m = BUY_FAIL[Billing.lastError ?? "failed"]; if (m) toast(m); }
 }
 
 // onGrant ต้องเซฟเสร็จก่อน return · กันให้ของซ้ำด้วย purchaseId
