@@ -32,7 +32,7 @@
 | `src/platform/ads.ts` | AdMob (ยกจาก LumiFlip) · `AD_CONFIG` = id จริงของ Wickling (`testing: true` จนกว่าจะปล่อย) · ตัวจำลองเฉพาะ `pnpm dev` · เว็บจริงไม่มีโฆษณา |
 | `src/platform/billing.ts` | IAP (ยกจาก LumiFlip) ส่งใบเสร็จให้ `functions/` ตรวจก่อนให้ของ · `IAP_SERVER_READY = false` ซ่อนปุ่มซื้อใน build จริง · ร้านจำลองเฉพาะ `pnpm dev` |
 | `src/platform/products.ts` | ตารางสินค้า + ราคาสำรอง (ต้องตรงกับ `functions/products.js`) |
-| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · **ยังไม่ deploy** |
+| `functions/` | Cloud Functions ตรวจใบเสร็จ `verifyPurchase` / `restorePurchase` (ยกจาก LumiFlip) · deploy แล้ว 2026-11-03 (asia-southeast1) · ร้านในแอปยังปิด (`IAP_SERVER_READY=false`) |
 | `android/` | Capacitor Android (`capacitor.config.json`) |
 | `src/platform/analytics.ts` | Firebase Analytics (config เว็บแอป ไม่ใช่ความลับ) · lazy load, ปิดใน dev และเว็บ localhost (แอป Android เปิดอยู่) · event: `level_complete` ตอนผ่านห้องเท่านั้น |
 | `scripts/check.ts` | คำตอบที่เขียนไว้ของห้องสอน + ตรวจหอคอย |
@@ -46,7 +46,7 @@
 | ค่า | ใช้ | สถานะ |
 |---|---|---|
 | package id | `com.wickling.puzzle` | ล็อก: สร้างแอปใน Play Console แล้ว (2026-11-02, app id `4973122480503751933`) · ลง Capacitor แล้ว (2026-11-03) |
-| Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · แผน Spark พอ (ยังไม่ใช้ Firestore) · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
+| Firebase | `wickling-rtliz` (`.firebaserc`) · region `asia-southeast1` เมื่อสร้าง Firestore/Functions | สร้างแล้ว · ใช้ Analytics (เว็บ, `G-HNDE8DEH0J`) · Blaze + budget alert (2026-11-03) · Firestore `(default)` asia-southeast1 (ใช้เฉพาะ Functions, rules deny-all) · Anonymous Auth เปิดแล้ว · ตอนทำ Android ต้องกรอก Data safety ว่าเก็บข้อมูลการใช้งาน · ก่อนอัป Blaze ต้องตั้ง budget alert |
 | key เซฟ | `wickling.save.v1` · สำรองเซฟเสีย `wickling.save.bad` · เครื่องที่เซฟแบบมีลายเซ็นแล้ว `wickling.save.signed` · `SAVE_VERSION = 2` (v2 = หัวใจ) | ล็อก · ห้ามเปลี่ยน `SECRET`/`PREFIX` ใน `saveguard.ts` |
 | ลำดับห้องใน `LEVELS` | ดาวในเซฟอ้างด้วยลำดับ → เพิ่มต่อท้ายเท่านั้น | ล็อกหลังปล่อย |
 | ตัวสุ่มหอคอย (`genTower`, seed) | ห้องของแต่ละชั้นต้องเหมือนเดิม | ล็อกหลังปล่อย |
@@ -61,7 +61,7 @@
 ทำตาม [../.claude/rules/anti-hack.md](../.claude/rules/anti-hack.md) · **โมเดลที่เลือก: เซฟลายเซ็น + Validator (แบบเกม Wuxia)** เมื่อมีของมีมูลค่า
 - เซฟ v2 ลงลายเซ็น (`saveguard.ts` ยกจาก LumiFlip) · JSON ไม่มีลายเซ็น (เซฟ v1) รับได้ครั้งเดียวต่อเครื่องและได้หัวใจค่าเริ่มต้นเสมอ · `validate()` ตัดหัวใจ 0–8 และเวลาไม่จำกัดที่ผิดปกติ · ดาวทดสอบมีเฉพาะ `import.meta.env.DEV`
 - ของที่ซื้อให้หลัง `functions/` ตรวจใบเสร็จกับ Google เท่านั้น (กันซ้ำด้วย purchaseId) · ร้าน/โฆษณาจำลองเฉพาะ `pnpm dev` · เว็บจริงล้าง `noAds`/ไม่จำกัด ทิ้ง
-- **ช่องโหว่ที่รู้:** หัวใจและเวลาไม่จำกัดใช้นาฬิกาเครื่อง (แบบ LumiFlip มีตัวกันย้อนนาฬิกา) · key ลายเซ็นอยู่ใน bundle · Functions ยังไม่ deploy จึงเปิดร้านจริงไม่ได้ (บันทึกใน `../.claude/skills/game-security/SKILL.md`)
+- **ช่องโหว่ที่รู้:** หัวใจและเวลาไม่จำกัดใช้นาฬิกาเครื่อง (แบบ LumiFlip มีตัวกันย้อนนาฬิกา) · key ลายเซ็นอยู่ใน bundle · Functions deploy แล้ว แต่ร้านยังปิดจนกว่าจะสร้างสินค้าใน Play + ให้สิทธิ์ service account + ทดสอบ license tester (บันทึกใน `../.claude/skills/game-security/SKILL.md`)
 - Firestore ปิดทุกอย่าง (`firestore.rules` default-deny · Functions เขียนด้วย Admin SDK)
 - **ก่อนเพิ่มกระดานคะแนน:** ต้องมีเพดานตามอายุบัญชี
 

@@ -2,7 +2,7 @@
 
 ยกจาก `LumiFlip/functions/` (ตรรกะใน `purchases.js` ไม่ได้แก้) · ทุกการซื้อในแอป Android ต้องผ่าน `verifyPurchase` ก่อนเกมให้ของ: server ถาม Google ว่าจ่ายจริงไหม กันใบเสร็จซ้ำ ผูกใบเสร็จกับบัญชี แล้วส่งรายการของกลับไป (ตารางของอยู่ที่ server)
 
-> **สถานะ: ยังไม่ได้ deploy** · โปรเจกต์ `wickling-rtliz` ยังเป็นแผน Spark (Functions ใช้ไม่ได้) · ในแอป `IAP_SERVER_READY = false` (`src/platform/billing.ts`) จึงซ่อนปุ่มซื้อทั้งหมด จนกว่าจะทำครบขั้นตอนข้างล่าง
+> **สถานะ: deploy แล้ว (2026-11-03)** · Blaze + budget alert ✅ · Firestore `(default)` asia-southeast1 + rules deny-all ✅ · Anonymous Auth ✅ · androidpublisher API ✅ · ยังเหลือข้อ 4 (สินค้าใน Play Console) และ 6 (สิทธิ์ service account) แล้วค่อยตั้ง `IAP_SERVER_READY = true` (`src/platform/billing.ts`)
 
 | ไฟล์ | คืออะไร |
 |---|---|
