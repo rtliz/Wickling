@@ -21,7 +21,7 @@
 
 | product id | ชนิดใน Play Console | ราคา | ได้ |
 |---|---|---|---|
-| `remove_ads` | ซื้อครั้งเดียว | ฿35 | ลบโฆษณาคั่น/แบนเนอร์ + หัวใจวันละ 8 |
+| `remove_ads` | ซื้อครั้งเดียว | ฿99 | ลบโฆษณาคั่น/แบนเนอร์ + หัวใจวันละ 8 |
 | `unlimited_hearts_2h` | ใช้แล้วหมด (ซื้อซ้ำได้) | ฿19 | หัวใจไม่จำกัด 2 ชม. |
 
 กติกาส่งของซ้ำ/กู้คืน/จำกัดคำขอ เหมือน `LumiFlip/functions/README.md` · Firestore ที่ใช้: `purchases/{sha256(token)}`, `entitlements/{uid}`, `rate/{uid}` เขียนด้วย Admin SDK เท่านั้น (`firestore.rules` default-deny ไม่ต้องแก้)
