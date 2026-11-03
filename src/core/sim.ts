@@ -16,7 +16,8 @@ export const ACTIVE_SKILLS: ReadonlySet<SkillId> = new Set<SkillId>(["t2", "t3",
 export interface LevelDef {
   name: string;
   par: number;          // ใช้เงาไม่เกินนี้ได้ 3 ดาว
-  hint: string;
+  hint: string;         // คำอธิบายเต็ม (เปิดดูด้วยปุ่ม ? ในเกม)
+  tip?: string;         // คำใบ้บรรทัดเดียว ≤ ~40 ตัวอักษร ขึ้นครั้งแรกที่เปิดห้อง
   map: string[];        // # กำแพง . พื้น S เริ่ม E ทางออก a/b สวิตช์ A/B ประตู > < ปืนเลเซอร์ } { เลเซอร์กะพริบ
   skill?: SkillId;      // สกิลที่ห้องนี้ออกแบบให้ใช้ (ห้องสอน)
   dark?: boolean;
@@ -204,20 +205,20 @@ export function toGhost(r: Round): Ghost {
 /** ใช้สกิลแบบกด · คืนข้อความบอกผู้เล่น หรือ null ถ้าใช้ไม่ได้ */
 export function useSkill(room: Room, ghosts: Ghost[], r: Round, id: SkillId): string | null {
   if (r.outcome) return null;
-  if (id === "cap" && r.clone) { r.ctrl = r.ctrl === "clone" ? "main" : "clone"; return r.ctrl === "clone" ? "บังคับดวงที่สอง" : "บังคับดวงแรก"; }
+  if (id === "cap" && r.clone) { r.ctrl = r.ctrl === "clone" ? "main" : "clone"; return r.ctrl === "clone" ? "คุมดวงที่ 2" : "คุมดวงที่ 1"; }
   if (r.used[id] || !ACTIVE_SKILLS.has(id)) return null;
   r.used[id] = true;
   switch (id) {
-    case "t2": r.freeze = FREEZE_TICKS; return "หยุดเปลว! เงา ประตู และเลเซอร์กะพริบหยุด 1 วินาที ตัวคุณยังเดินได้";
-    case "l3": r.lantern = { p: [...r.p], t0: r.t }; evaluate(room, ghosts, r); return "วางโคมแล้ว โคมกดสวิตช์ค้างไว้ 3 วินาที";
+    case "t2": r.freeze = FREEZE_TICKS; return "หยุดเปลว! โลกหยุด 1 วิ";
+    case "l3": r.lantern = { p: [...r.p], t0: r.t }; evaluate(room, ghosts, r); return "วางโคม · ค้าง 3 วิ";
     case "t3": {
       const back = r.rec[Math.max(0, r.rec.length - 1 - REWIND_TICKS)];
       r.p = [...back]; r.pPrev = [...back]; r.path = []; evaluate(room, ghosts, r);
-      return "ย้อนเปลว! กลับไปจุดเมื่อ 2 วินาทีก่อน";
+      return "ย้อนเปลว! กลับ 2 วิ";
     }
-    case "l2": r.dashArmed = true; return "พร้อมพุ่ง: แตะช่องที่จะไป ก้าวแรกจะพุ่ง 2 ช่อง ข้ามลำแสงได้";
+    case "l2": r.dashArmed = true; return "แตะช่องที่จะพุ่งไป";
     case "cap": r.clone = { p: [...r.p], pPrev: [...r.p], path: [], until: r.t + CLONE_TICKS }; r.ctrl = "clone";
-      return "แยกเปลว! ตอนนี้บังคับดวงที่สอง (3 วินาที) · กดปุ่มอีกครั้งเพื่อสลับดวง";
+      return "แยกเปลว! คุมดวงที่ 2";
   }
   return null;
 }

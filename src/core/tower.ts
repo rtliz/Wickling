@@ -62,7 +62,7 @@ export function genTower(floor: number): LevelDef {
     if (D) parts.push(`ประตู ${D} บาน`);
     if (Lz) parts.push(`เลเซอร์ ${Lz} เส้น`);
     const def: LevelDef = { name: `หอคอย ชั้น ${floor}`, par: D + Lz, tower: true,
-      hint: `ห้องสุ่มชั้น ${floor} · ${parts.join(" · ")}`, map: g.map(r => r.join("")) };
+      hint: `ห้องสุ่มชั้น ${floor} · ${parts.join(" · ")}`, tip: parts.join(" · "), map: g.map(r => r.join("")) };
     // เก็บเฉพาะห้องที่ตัวแก้อัตโนมัติเล่นผ่านจริงด้วยเงา ≤ par
     const res = autoSolve(def);
     if (!res.ok || res.ghosts > def.par) continue;

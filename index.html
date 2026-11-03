@@ -75,13 +75,14 @@
   </div>
   <button id="hearts" class="hearts" aria-label="หัวใจ แตะเพื่อดูรายละเอียด"></button>
   <div class="ghosts">
-    <div id="ghostTxt">เงา 0/4</div>
-    <div class="dots" id="dots"></div>
+    <div class="dots" id="dots" role="group" aria-label="เงาที่ใช้แล้ว แตะจุดสีเพื่อปรับเงา"></div>
   </div>
 </header>
 
 <div id="stage">
   <canvas id="cv" aria-label="กระดานเกม แตะช่องเพื่อเดิน"></canvas>
+  <!-- คำอธิบายเต็มของห้อง (ปุ่ม ?) · แตะที่ไหนก็ได้เพื่อปิด · ข้อความมาจากข้อมูลห้องในโค้ด ไม่ใช่จากผู้เล่น -->
+  <div id="helpPop" hidden><div class="hcard"><p id="helpText"></p><small id="helpMore"></small></div></div>
   <div id="win" hidden><div class="card">
     <h2 id="winTitle">ผ่านแล้ว!</h2>
     <div class="stars" id="winStars"></div>
@@ -93,13 +94,17 @@
   </div></div>
 </div>
 
-<div id="banner"></div>
+<!-- แถวข้อความ: คำใบ้บรรทัดเดียว (แตะเพื่อซ่อน) + ปุ่ม ? เปิดคำอธิบายเต็มของห้อง -->
+<div class="tiprow">
+  <div id="banner" role="status" aria-live="polite"></div>
+  <button id="btnHelp" class="help" aria-label="คำใบ้ห้องนี้">?</button>
+</div>
 <div class="timer" id="timerBar" aria-label="เวลาที่เหลือ"><span class="wax" id="bar"></span><span class="fl"></span><span class="rest"></span></div>
 <div class="skills" id="skillBar"></div>
 <div class="controls">
-  <button id="btnEnd" disabled>ใช้เงาเลย ⟲</button>
-  <button id="btnUndo" disabled>ลบเงาล่าสุด</button>
-  <button id="btnReset">เริ่มห้องใหม่</button>
+  <button id="btnEnd" disabled aria-label="จบรอบนี้ให้กลายเป็นเงาเลย"><svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkGhost0"/></svg><span>เป็นเงา</span></button>
+  <button id="btnUndo" disabled aria-label="ลบเงาล่าสุด"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 4 10l5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 10H14a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span>ลบเงา</span></button>
+  <button id="btnReset" aria-label="เริ่มห้องใหม่"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M18.5 2.5v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>เริ่มใหม่</span><i class="hcost" id="resetCost" hidden aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.5S3.5 15.2 3.5 9.1A4.6 4.6 0 0 1 12 6.6a4.6 4.6 0 0 1 8.5 2.5c0 6.1-8.5 11.4-8.5 11.4z" fill="var(--heart)" stroke="#1b1430" stroke-width="2"/></svg>1</i></button>
 </div>
 <div class="levels" id="levels"></div>
 <div id="gmenu" hidden></div>

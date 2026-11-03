@@ -57,6 +57,8 @@ function loadLevel(i: number) {
   room = parseRoom(i < 0 ? genTower(save.tower.floor) : LEVELS[i]);
   ghosts = [];
   $("win").hidden = true;
+  $("helpPop").hidden = true;
+  renderSkillBar();
   startRound();
   renderLevelChips();
 }
@@ -66,17 +68,32 @@ function startRound() {
   r = newRound(room, ghosts); phase = "ready"; flash = null;
   $("gmenu").hidden = true;
   updateHud();
-  const sk = room.def.skill ? nodeById(room.def.skill) : null;
-  const skLine = sk ? `<br><small>สกิลแนะนำ: ${sk.name} · ${has(sk.id) ? "ติดตัวอยู่" : save.skills.owned.includes(sk.id) ? "ปลดล็อกแล้ว ไปติดตัวที่ต้นไม้สกิล" : "ยังไม่มี ผ่านด้วยเงาได้ (ดาวน้อยลง)"}</small>` : "";
-  banner(ghosts.length === 0 ? room.def.hint + skLine
-    : `เงา #${ghosts.length} พร้อมแล้ว · แตะเพื่อเริ่ม<b>รอบที่ ${ghosts.length + 1}</b>`
-      + (ghosts.length === 1 ? `<br><small>วงประ = ที่ที่เงาจะอยู่ตอนคุณเดินไปถึง · แตะจุดสีมุมขวาบนเพื่อปรับเงา</small>` : ""));
+  // คำใบ้บรรทัดเดียวขึ้นครั้งแรกที่เปิดห้องนี้ (ต่อการเปิดแอป) · ดูซ้ำ/อ่านเต็มได้ที่ปุ่ม ?
+  const key = levelIdx < 0 ? `t${save.tower.floor}` : String(levelIdx);
+  if (ghosts.length === 0 && !tipSeen.has(key)) { tipSeen.add(key); banner(room.def.tip ?? ""); }
+  else banner(ghosts.length ? `รอบ <b>${ghosts.length + 1}</b> · แตะเพื่อเดิน` : "");
 }
+const tipSeen = new Set<string>();
+
+// ปุ่ม ?: คำอธิบายเต็มของห้อง + สกิลแนะนำ + วิธีปรับเงา (ข้อมูลห้องเขียนในโค้ด ไม่ใช่ข้อความผู้เล่น)
+function openHelp() {
+  const sk = room.def.skill ? nodeById(room.def.skill) : null;
+  $("helpText").innerHTML = room.def.hint;
+  $("helpMore").textContent = [
+    sk ? `สกิลแนะนำ: ${sk.name} · ${has(sk.id) ? "ติดตัวอยู่" : save.skills.owned.includes(sk.id) ? "ปลดล็อกแล้ว ไปติดตัวที่ต้นไม้สกิล" : "ยังไม่มี ผ่านด้วยเงาได้ (ดาวน้อยลง)"}` : "",
+    ghosts.length ? "วงประ = ที่ที่เงาจะอยู่ตอนคุณไปถึง · แตะจุดสีมุมขวาบนเพื่อปรับเงา" : "",
+    `3 ดาวเมื่อใช้เงาไม่เกิน ${room.def.par} ตัว`,
+  ].filter(Boolean).join("\n");
+  $("helpPop").hidden = false;
+}
+$("btnHelp").onclick = () => { if ($("helpPop").hidden) openHelp(); else $("helpPop").hidden = true; };
+$("helpPop").onclick = () => { $("helpPop").hidden = true; };
+$("banner").onclick = () => banner("");
 
 function endRound(why: string) {
   if (ghosts.length >= MAX_GHOSTS) {
     ghosts = []; H.attempt = null; writeSave(save); startRound();
-    banner(`${why} · เงาครบ ${MAX_GHOSTS} ตัวแล้ว เริ่มห้องใหม่ทั้งหมด ลองวางแผนอีกแบบ` + (needsHeartNow() ? "<br><small>เริ่มเดินอีกครั้งใช้หัวใจ 1 ดวง</small>" : ""));
+    banner(`เงาครบ ${MAX_GHOSTS} · เริ่มห้องใหม่`);   // ค่าหัวใจดูจากป้ายบนปุ่มเริ่มใหม่
     return;
   }
   ghosts.push(toGhost(r));
@@ -87,7 +104,7 @@ function endRound(why: string) {
 function onZap() {
   phase = "zap"; flash = { color: COL.laser, at: performance.now() };
   note(110, .35, "sawtooth", .08);
-  banner("โดนเลเซอร์! แต่ไม่เป็นไร รอบนี้ยังกลายเป็นเงาได้");
+  banner("โดนเลเซอร์! กลายเป็นเงา");
   zapTimer = window.setTimeout(() => endRound("โดนเลเซอร์"), 750);
 }
 
@@ -116,8 +133,8 @@ function onWin() {
 function tick() {
   const ev = step(room, ghosts, r);
   for (const f of ev.fresh) note(f === "p" ? 392 : NOTES[f % 4], .18);
-  if (ev.cloneLost) { note(110, .3, "sawtooth", .06); banner("ดวงที่สองโดนลำแสงดับไป"); updateHud(); }
-  if (ev.cloneExpired) { banner("ดวงที่สองดับแล้ว"); updateHud(); }
+  if (ev.cloneLost) { note(110, .3, "sawtooth", .06); banner("ดวงที่ 2 โดนลำแสง"); updateHud(); }
+  if (ev.cloneExpired) { banner("ดวงที่ 2 ดับแล้ว"); updateHud(); }
   if (r.outcome === "zap") onZap();
   else if (r.outcome === "win") onWin();
   else if (r.outcome === "timeout") endRound("หมดเวลา");
@@ -130,7 +147,7 @@ $("cv").addEventListener("pointerdown", ev => {
   const p = board.cellAt(ev.clientX, ev.clientY);
   if (!p || !tapCell(room, r, p)) return;
   if (phase === "ready" && !payHeart()) return;
-  if (phase === "ready") { phase = "run"; last = performance.now(); banner(""); updateHud(); }
+  if (phase === "ready") { phase = "run"; last = performance.now(); banner(""); $("helpPop").hidden = true; updateHud(); }
 });
 $("btnEnd").onclick = () => { if (phase === "run") { r.outcome = "timeout"; endRound("จบรอบเอง"); } };
 $("btnUndo").onclick = () => { if (phase === "ready" && ghosts.length) { ghosts.pop(); startRound(); } };
@@ -173,9 +190,10 @@ function renderHearts() {
   $("hearts").classList.toggle("empty", !inf && H.n <= 0);
   $("hearts").classList.toggle("unl", inf);
   $("hearts").setAttribute("aria-label", inf ? `หัวใจไม่จำกัด เหลือเวลา ${timeLeft(H.until - Date.now())} ชั่วโมง` : `หัวใจ ${H.n} ดวง`);
-  const rb = $("btnReset");
-  const label = needsHeartNow() && H.attempt ? "เริ่มห้องใหม่ (ใช้หัวใจ 1)" : "เริ่มห้องใหม่";
-  if (rb.textContent !== label) rb.textContent = label;
+  // เริ่มห้องใหม่ที่ต้องจ่ายหัวใจ: ป้ายหัวใจ 1 ที่มุมปุ่มแทนข้อความ
+  const cost = needsHeartNow() && !!H.attempt;
+  const rc = $("resetCost");
+  if (rc.hidden === cost) { rc.hidden = !cost; $("btnReset").setAttribute("aria-label", cost ? "เริ่มห้องใหม่ ใช้หัวใจ 1 ดวง" : "เริ่มห้องใหม่"); }
 }
 
 // นับถอยหลังหัวใจไม่จำกัดบนป้ายทุกวินาที จนหมดเวลา (timer เดียว ไม่สร้างใหม่ทุกเฟรม)
@@ -571,13 +589,18 @@ function setupSplash() {
 }
 
 // ---------- HUD ----------
+const GHOST_SVG = `<svg viewBox="-16 -26 32 44" aria-hidden="true"><use href="#wkBody" fill="#c9b8ff" stroke="#1b1430" stroke-width="2.6" stroke-linejoin="round"/></svg>`;
+const PLUS_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+let subHtml = "";
 function banner(html: string) { $("banner").innerHTML = html; }
 
 function updateHud() {
-  $("lvlNo").textContent = levelIdx < 0 ? `หอคอย ∞ · สถิติสูงสุด ชั้น ${save.tower.best} · 3 ดาวเมื่อใช้เงา ≤ ${room.def.par}`
-    : `ห้อง ${levelIdx + 1}/${LEVELS.length} · 3 ดาวเมื่อใช้เงา ≤ ${room.def.par}`;
+  // บรรทัดเล็ก: เลขห้อง + เป้า 3 ดาว (★★★ ≤ ไอคอนเงา n) · ตัวเลขล้วน ไม่มีข้อความผู้เล่น
+  const where = levelIdx < 0 ? `∞ <span class="best">สูงสุด ${save.tower.best}</span>` : `${levelIdx + 1}/${LEVELS.length}`;
+  const sub = `${where}<span class="par" title="3 ดาวเมื่อใช้เงาไม่เกิน ${room.def.par} ตัว">★★★ ≤${GHOST_SVG}${room.def.par}</span>`;
+  if (sub !== subHtml) { subHtml = sub; $("lvlNo").innerHTML = sub; $("lvlNo").setAttribute("aria-label", `${levelIdx < 0 ? "หอคอย" : "ห้อง " + (levelIdx + 1)} · 3 ดาวเมื่อใช้เงาไม่เกิน ${room.def.par} ตัว`); }
   $("lvlName").textContent = room.def.name;
-  $("ghostTxt").textContent = `เงา ${ghosts.length}/${MAX_GHOSTS}`;
+  $("dots").setAttribute("aria-label", `เงา ${ghosts.length} จาก ${MAX_GHOSTS} ตัว`);
   const dots = $("dots"); dots.innerHTML = "";
   for (let i = 0; i < MAX_GHOSTS; i++) {
     const d = document.createElement("span"); d.className = "dot";
@@ -598,23 +621,38 @@ function updateHud() {
     b.disabled = phase !== "run" || (!!r.used[id] && !toggling);
     b.classList.toggle("used", !!r.used[id] && !toggling);
     const small = b.querySelector("small");
-    if (small) small.textContent = toggling ? (r.ctrl === "clone" ? "แตะเพื่อบังคับดวงแรก" : "แตะเพื่อบังคับดวงที่สอง") : "กดใช้ · รอบละครั้ง";
+    if (small) small.textContent = toggling ? (r.ctrl === "clone" ? "→ ดวง 1" : "→ ดวง 2") : "";
   });
 }
 
 function renderSkillBar() {
   const bar = $("skillBar"); bar.innerHTML = "";
+  const recId = room?.def.skill;
+  const recSk = recId && !has(recId) ? nodeById(recId) ?? null : null;
+  let recShown = false;
   save.skills.eq.forEach((id, i) => {
     const b = document.createElement("button"); b.id = "sk" + i;
     const n = id ? nodeById(id) : undefined;
-    if (!n) { b.innerHTML = `<span>ช่องสกิล ${i + 1} ว่าง<small>แตะเพื่อเปิดต้นไม้สกิล</small></span>`; b.onclick = () => openTree(); }
-    else {
-      b.innerHTML = `<svg viewBox="0 0 24 24" style="color:${BR[n.br].c}">${ICON[n.icon]}</svg><span>${n.name}<small>${ACTIVE_SKILLS.has(n.id) ? "กดใช้ · รอบละครั้ง" : "ทำงานเอง"}</small></span>`;
+    if (!n) {
+      // ช่องว่าง: ไอคอน + · ถ้าห้องนี้แนะนำสกิลที่ยังไม่ได้ติดตัว ช่องว่างช่องแรกโชว์ไอคอนสกิลนั้นจาง ๆ และเรืองแสง
+      const showRec = recSk && !recShown;
+      if (showRec) recShown = true;
+      b.className = "empty" + (showRec ? " rec" : "");
+      b.innerHTML = (showRec ? `<svg viewBox="0 0 24 24" class="ghosted" style="color:${BR[recSk!.br].c}">${ICON[recSk!.icon]}</svg>` : PLUS_SVG) + `<small>${showRec ? recSk!.name : "สกิล"}</small>`;
+      b.setAttribute("aria-label", showRec ? `ช่องสกิลว่าง · ห้องนี้แนะนำ ${recSk!.name} แตะเพื่อเปิดต้นไม้สกิล` : "ช่องสกิลว่าง แตะเพื่อเปิดต้นไม้สกิล");
+      b.onclick = () => openTree();
+    } else {
+      b.innerHTML = `<svg viewBox="0 0 24 24" style="color:${BR[n.br].c}">${ICON[n.icon]}</svg><span>${n.name}<small></small></span>`;
+      b.setAttribute("aria-label", `${n.name} · ${ACTIVE_SKILLS.has(n.id) ? "กดใช้ได้รอบละครั้ง" : "ทำงานเอง"}`);
+      if (n.id === room?.def.skill) b.classList.add("rec");
       if (ACTIVE_SKILLS.has(n.id)) b.onclick = () => pressSkill(n.id); else b.classList.add("passive");
     }
     bar.appendChild(b);
   });
+  // แนะนำแต่ไม่มีช่องว่าง → ให้ปุ่มต้นไม้สกิลเรืองแสงแทน
+  recTree = !!recSk && !recShown;
 }
+let recTree = false;
 
 function ghostMenu(i: number) {
   const m = $("gmenu"), g = ghosts[i];
@@ -645,7 +683,7 @@ function renderLevelChips() {
     if (label) b.setAttribute("aria-label", label); box.appendChild(b);
   };
   add(`${SPIRIT_SVG}<small>บัญชี</small>`, "acct", openProfile, "บัญชีผู้เล่น");
-  add("ต้นไม้สกิล ✦", "tree", () => openTree());
+  add("ต้นไม้สกิล ✦", recTree ? "tree rec" : "tree", () => openTree());
     // แตะห้องที่กำลังเล่นอยู่ = ไม่ทำอะไร (เริ่มใหม่ต้องกดปุ่ม "เริ่มห้องใหม่" ซึ่งบอกว่าใช้หัวใจ)
   const go = (i: number) => () => { if (i !== levelIdx || phase === "win") loadLevel(i); };
   LEVELS.forEach((_, i) => add(`${i + 1}<small>${"★".repeat(save.best[i] || 0) || "&nbsp;"}</small>`, i === levelIdx ? "on" : "", go(i), `ห้อง ${i + 1}`));
