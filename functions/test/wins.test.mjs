@@ -114,8 +114,12 @@ test('แถวกระดานจด g = ผูก Google ไหม · guest 
   const ROOM_G = { ...ROOM1 };
   assert.equal((await wins.submit(user('gu'), { proof: ROOM_G, name: 'ภูติ' }, NOW)).g, false);
   assert.equal((await db.doc(`boards/${weekId(NOW)}/scores/gu`).get()).get('g'), false);
+  // guest ขึ้นกระดานสัปดาห์/เดือนเหมือนกระดานถาวร (ต่างแค่ไม่ได้รางวัล)
+  for (const b of ['all', weekId(NOW), monthId(NOW)]) assert.equal(await pts(b, 'gu'), 1);
   assert.equal((await wins.submit(google('gu'), { proof: ROOM8, name: 'ภูติ' }, NOW + 120_000)).g, true);
   assert.equal((await db.doc(`boards/${weekId(NOW)}/scores/gu`).get()).get('g'), true);
+  assert.equal((await db.doc(`boards/${monthId(NOW)}/scores/gu`).get()).get('g'), true);
+  for (const b of ['all', weekId(NOW), monthId(NOW)]) assert.equal(await pts(b, 'gu'), 2);
 });
 
 test('แต้มจาก submitWin (บัญชี Google) เข้ารางวัลรอบได้ · แถว guest ไม่ได้', async () => {

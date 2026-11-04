@@ -764,6 +764,7 @@ async function loadRank() {
   const tiers = sc.tier ? REWARD_TIERS[sc.tier] : [];
   let from = 1;
   $("rankPrizes").hidden = !tiers.length;
+  $("rankGNote").hidden = !tiers.length;
   $("rankPrizes").innerHTML = tiers.map(([upto, hearts], k) => {
     const label = from === upto ? `ที่ ${upto}` : `${from}–${upto}`; from = upto + 1;
     return `<div>${k < 3 ? `<span class="medal ${["g", "s", "b"][k]}" style="width:22px;height:22px;font-size:11px">${k + 1}</span>` : ""}<span>${label}</span><b>${ic("heart")}${hearts}</b></div>`;
@@ -776,20 +777,27 @@ async function loadRank() {
   if (!Account.user) return note("เชื่อมต่อเน็ตเพื่อดูอันดับ");
   note("กำลังโหลด…");
   try {
-    const id = sc.id(), googleOnly = !!sc.tier;   // สัปดาห์/เดือนมีรางวัล = นับเฉพาะบัญชี Google (เหมือน server)
-    const [rows, mine] = await Promise.all([Boards.top(id, googleOnly), Boards.mine(id)]);
+    // ทุกแท็บแสดงทุกคน (guest ด้วย) · สัปดาห์/เดือนต่างแค่รีเซ็ตและมีรางวัล · อันดับรางวัลนับเฉพาะบัญชี Google (เหมือน server lockRanks)
+    const id = sc.id();
+    const [rows, mine] = await Promise.all([Boards.top(id), Boards.mine(id)]);
     const meIn = rows.findIndex(x => x.uid === Account.user?.uid);
-    // อันดับนอก 50 คนแรกนับไม่ได้ (rules) → "50+" · guest บนกระดานรางวัล = ไม่มีอันดับ
-    const myRank = mine.pts <= 0 ? "" : meIn >= 0 ? String(meIn + 1) : googleOnly && !mine.g ? "–" : `${BOARD_SIZE}+`;
+    // อันดับนอก 50 คนแรกนับไม่ได้ (rules) → "50+"
+    const myRank = mine.pts <= 0 ? "" : meIn >= 0 ? String(meIn + 1) : `${BOARD_SIZE}+`;
+    // ป้ายรางวัลของเรา: อันดับในหมู่บัญชี Google (นับจาก 50 แถวที่โหลดมา) · guest = ชวนผูก Google
+    let prize = "";
+    if (sc.tier && mine.pts > 0) {
+      if (!mine.g) prize = Account.user?.google ? "ผูกแล้ว · ชนะห้องใหม่เพื่อลุ้นรางวัล" : "ผูก Google เพื่อรับรางวัล";
+      else if (meIn >= 0) prize = `อันดับรางวัล ${rows.slice(0, meIn + 1).filter(x => x.g).length}`;
+    }
     if (load !== rankLoad) return;
     if (rankScope === "week") { weekRank = meIn >= 0 ? meIn + 1 : 0; renderHome(); }
-    renderRankRows(rows, mine.pts, myRank, googleOnly && !mine.g);
+    renderRankRows(rows, mine.pts, myRank, prize);
   } catch {
     if (load === rankLoad) note("โหลดอันดับไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่");
   }
 }
 // ชื่อผู้เล่นคนอื่นมาจาก server → textContent เท่านั้น (กฎกันแฮกข้อ 7)
-function renderRankRows(rows: Row[], mine: number, myRank: string, guest = false) {
+function renderRankRows(rows: Row[], mine: number, myRank: string, prize = "") {
   const list = $("rankList"), me = Account.user?.uid;
   if (!rows.length) { const li = document.createElement("li"); li.className = "note"; li.textContent = "ยังไม่มีใครขึ้นกระดานนี้ ชนะห้องใหม่เพื่อเป็นคนแรก!"; list.replaceChildren(li); }
   else list.replaceChildren(...rows.slice(0, BOARD_SIZE).map((row, k) => {
@@ -804,7 +812,9 @@ function renderRankRows(rows: Row[], mine: number, myRank: string, guest = false
   // แถบของเรา ค้างใต้รายการเสมอ
   $("rankMine").hidden = mine <= 0;
   $("rankMineN").textContent = myRank || "–";
-  $("rankMineName").textContent = guest ? "ผูก Google เพื่อติดอันดับรางวัล" : `${Account.name() ?? "คุณ"} (คุณ)`;
+  $("rankMineName").textContent = `${Account.name() ?? "คุณ"} (คุณ)`;
+  $("rankMinePrize").hidden = !prize;
+  $("rankMinePrize").textContent = prize;
   $("rankMinePts").textContent = String(mine);
 }
 

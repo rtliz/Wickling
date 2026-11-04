@@ -1,7 +1,7 @@
 // กระดานคะแนน: หน้าตา/รอบ/รางวัลแบบ LumiFlip (สัปดาห์ · เดือน · ทั้งหมด) แต่แต้มตัดสินที่ server แบบ meowchime
 //   เกมส่ง "หลักฐานการชนะ" (src/core/proof.ts) ให้ Cloud Function submitWin → server เล่นซ้ำด้วย sim ตัวเดียวกัน → +1 แต้ม
 //   boards/{all|W…|M…}/scores/{uid} { uid, name, pts, at, g } client อ่านได้อย่างเดียว · list ต้อง limit ≤ 50 (firestore.rules)
-//   สัปดาห์/เดือน (มีรางวัล) แสดงเฉพาะแถวบัญชี Google (g) แบบเดียวกับที่ server ล็อกอันดับ · ทั้งหมด (ไม่มีรางวัล) แสดงทุกคน
+//   ทุกแท็บแสดงทุกคนที่ได้แต้ม (guest ด้วย) · สัปดาห์/เดือนต่างแค่รีเซ็ตและมีรางวัล · อันดับรางวัลนับเฉพาะ g (server ล็อกเอง)
 //   นับอันดับนอก 50 คนแรกไม่ได้ (rules ไม่ให้ count) → แสดง "50+"
 //   pnpm dev อ่านกระดานจริง (อ่านอย่างเดียว) · ส่งแต้มแบบ dev ได้เฉพาะ Functions emulator (ของจริงตอบ invalid-argument แล้วทิ้ง)
 // กฎค่าใช้จ่าย (firebase-cost.md): Firestore lite (อ่านครั้งเดียว ไม่มี realtime) · ทุก query มี limit(BOARD_SIZE)
@@ -24,7 +24,7 @@ function load() {
 
 const DEV = import.meta.env.DEV;
 const scores = (board: string) => `boards/${board}/scores`;
-export interface Row { uid: string; name: string; score: number }
+export interface Row { uid: string; name: string; score: number; g: boolean }
 export interface Claim { rewards: { id: string; rank: number; hearts: number }[]; hearts: number; needGoogle?: boolean }
 
 // หลักฐานที่ยังส่งไม่ได้ (ไม่มีเน็ต/ยังไม่มีบัญชี) · ไม่ใช่ของมีค่า (server ตรวจเองทุกใบ) จึงเก็บนอกเซฟ
@@ -79,14 +79,12 @@ export const Boards = {
     return got;
   },
 
-  // [{ uid, name, score }] แต้มมากก่อน เท่ากันคนถึงก่อนอยู่สูงกว่า (ดัชนีใน firestore.indexes.json)
-  async top(board: string, googleOnly: boolean): Promise<Row[]> {
+  // [{ uid, name, score, g }] แต้มมากก่อน เท่ากันคนถึงก่อนอยู่สูงกว่า (ดัชนีใน firestore.indexes.json) · g = บัญชี Google (ลุ้นรางวัลได้)
+  async top(board: string): Promise<Row[]> {
     const { db, m } = await load();
-    const q = googleOnly
-      ? m.query(m.collection(db, scores(board)), m.where("g", "==", true), m.orderBy("pts", "desc"), m.orderBy("at"), m.limit(BOARD_SIZE))
-      : m.query(m.collection(db, scores(board)), m.orderBy("pts", "desc"), m.orderBy("at"), m.limit(BOARD_SIZE));
+    const q = m.query(m.collection(db, scores(board)), m.orderBy("pts", "desc"), m.orderBy("at"), m.limit(BOARD_SIZE));
     const snap = await m.getDocs(q);
-    return snap.docs.map(s => ({ uid: s.id, name: String(s.data().name ?? ""), score: Number(s.data().pts) || 0 }));
+    return snap.docs.map(s => ({ uid: s.id, name: String(s.data().name ?? ""), score: Number(s.data().pts) || 0, g: s.data().g === true }));
   },
 
   // แถวของเรา { pts, g } (1 read)

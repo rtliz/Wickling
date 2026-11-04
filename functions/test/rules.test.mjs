@@ -26,6 +26,7 @@ test('firestore.rules กระดาน (server-only)', async ctx => {
   await t('อ่าน boards-dev ไม่ได้ (ข้อมูลทดสอบมีแค่ใน emulator)', false, () => getDoc(doc(as('z'), `boards-dev/${w}/scores/a`)));
   await t('list ไม่มี limit ไม่ได้', false, () => getDocs(query(collection(as('z'), 'boards/all/scores'), orderBy('pts', 'desc'))));
   await t('list limit 51 ไม่ได้', false, () => getDocs(query(collection(as('z'), 'boards/all/scores'), orderBy('pts', 'desc'), limit(51))));
+  await t('list กระดานสัปดาห์/เดือนทุกคน (แบบกระดานถาวร) limit 50 ได้', true, () => getDocs(query(collection(as('z'), `boards/${m}/scores`), orderBy('pts', 'desc'), orderBy('at'), limit(50))));
   await t('list เฉพาะ Google (g == true) limit 50 ได้', true, () => getDocs(query(collection(as('z'), `boards/${w}/scores`), where('g', '==', true), orderBy('pts', 'desc'), limit(50))));
   await t('นับอันดับ (count ไม่มี limit) ไม่ได้ → เกมแสดง 50+', false, () => getCountFromServer(query(collection(as('z'), 'boards/all/scores'), where('pts', '>', 1))));
   await t('ไม่ล็อกอิน list ไม่ได้', false, () => getDocs(query(collection(anon(), 'boards/all/scores'), limit(10))));
