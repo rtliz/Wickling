@@ -549,9 +549,22 @@ async function linkGoogle() {
     renderAccount();
     toast("ผูกบัญชี Google แล้ว");
   } catch (err) {
-    toast(errCode(err) === "auth/credential-already-in-use"
-      ? "บัญชี Google นี้เคยใช้กับเกมนี้แล้ว · ออกจากระบบแล้วเข้าด้วย Google แทนได้"
-      : googleFailMsg(err).replace("เข้าด้วย", "ผูก"));
+    const e = err as { code?: string; message?: string };
+    // บัญชี Google นี้มีผู้เล่นของตัวเองแล้ว → ผูกไม่ได้ · ถามว่าจะสลับไปบัญชีนั้นไหม (ด่านบนเครื่องยังอยู่ครบ)
+    if (/credential[-_ ]already[-_ ]in[-_ ]use|already associated with a different user/i.test(`${e?.code ?? ""} ${e?.message ?? ""}`)) {
+      b.disabled = false;
+      if (!(await ask("บัญชี Google นี้เคยใช้แล้ว", "บัญชีนี้มีข้อมูลของตัวเองอยู่แล้ว เลยผูกกับผู้เยี่ยมชมนี้ไม่ได้ · เข้าบัญชี Google นั้นแทนไหม? ความคืบหน้าในเกมบนเครื่องนี้ยังอยู่ครบ", "เข้าบัญชีนี้"))) return;
+      try {
+        await Account.signIn("google");
+        const google = cleanName(Account.user?.name);
+        finishLogin(nameLength(google) >= NAME_MIN ? google : "ภูติน้อย");
+        $("profileOv").hidden = true;
+        toast("เข้าบัญชี Google แล้ว");
+        if (Billing.pending.size) Billing.retryPending().catch(() => 0);
+      } catch (err2) { toast(googleFailMsg(err2)); }
+      return;
+    }
+    toast(googleFailMsg(err).replace("เข้าด้วย", "ผูก"));
   } finally { b.disabled = false; }
 }
 
