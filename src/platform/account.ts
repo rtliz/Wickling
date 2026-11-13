@@ -32,8 +32,11 @@ function load() {
   })).catch(err => { loaded = null; throw err; }));
 }
 
+// บัญชี Google = มี google.com ใน providerData · isAnonymous อาจยังเป็น true ค้างหลังผูก (ปุ่มผูกเลยไม่หาย)
+const isGoogle = (u: User): boolean => u.providerData.some(p => p.providerId === "google.com") || (!u.isAnonymous && !!u.email);
+
 const toPlayer = (u: User | null): Player | null => u && {
-  uid: u.uid, google: !u.isAnonymous, name: u.displayName, email: u.email, photo: u.photoURL,
+  uid: u.uid, google: isGoogle(u), name: u.displayName, email: u.email, photo: u.photoURL,
 };
 
 // Google แบบเนทีฟ: ได้แค่ credential (skipNativeAuth) แล้วให้ JS SDK เป็นคนเข้าสู่ระบบ
